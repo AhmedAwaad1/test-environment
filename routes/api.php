@@ -5,6 +5,7 @@ use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Color\ColorController;
 use App\Http\Controllers\Country\CountryController;
+use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\ProductType\ProductTypeController;
 use App\Http\Controllers\Size\SizeController;
 use Illuminate\Http\Request;
@@ -112,4 +113,17 @@ Route::prefix('size')->namespace('Size')->group(function () {
     Route::put('/{id}', [SizeController::class, 'update'])->name('size.update');
     // Delete size
     Route::delete('/{id}', [SizeController::class, 'destroy'])->name('size.destroy');
+});
+
+Route::prefix('product')->namespace('Product')->group(function () {
+    // Get all size
+    Route::get('/', [ProductController::class, 'index'])->name('product.index');
+    // Get specific size
+    Route::get('/{id}', [ProductController::class, 'show'])->name('product.show');
+    // Create size
+    Route::post('/', [ProductController::class, 'store'])->name('product.store');
+    // Update size
+    Route::put('/{id}', [ProductController::class, 'update'])->name('product.update');
+    // Delete size
+    Route::delete('/{id}', [ProductController::class, 'destroy'])->name('product.destroy');
 });

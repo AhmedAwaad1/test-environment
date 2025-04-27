@@ -27,7 +27,7 @@ class CityService
             $cities = CityResource::collection($query->get());
         }
 
-        return Response::successResponse($cities, 'Cities retrieved successfully');
+        return Response::successResponse($cities, 'cities retrieved successfully');
     }
 
     public function getCityById($id)
