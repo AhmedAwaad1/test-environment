@@ -84,4 +84,5 @@ Route::prefix('category')->namespace('Category')->group(function () {
     Route::put('/{id}', [CategoryController::class, 'update'])->name('category.update');
     // Delete category
     Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
+    
 });
