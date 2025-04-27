@@ -23,7 +23,7 @@ class AuthService
             $responseData          = $user->toArray();
             $responseData['token'] = $token;
 
-            return Response::successResponse(['is_success' => 1], [$responseData], 200);
+            return Response::successResponse($responseData, 'User created successfully', 201);
         }
         catch(\Exception $e){
             //duplicate entry

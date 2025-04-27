@@ -3,8 +3,10 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
+use App\Http\Controllers\Color\ColorController;
 use App\Http\Controllers\Country\CountryController;
 use App\Http\Controllers\ProductType\ProductTypeController;
+use App\Http\Controllers\Size\SizeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -84,6 +86,30 @@ Route::prefix('category')->namespace('Category')->group(function () {
     Route::put('/{id}', [CategoryController::class, 'update'])->name('category.update');
     // Delete category
     Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
+});
 
-    
+Route::prefix('color')->namespace('Color')->group(function () {
+    // Get all colors
+    Route::get('/', [ColorController::class, 'index'])->name('color.index');
+    // Get specific color
+    Route::get('/{id}', [ColorController::class, 'show'])->name('color.show');
+    // Create color
+    Route::post('/', [ColorController::class, 'store'])->name('color.store');
+    // Update color
+    Route::put('/{id}', [ColorController::class, 'update'])->name('color.update');
+    // Delete color
+    Route::delete('/{id}', [ColorController::class, 'destroy'])->name('color.destroy');
+});
+
+Route::prefix('size')->namespace('Size')->group(function () {
+    // Get all size
+    Route::get('/', [SizeController::class, 'index'])->name('size.index');
+    // Get specific size
+    Route::get('/{id}', [SizeController::class, 'show'])->name('size.show');
+    // Create size
+    Route::post('/', [SizeController::class, 'store'])->name('size.store');
+    // Update size
+    Route::put('/{id}', [SizeController::class, 'update'])->name('size.update');
+    // Delete size
+    Route::delete('/{id}', [SizeController::class, 'destroy'])->name('size.destroy');
 });

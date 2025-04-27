@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name_en')->unique();
             $table->string('name_ar')->unique();
-            $table->string('code')->nullable()->unique();
+            $table->string('hex_code')->nullable()->unique();
             $table->timestamps();
         });
     }
