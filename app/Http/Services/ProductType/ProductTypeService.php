@@ -52,7 +52,7 @@ class ProductTypeService
     public function createProductType($request)
     {
         try {
-            if (empty($request['slug'])) {
+            if (empty($request['slug']) && $request['name_en']) {
                 $request['slug'] = str_replace(' ', '-', $request['name_en']);
             }
 

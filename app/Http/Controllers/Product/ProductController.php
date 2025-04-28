@@ -26,7 +26,6 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request)
     {
-        dd('a');
         return $this->productService->createProduct($request->validated());
     }
 
