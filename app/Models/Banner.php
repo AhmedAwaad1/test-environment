@@ -23,4 +23,12 @@ class Banner extends Model
         }
         return null;
     }
+    public function setImageAttribute($value)
+    {
+        if (is_string($value)) {
+            $this->attributes['image'] = $value;
+        } else {
+            $this->attributes['image'] = $value->store('banners', 'public');
+        }
+    }
 }

@@ -46,8 +46,6 @@ class BannerRequest extends FormRequest
             'product_id'      => ['nullable', 'exists:products,id'],
             'category_id'     => ['nullable', 'exists:categories,id'],
             'product_type_id' => ['nullable', 'exists:product_types,id'],
-            
-            'product_id,category_id,product_type_id' => ['one_field_only'],
         ];
     }
 
@@ -56,9 +54,9 @@ class BannerRequest extends FormRequest
         return [
             'image'           => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
             'url'             => ['nullable', 'string', 'max:255'],
-            'product_id'      => ['nullable', 'exists:products,id', 'required_without:category_id', 'required_without:product_type_id'],
-            'category_id'     => ['nullable', 'exists:categories,id', 'required_without:product_id', 'required_without:product_type_id'],
-            'product_type_id' => ['nullable', 'exists:product_types,id', 'required_without:product_id', 'required_without:category_id'],
+            'product_id'      => ['nullable', 'exists:products,id'],
+            'category_id'     => ['nullable', 'exists:categories,id'],
+            'product_type_id' => ['nullable', 'exists:product_types,id'],
         ];
     }
 }
