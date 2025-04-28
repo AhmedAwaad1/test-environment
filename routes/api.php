@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\Banner\BannerController;
 use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Color\ColorController;
@@ -126,4 +127,17 @@ Route::prefix('product')->namespace('Product')->group(function () {
     Route::put('/{id}', [ProductController::class, 'update'])->name('product.update');
     // Delete size
     Route::delete('/{id}', [ProductController::class, 'destroy'])->name('product.destroy');
+});
+
+Route::prefix('banner')->namespace('Banner')->group(function () {
+    // Get all banners
+    Route::get('/', [BannerController::class, 'index'])->name('banner.index');
+    // Get specific banner
+    Route::get('/{id}', [BannerController::class, 'show'])->name('banner.show');
+    // Create banner
+    Route::post('/', [BannerController::class, 'store'])->name('banner.store');
+    // Update banner
+    Route::put('/{id}', [BannerController::class, 'update'])->name('banner.update');
+    // Delete banner
+    Route::delete('/{id}', [BannerController::class, 'destroy'])->name('banner.destroy');
 });
