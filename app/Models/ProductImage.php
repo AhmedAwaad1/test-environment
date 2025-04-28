@@ -14,4 +14,21 @@ class ProductImage extends Model
         'image',
         'is_main',
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+    public function setImageAttribute($value)
+    {
+        if (is_file($value)) {
+            $this->attributes['image'] = $value->store('products', 'public');
+        } else {
+            $this->attributes['image'] = $value;
+        }
+    }
+    public function getImageAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : null;
+    }
 }

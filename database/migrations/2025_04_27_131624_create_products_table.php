@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('description_en')->nullable();
             $table->text('description_ar')->nullable();
             $table->decimal('price', 10, 2);
+            $table->decimal('price_after_discount', 10, 2)->nullable();
             $table->foreignId('category_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_type_id')->constrained()->onDelete('cascade');
             $table->timestamps();

@@ -15,7 +15,8 @@ class ProductRepository
 
     public function find($id)
     {
-        return Product::with('country')->find($id);
+        return Product::with('productType', 'category', 'images')
+            ->find($id);
     }
 
     public function create(array $data)

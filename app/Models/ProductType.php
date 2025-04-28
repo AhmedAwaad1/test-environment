@@ -17,7 +17,10 @@ class ProductType extends Model
 
     public function getImageAttribute($value)
     {
-        return asset('storage/' . $value);
+        if ($value) {
+            return asset('storage/' . $value);
+        }
+        return null;
     }
     public function setImageAttribute($value)
     {
