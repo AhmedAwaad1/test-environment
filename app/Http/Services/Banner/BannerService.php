@@ -51,6 +51,18 @@ class BannerService
     public function createBanner($request)
     {
         try {
+            $relations = [
+                $request['product_id'] ?? null,
+                $request['category_id'] ?? null,
+                $request['product_type_id'] ?? null,
+            ];
+
+            $nonNullRelations = array_filter($relations);
+
+            if (count($nonNullRelations) !== 1) {
+                return Response::errorResponse('You must provide exactly one of product_id, category_id, or product_type_id', [], 422);
+            }
+
             $banner = $this->bannerRepo->create($request);
 
             return Response::successResponse(new BannerResource($banner), 'banner created successfully', 201);
@@ -65,6 +77,17 @@ class BannerService
     public function updateBanner($id, array $data)
     {
         try {
+            $relations = [
+                $data['product_id'] ?? null,
+                $data['category_id'] ?? null,
+                $data['product_type_id'] ?? null,
+            ];
+
+            $nonNullRelations = array_filter($relations);
+            if (count($nonNullRelations) !== 1) {
+                return Response::errorResponse('You must provide exactly one of product_id, category_id, or product_type_id', [], 422);
+            }
+            
             $banner = $this->bannerRepo->update($id, $data);
 
             if (!$banner) {

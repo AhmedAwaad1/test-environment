@@ -26,12 +26,11 @@ class ProductRepository
 
     public function update($id, array $data)
     {
-        $product = $this->find($id);
+        $product = Product::find($id);
 
         if ($product) {
             $product->update($data);
         }
-        return $product;
     }
 
     public function delete($id)

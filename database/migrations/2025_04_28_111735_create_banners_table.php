@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('image')->nullable();
             $table->string('url')->nullable();
-            $table->foreignId('product_id')->nullable()->constrained('products')->onDelete('cascade');
-            $table->foreignId('category_id')->nullable()->constrained('categories')->onDelete('cascade');
-            $table->foreignId('product_type_id')->nullable()->constrained('product_types')->onDelete('cascade');
+            $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
+            $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
+            $table->foreignId('product_type_id')->nullable()->constrained('product_types')->nullOnDelete();
             $table->timestamps();
         });
     }

@@ -3,6 +3,7 @@
 namespace App\Repositories\Banner;
 
 use App\Models\Banner;
+use Illuminate\Support\Facades\Storage;
 
 class BannerRepository
 {
@@ -34,9 +35,17 @@ class BannerRepository
     public function delete($id)
     {
         $banner = $this->find($id);
+
         if ($banner) {
+            if ($banner->image) {
+                $path = str_replace(asset('storage') . '/', '', $banner->image);
+
+                Storage::delete('public/' . $path);
+            }
+
             $banner->delete();
         }
+
         return $banner;
     }
 }

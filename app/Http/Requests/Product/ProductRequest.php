@@ -68,11 +68,11 @@ class ProductRequest extends FormRequest
             'category_id' => ['nullable', 'exists:categories,id'],
             'product_type_id' => ['nullable', 'exists:product_types,id'],
 
-            'images' => 'nullable|array',
-            'images.*.path' => 'required|string',
-            'main_image_id' => 'nullable|exists:images,id',
+            'images' => ['nullable', 'array'],
+            'images.*.path' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'main_image_id' => 'nullable|exists:product_images,id',
             'deleted_images' => 'nullable|array',
-            'deleted_images.*' => 'exists:images,id',
+            'deleted_images.*' => 'exists:product_images,id',
         ];
     }
 }

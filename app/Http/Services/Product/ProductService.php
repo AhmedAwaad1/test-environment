@@ -72,7 +72,7 @@ class ProductService
                 }
 
                 foreach ($request['images'] as $image) {
-                    $path = $image['path'];
+                    $path = $image['image'];
                     $isMain = isset($image['is_main']) ? filter_var($image['is_main'], FILTER_VALIDATE_BOOLEAN) : false;
 
                     $product->images()->create([
@@ -98,7 +98,6 @@ class ProductService
     public function updateProduct($id, array $data)
     {
         try {
-            // Find the product by ID
             $product = $this->productRepo->find($id);
 
             if (!$product) {
@@ -112,34 +111,13 @@ class ProductService
 
             // Handle new images
             if (isset($data['images'])) {
-
-                // Check if more than one image is marked as main
-                $mainImageId = $data['main_image_id'] ?? null;
-
-                // Update the main image
-                if ($mainImageId) {
-                    // Set all images to not be main
-                    $product->images()->update(['is_main' => false]);
-
-                    // Set the selected image as main
-                    $product->images()->where('id', $mainImageId)->update(['is_main' => true]);
-                }
-
-                // Add or update the images
                 foreach ($data['images'] as $image) {
-                    // Skip the image if it's the main image (it's already updated)
-                    if (isset($image['id']) && $image['id'] == $mainImageId) {
-                        continue;
-                    }
-
                     $path = $image['path'];
-                    $isMain = isset($image['is_main']) ? filter_var($image['is_main'], FILTER_VALIDATE_BOOLEAN) : false;
 
-                    // Add the new image or update existing one
-                    $product->images()->updateOrCreate(
-                        ['image' => $path],
-                        ['is_main' => $isMain]
-                    );
+                    $product->images()->create([
+                        'image' => $path,
+                        'is_main' => false,
+                    ]);
                 }
             }
 
@@ -147,18 +125,34 @@ class ProductService
             if (isset($data['deleted_images'])) {
                 foreach ($data['deleted_images'] as $image_id) {
                     $image = $product->images()->find($image_id);
-                    if ($image && $image->image) {
-                        // Delete the image from storage
-                        Storage::delete($image->file_path);
-                        // Delete the record from the database
+                    if ($image) {
+                        if (!empty($image->image) && Storage::exists($image->image)) {
+                            Storage::delete($image->image);
+                        }
                         $image->delete();
                     }
                 }
             }
 
+            // Handle setting main image
+            if (isset($data['main_image_id'])) {
+                $mainImageId = $data['main_image_id'];
+
+                // First, set all images to is_main = false
+                $product->images()->update(['is_main' => false]);
+
+                // Then, set the selected image to is_main = true
+                ProductImage::where('product_id', $product->id)
+                ->update(['is_main' => false]);
+
+                ProductImage::where('product_id', $product->id)
+                ->where('id', $mainImageId)
+                ->update(['is_main' => true]);
+            }
+
             DB::commit();
 
-            return Response::successResponse(new ProductResource($product), 'Product updated successfully');
+            return Response::successResponse(new ProductResource($product->load('images')), 'Product updated successfully');
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             DB::rollBack();
@@ -168,6 +162,7 @@ class ProductService
             return Response::handleException($e, 'update product');
         }
     }
+
 
 
     public function deleteProduct($id)
