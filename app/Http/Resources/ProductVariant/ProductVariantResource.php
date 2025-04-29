@@ -3,6 +3,7 @@
 namespace App\Http\Resources\ProductVariant;
 
 use App\Http\Resources\Category\CategoryResource;
+use App\Http\Resources\Color\ColorResource;
 use App\Http\Resources\Product\ProductResource;
 use App\Http\Resources\ProductVariantImage\ProductVariantImageResource;
 use App\Http\Resources\ProductVariantType\ProductVariantTypeResource;
@@ -27,7 +28,7 @@ class ProductVariantResource extends JsonResource
             'quantity' => $this->quantity,
             'is_active' => $this->is_active,
             'product' => new ProductResource($this->whenLoaded('product')),
-            'color' => new CategoryResource($this->whenLoaded('color')),
+            'color' => new ColorResource($this->whenLoaded('color')),
             'size' => new SizeResource($this->whenLoaded('size')),
             'images' => ProductVariantImageResource::collection($this->whenLoaded('images')),
         ];
