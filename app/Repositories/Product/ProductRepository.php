@@ -15,7 +15,8 @@ class ProductRepository
 
     public function find($id)
     {
-        return Product::with('productType', 'category', 'images', 'productVariants')
+        return Product::with('productType', 'category', 'images',  'productVariants.color',
+        'productVariants.size', 'productVariants.images')
             ->find($id);
     }
 
