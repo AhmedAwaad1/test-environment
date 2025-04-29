@@ -24,6 +24,7 @@ class ProductResource extends JsonResource
             'description_en' => $this->description_en,
             'description_ar' => $this->description_ar,
             'price' => $this->price,
+            'price_after_discount' => $this->price_after_discount,
             'category' => new CategoryResource($this->whenLoaded('category')),
             'product_type' => new ProductTypeResource($this->whenLoaded('productType')),
             'product_images' => ProductImageResource::collection($this->whenLoaded('images')),

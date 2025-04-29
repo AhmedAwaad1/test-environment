@@ -37,9 +37,10 @@ class AuthService
 
     public function login($request)
     {
-        $user = User::where('email', $request->username)
-                    ->orWhere('username', $request->username)
+        // dd($request->all());
+        $user = User::where('email', $request->email)
                     ->first();
+
         if (!$user) {
             return Response::errorResponse('User is Not Found', [], 400);
         }

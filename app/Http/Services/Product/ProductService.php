@@ -72,7 +72,8 @@ class ProductService
                 }
 
                 foreach ($request['images'] as $image) {
-                    $path = $image['image'];
+                    
+                    $path = $image['path'];
                     $isMain = isset($image['is_main']) ? filter_var($image['is_main'], FILTER_VALIDATE_BOOLEAN) : false;
 
                     $product->images()->create([

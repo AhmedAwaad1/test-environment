@@ -14,10 +14,11 @@ class Product extends Model
         'description_en',
         'description_ar',
         'price',
+        'price_after_discount',
         'product_type_id',
         'category_id',
     ];
-    
+
     public function productType()
     {
         return $this->belongsTo(ProductType::class);

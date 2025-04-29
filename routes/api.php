@@ -8,6 +8,7 @@ use App\Http\Controllers\Color\ColorController;
 use App\Http\Controllers\Country\CountryController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\ProductType\ProductTypeController;
+use App\Http\Controllers\ProductVariant\ProductVariantController;
 use App\Http\Controllers\Size\SizeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -140,4 +141,17 @@ Route::prefix('banner')->namespace('Banner')->group(function () {
     Route::put('/{id}', [BannerController::class, 'update'])->name('banner.update');
     // Delete banner
     Route::delete('/{id}', [BannerController::class, 'destroy'])->name('banner.destroy');
+});
+
+Route::prefix('product-variant')->namespace('ProductVariant')->group(function () {
+    // Get all product variants
+    Route::get('/', [ProductVariantController::class, 'index'])->name('product-variant.index');
+    // Get specific product variant
+    Route::get('/{id}', [ProductVariantController::class, 'show'])->name('product-variant.show');
+    // Create product variant
+    Route::post('/', [ProductVariantController::class, 'store'])->name('product-variant.store');
+    // Update product variant
+    Route::put('/{id}', [ProductVariantController::class, 'update'])->name('product-variant.update');
+    // Delete product variant
+    Route::delete('/{id}', [ProductVariantController::class, 'destroy'])->name('product-variant.destroy');
 });
