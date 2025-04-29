@@ -9,13 +9,13 @@ class ProductVariantRepository
     public function getAll($request)
     {
         return ProductVariant::query()
-            ->with('product', 'color', 'size')
+            ->with('product', 'color', 'size', 'images')
             ->filter($request);
     }
 
     public function find($id)
     {
-        return ProductVariant::with('product', 'color', 'size')
+        return ProductVariant::with('product', 'color', 'size', 'images')
             ->find($id);
     }
 

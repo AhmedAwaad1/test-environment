@@ -29,6 +29,7 @@ class ProductVariantResource extends JsonResource
             'product' => new ProductResource($this->whenLoaded('product')),
             'color' => new CategoryResource($this->whenLoaded('color')),
             'size' => new SizeResource($this->whenLoaded('size')),
+            'images' => ProductVariantImageResource::collection($this->whenLoaded('images')),
         ];
     }
 }

@@ -61,12 +61,12 @@ class ProductVariantService
 
             // Handle images
             if (isset($request['images'])) {
-                foreach ($request['images'] as $image) {
-                    $path = $image['path'];
-                    $productVariant->images()->create([
-                        'image' => $path,
-                    ]);
-                }
+                $imagesData = array_map(function($image) {
+                    $path = $image->store('variants', 'public'); // saves file in storage/app/public/variants
+                    return ['image' => $path];
+                }, $request['images']);
+
+                $productVariant->images()->createMany($imagesData);
             }
 
             DB::commit();
@@ -96,15 +96,19 @@ class ProductVariantService
             // Update the productVariant details
             $this->productVariantRepo->update($id, $data);
 
-            // Handle new images
+            // Handle new uploaded images
             if (isset($data['images'])) {
                 foreach ($data['images'] as $image) {
-                    $path = $image['path'];
-
-                    $productVariant->images()->create([
-                        'image' => $path,
-                        'is_main' => false,
-                    ]);
+                    if ($image instanceof \Illuminate\Http\UploadedFile) {
+                        $path = $image->store('variants', 'public');
+                        $productVariant->images()->create([
+                            'image' => $path,
+                        ]);
+                    } elseif (is_array($image) && isset($image['path'])) {
+                        $productVariant->images()->create([
+                            'image' => $image['path'],
+                        ]);
+                    }
                 }
             }
 
@@ -113,8 +117,8 @@ class ProductVariantService
                 foreach ($data['deleted_images'] as $image_id) {
                     $image = $productVariant->images()->find($image_id);
                     if ($image) {
-                        if (!empty($image->image) && Storage::exists($image->image)) {
-                            Storage::delete($image->image);
+                        if (!empty($image->image) && Storage::disk('public')->exists($image->image)) {
+                            Storage::disk('public')->delete($image->image);
                         }
                         $image->delete();
                     }
@@ -123,7 +127,10 @@ class ProductVariantService
 
             DB::commit();
 
-            return Response::successResponse(new ProductVariantResource($productVariant->load('images')), 'ProductVariant updated successfully');
+            return Response::successResponse(
+                new ProductVariantResource($productVariant->load('images')),
+                'ProductVariant updated successfully'
+            );
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             DB::rollBack();
@@ -133,8 +140,6 @@ class ProductVariantService
             return Response::handleException($e, 'update product variant');
         }
     }
-
-
 
     public function deleteProductVariant($id)
     {
