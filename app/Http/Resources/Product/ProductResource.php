@@ -18,6 +18,18 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $variants = $this->whenLoaded('productVariants');
+
+        $colors = $variants
+            ->pluck('color')
+            ->unique('id')
+            ->values();
+
+        $sizes = $variants
+            ->pluck('size')
+            ->unique('id')
+            ->values();
+
         return [
             "id" => $this->id,
             'name_en' => $this->name_en,
@@ -26,6 +38,8 @@ class ProductResource extends JsonResource
             'description_ar' => $this->description_ar,
             'price' => $this->price,
             'price_after_discount' => $this->price_after_discount,
+            'colors' => $colors,
+            'sizes' => $sizes,
             'category' => new CategoryResource($this->whenLoaded('category')),
             'product_type' => new ProductTypeResource($this->whenLoaded('productType')),
             'product_images' => ProductImageResource::collection($this->whenLoaded('images')),
