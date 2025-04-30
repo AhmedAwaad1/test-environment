@@ -83,13 +83,11 @@ class CityService
 
     public function deleteCity($id)
     {
-        $city = $this->cityRepo->find($id);
+        $city = $this->cityRepo->delete($id);
 
         if (!$city) {
             return Response::errorResponse('city not found', [], 404);
         }
-
-        $this->cityRepo->delete($id);
 
         return Response::successResponse(['is_success' => 1], 'city deleted successfully');
     }

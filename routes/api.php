@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Address\AddressController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Banner\BannerController;
 use App\Http\Controllers\Category\CategoryController;
@@ -172,13 +173,13 @@ Route::prefix('district')->namespace('District')->group(function () {
 
 Route::prefix('address')->namespace('Addres')->group(function () {
         // Get all user addresses
-        Route::get('/', [DistrictController::class, 'index'])->name('district.index');
+        Route::get('/', [AddressController::class, 'index'])->name('address.index');
         // Get specific address
-        Route::get('/{id}', [DistrictController::class, 'show'])->name('district.show');
+        Route::get('/{id}', [AddressController::class, 'show'])->name('address.show');
         // Create new address
-        Route::post('/', [DistrictController::class, 'store'])->name('district.store');
+        Route::post('/', [AddressController::class, 'store'])->name('address.store');
         // Update address
-        Route::put('/{id}', [DistrictController::class, 'update'])->name('district.update');
+        Route::put('/{id}', [AddressController::class, 'update'])->name('address.update');
         // Delete address
-        Route::delete('/{id}', [DistrictController::class, 'destroy'])->name('district.destroy');
+        Route::delete('/{id}', [AddressController::class, 'destroy'])->name('address.destroy');
 });
