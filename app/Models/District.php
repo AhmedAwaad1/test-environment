@@ -5,23 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class City extends Model
+class District extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'name_en',
         'name_ar',
-        'country_id',
+        'city_id',
+        'code',
     ];
 
-    public function country()
+    public function city()
     {
-        return $this->belongsTo(Country::class);
+        return $this->belongsTo(City::class);
     }
     public function scopeFilter($query, $filters)
     {
-        if ($filters['country_id'] ?? false) {
-            $query->where('country_id', $filters['country_id']);
+        if ($filters['city_id'] ?? false) {
+            $query->where('city_id', $filters['city_id']);
         }
     }
 }

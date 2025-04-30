@@ -6,6 +6,7 @@ use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Color\ColorController;
 use App\Http\Controllers\Country\CountryController;
+use App\Http\Controllers\District\DistrictController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\ProductType\ProductTypeController;
 use App\Http\Controllers\ProductVariant\ProductVariantController;
@@ -155,3 +156,17 @@ Route::prefix('product-variant')->namespace('ProductVariant')->group(function ()
     // Delete product variant
     Route::delete('/{id}', [ProductVariantController::class, 'destroy'])->name('product-variant.destroy');
 });
+
+Route::prefix('district')->namespace('District')->group(function () {
+    // Get all districts
+    Route::get('/', [DistrictController::class, 'index'])->name('district.index');
+    // Get specific district
+    Route::get('/{id}', [DistrictController::class, 'show'])->name('district.show');
+    // Create district
+    Route::post('/', [DistrictController::class, 'store'])->name('district.store');
+    // Update district
+    Route::put('/{id}', [DistrictController::class, 'update'])->name('district.update');
+    // Delete district
+    Route::delete('/{id}', [DistrictController::class, 'destroy'])->name('district.destroy');
+});
+

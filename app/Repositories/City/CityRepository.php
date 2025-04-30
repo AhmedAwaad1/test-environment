@@ -6,9 +6,9 @@ use App\Models\City;
 
 class CityRepository
 {
-    public function getAll()
+    public function getAll($request)
     {
-        return City::with('country');
+        return City::with('country')->filter($request);
     }
 
     public function find($id)

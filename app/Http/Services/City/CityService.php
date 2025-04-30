@@ -19,7 +19,7 @@ class CityService
 
     public function getAllCities($request)
     {
-        $query = $this->cityRepo->getAll();
+        $query = $this->cityRepo->getAll($request);
 
         if ($request->per_page) {
             $cities = new PaginationResource($query->paginate($request->per_page), CityResource::class);
