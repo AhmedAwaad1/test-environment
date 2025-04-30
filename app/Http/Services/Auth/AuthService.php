@@ -16,7 +16,7 @@ class AuthService
                 'password' => bcrypt($request->password),
             ]);
             $user  = User::create($request->only([
-                'username', 'type', 'email', 'password'
+                'username', 'type', 'email', 'password', 'phone'
             ]));
             $token = JWTAuth::fromUser($user);
 

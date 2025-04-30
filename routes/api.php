@@ -170,3 +170,15 @@ Route::prefix('district')->namespace('District')->group(function () {
     Route::delete('/{id}', [DistrictController::class, 'destroy'])->name('district.destroy');
 });
 
+Route::prefix('address')->namespace('Addres')->group(function () {
+        // Get all user addresses
+        Route::get('/', [DistrictController::class, 'index'])->name('district.index');
+        // Get specific address
+        Route::get('/{id}', [DistrictController::class, 'show'])->name('district.show');
+        // Create new address
+        Route::post('/', [DistrictController::class, 'store'])->name('district.store');
+        // Update address
+        Route::put('/{id}', [DistrictController::class, 'update'])->name('district.update');
+        // Delete address
+        Route::delete('/{id}', [DistrictController::class, 'destroy'])->name('district.destroy');
+});
