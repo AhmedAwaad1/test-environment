@@ -18,17 +18,23 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $variants = $this->whenLoaded('productVariants');
+        $colors = collect();
+        $sizes = collect();
+        if ($this->relationLoaded('productVariants')) {
+            $variants = $this->productVariants;
 
-        $colors = $variants
-            ->pluck('color')
-            ->unique('id')
-            ->values();
+            $colors = $variants
+                ->pluck('color')
+                ->filter()
+                ->unique('id')
+                ->values();
 
-        $sizes = $variants
-            ->pluck('size')
-            ->unique('id')
-            ->values();
+            $sizes = $variants
+                ->pluck('size')
+                ->filter()
+                ->unique('id')
+                ->values();
+        }
 
         return [
             "id" => $this->id,
