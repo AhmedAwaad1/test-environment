@@ -30,23 +30,25 @@ class CartService
         $this->couponRepo = $couponRepo;
     }
 
-    // public function getCartByUserId($id)
-    // {
-    //     try {
-    //         $cart = $this->cartRepo->find($id);
+    public function getUserCart()
+    {
+        try{
+            $user = Auth::user();
 
-    //         if (!$cart) {
-    //             return Response::errorResponse('cart not found', [], 404);
-    //         }
+            $cart = $this->cartRepo->findUserCart($user->id);
 
-    //         return Response::successResponse(new CartResource($cart), 'cart found successfully');
-    //     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-    //         //exception if id not found
-    //         return Response::handleModelNotFoundException($e, 'cart');
-    //     } catch (\Exception $e) {
-    //         return Response::handleException($e, 'Failed to retrieve cart');
-    //     }
-    // }
+            if (!$cart) {
+                return Response::errorResponse('Cart not found', [], 404);
+            }
+
+            return Response::successResponse(new CartResource($cart), 'Cart retrieved successfully', 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            //exception if id not found
+            return Response::handleModelNotFoundException($e, 'cart');
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'Failed to retrieve cart');
+        }
+    }
 
     public function addToCart($data)
     {
@@ -90,6 +92,13 @@ class CartService
             }
 
             $this->calculateTotalPrice($cart);
+            // Check if the cart has a coupon code applied
+            if($cart->coupon_code != null){
+                $coupon = $this->couponRepo->findByCode($cart->coupon_code);
+                if($coupon != null){
+                    $this->calculateTotalPriceAfterDiscount($cart, $coupon);
+                }
+            }
 
             DB::commit();
             return Response::successResponse(new CartResource($cart), 'new item added to cart', 201);
@@ -136,6 +145,14 @@ class CartService
 
             $this->calculateTotalPrice($cart);
 
+            // Check if the cart has a coupon code applied
+            if($cart->coupon_code != null){
+                $coupon = $this->couponRepo->findByCode($cart->coupon_code);
+                if($coupon != null){
+                    $this->calculateTotalPriceAfterDiscount($cart, $coupon);
+                }
+            }
+
             DB::commit();
             return Response::successResponse(new CartResource($cart), 'Cart item quantity updated successfully');
 
@@ -147,16 +164,39 @@ class CartService
         }
     }
 
-    // public function deleteCart($id)
-    // {
-    //     $cart = $this->cartRepo->delete($id);
+    public function deleteCartItem($cartItemId)
+    {
+        $user = Auth::user();
 
-    //     if (!$cart) {
-    //         return Response::errorResponse('cart not found', [], 404);
-    //     }
+        $cart = $this->cartRepo->findUserCart($user->id);
+        if (!$cart) {
+            return Response::errorResponse('Cart not found', [], 404);
+        }
 
-    //     return Response::successResponse(['is_success' => 1], 'cart deleted successfully');
-    // }
+        $cartItem = $this->cartItemRepo->findById($cartItemId);
+
+        if (!$cartItem || $cartItem->cart_id !== $cart->id) {
+            return Response::errorResponse('Cart item not found or unauthorized', [], 403);
+        }
+
+        $cartItem->delete();
+
+        // Check if the cart is empty after deletion
+        if ($cart->cartItems()->count() === 0) {
+            $cart->delete();
+            return Response::successResponse(null, 'Cart item deleted successfully and cart is empty', 200);
+        }
+
+        // Recalculate the total price of the cart
+        $this->calculateTotalPrice($cart);
+        if($cart->coupon_code != null){
+            $coupon = $this->couponRepo->findByCode($cart->coupon_code);
+            if($coupon != null){
+                $this->calculateTotalPriceAfterDiscount($cart, $coupon);
+            }
+        }
+        return Response::successResponse(null, 'Cart item deleted successfully', 200);
+    }
 
     public function calculateItemPrice($unitPrice, $quantity)
     {
@@ -192,31 +232,52 @@ class CartService
 
     public function applyCoupon($data)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
+            $cart = $this->cartRepo->findUserCart($user->id);
 
-        $cart = $this->cartRepo->findUserCart($user->id);
-        if (!$cart) {
-            return Response::errorResponse('Cart not found', [], 404);
-        }
-
-        $total = $cart->total_price;
-
-        if ($cart->coupon_code) {
-            $coupon = $this->couponRepo->findByCode($cart->coupon_code);
-
-            if ($coupon && $coupon->is_active) {
-                $cart->discount_amount = $coupon->discount_percentage ? ($total * $coupon->discount_percentage) / 100 : null;
-                $cart->total_price_after_discount = $total - $cart->discount_amount;
-            } else {
-                $cart->discount_amount = 0;
-                $cart->total_price_after_discount = null;
+            if (!$cart) {
+                return Response::errorResponse('Cart not found', [], 404);
             }
-        } else {
-            $cart->discount_amount = 0;
-            $cart->total_price_after_discount = null;
-        }
 
-        $cart->save();
+            $coupon = $this->couponRepo->findByCode($data['coupon_code']);
+
+            if (!$coupon) {
+                return Response::errorResponse('Coupon not found', [], 404);
+            }
+
+            if (!$coupon->is_active) {
+                return Response::errorResponse('Coupon is not active', [], 400);
+            }
+
+            // Check if user used this coupon before
+            // if ($user->usedCoupons()->where('coupon_id', $coupon->id)->exists()) {
+            //     return Response::errorResponse('You have already used this coupon', [], 400);
+            // }
+
+            $this->calculateTotalPriceAfterDiscount($cart, $coupon);
+
+            return Response::successResponse(new CartResource($cart), 'Coupon applied successfully');
+
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'apply coupon');
+        }
     }
 
+    public function calculateTotalPriceAfterDiscount(Cart $cart, $coupon)
+    {
+        $total = $cart->total_price;
+
+        if ($coupon->discount_percentage) {
+            $cart->coupon_code = $coupon->code;
+            $cart->discount_amount = ($total * $coupon->discount_percentage) / 100;
+        } else {
+            $cart->discount_amount = 0;
+        }
+
+        $cart->total_price_after_discount = $total - $cart->discount_amount;
+        $cart->save();
+
+        return $cart->total_price_after_discount;
+    }
 }

@@ -24,6 +24,7 @@ class CartResource extends JsonResource
             'cupon_code' => $this->coupon_code,
             'discount_amount' => (int) $this->discount_amount,
             'total_price' => (int) $this->total_price,
+            'total_price_after_discount' => (int) $this->total_price_after_discount,
             'cart_items' => CartItemResource::collection($this->whenLoaded('cartItems')),
             'user' => new AuthResource($this->whenLoaded('user')),
         ];

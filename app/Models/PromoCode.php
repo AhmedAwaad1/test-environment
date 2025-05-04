@@ -13,5 +13,9 @@ class PromoCode extends Model
         'discount_percentage',
         'is_active',
     ];
-    
+
+    // public function usersUsed()
+    // {
+    //     return $this->belongsToMany(User::class, 'coupon_user')->withTimestamps();
+    // }
 }

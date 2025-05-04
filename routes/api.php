@@ -201,13 +201,13 @@ Route::prefix('promo-code')->namespace('PromoCode')->group(function () {
 
 Route::prefix('cart')->namespace('Cart')->group(function () {
     // Get cart by user id
-    Route::get('/{id}', [CartController::class, 'show'])->name('cart.show');
+    Route::get('/', [CartController::class, 'getUserCart'])->name('cart.show');
     // Add to cart
     Route::post('/add', [CartController::class, 'addtoCart'])->name('cart.add');
     // Update cart item
     Route::put('/item/{id}', [CartController::class, 'updateCartItemQuantity'])->name('cart.update');
     // Delete cart item
-    Route::delete('/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
+    Route::delete('/item/{id}', [CartController::class, 'deleteCartItem'])->name('cart.delete');
 
     //apply coupon
     Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
