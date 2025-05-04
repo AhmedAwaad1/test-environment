@@ -57,4 +57,8 @@ class User extends Authenticatable implements JWTSubject
     {
         return Hash::check($value, $this->password);
     }
+    public function cart()
+    {
+        return $this->hasOne(Cart::class);
+    }
 }

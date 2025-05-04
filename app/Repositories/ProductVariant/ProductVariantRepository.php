@@ -19,6 +19,14 @@ class ProductVariantRepository
             ->find($id);
     }
 
+    public function findVariantByProductId($data)
+    {
+        return $productVariant = ProductVariant::where('product_id', $data['product_id'])
+            ->Where('size_id', $data['size_id'])
+            ->where('color_id', $data['color_id'])
+            ->first();
+    }
+
     public function create(array $data)
     {
         return ProductVariant::create($data);

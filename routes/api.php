@@ -3,6 +3,7 @@
 use App\Http\Controllers\Address\AddressController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Banner\BannerController;
+use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Color\ColorController;
@@ -11,6 +12,7 @@ use App\Http\Controllers\District\DistrictController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\ProductType\ProductTypeController;
 use App\Http\Controllers\ProductVariant\ProductVariantController;
+use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\Size\SizeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -183,3 +185,66 @@ Route::prefix('address')->namespace('Addres')->group(function () {
         // Delete address
         Route::delete('/{id}', [AddressController::class, 'destroy'])->name('address.destroy');
 });
+
+Route::prefix('promo-code')->namespace('PromoCode')->group(function () {
+    // Get all promo codes
+    Route::get('/', [PromoCodeController::class, 'index'])->name('promo-code.index');
+    // Get specific promo code
+    Route::get('/{id}', [PromoCodeController::class, 'show'])->name('promo-code.show');
+    // Create promo code
+    Route::post('/', [PromoCodeController::class, 'store'])->name('promo-code.store');
+    // Update promo code
+    Route::put('/{id}', [PromoCodeController::class, 'update'])->name('promo-code.update');
+    // Delete promo code
+    Route::delete('/{id}', [PromoCodeController::class, 'destroy'])->name('promo-code.destroy');
+});
+
+Route::prefix('cart')->namespace('Cart')->group(function () {
+    // Get cart by user id
+    Route::get('/{id}', [CartController::class, 'show'])->name('cart.show');
+    // Add to cart
+    Route::post('/add', [CartController::class, 'addtoCart'])->name('cart.add');
+    // Update cart item
+    Route::put('/item/{id}', [CartController::class, 'updateCartItemQuantity'])->name('cart.update');
+    // Delete cart item
+    Route::delete('/{id}', [CartController::class, 'destroy'])->name('cart.destroy');
+
+    //apply coupon
+    Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
+});
+// Route::prefix('order')->namespace('Order')->group(function () {
+//     // Get all orders
+//     Route::get('/', [OrderController::class, 'index'])->name('order.index');
+//     // Get specific order
+//     Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
+//     // Create order
+//     Route::post('/', [OrderController::class, 'store'])->name('order.store');
+//     // Update order
+//     Route::put('/{id}', [OrderController::class, 'update'])->name('order.update');
+//     // Delete order
+//     Route::delete('/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
+// });
+// Route::prefix('order-status')->namespace('OrderStatus')->group(function () {
+//     // Get all order statuses
+//     Route::get('/', [OrderStatusController::class, 'index'])->name('order-status.index');
+//     // Get specific order status
+//     Route::get('/{id}', [OrderStatusController::class, 'show'])->name('order-status.show');
+//     // Create order status
+//     Route::post('/', [OrderStatusController::class, 'store'])->name('order-status.store');
+//     // Update order status
+//     Route::put('/{id}', [OrderStatusController::class, 'update'])->name('order-status.update');
+//     // Delete order status
+//     Route::delete('/{id}', [OrderStatusController::class, 'destroy'])->name('order-status.destroy');
+// });
+// Route::prefix('order-item')->namespace('OrderItem')->group(function () {
+//     // Get all order items
+//     Route::get('/', [OrderItemController::class, 'index'])->name('order-item.index');
+//     // Get specific order item
+//     Route::get('/{id}', [OrderItemController::class, 'show'])->name('order-item.show');
+//     // Create order item
+//     Route::post('/', [OrderItemController::class, 'store'])->name('order-item.store');
+//     // Update order item
+//     Route::put('/{id}', [OrderItemController::class, 'update'])->name('order-item.update');
+//     // Delete order item
+//     Route::delete('/{id}', [OrderItemController::class, 'destroy'])->name('order-item.destroy');
+// });

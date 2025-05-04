@@ -16,6 +16,11 @@ class PromoCodeRepository
         return PromoCode::find($id);
     }
 
+    public function findByCode($code)
+    {
+        return PromoCode::where('code', $code)->first();
+    }
+    
     public function create(array $data)
     {
         return PromoCode::create($data);
