@@ -19,7 +19,9 @@ class CartRepository
 
     public function findUserCart($userId)
     {
-        return Cart::where('user_id', $userId)->with('cartItems.productVariant')->first();
+        return Cart::where('user_id', $userId)
+            ->with('cartItems.productVariant.product', 'cartItems.productVariant.color', 'cartItems.productVariant.size')
+            ->first();
     }
 
     public function findBySessionId($sessionId)
