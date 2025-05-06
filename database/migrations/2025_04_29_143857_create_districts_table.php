@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name_en');
             $table->string('name_ar');
             $table->foreignId('city_id')->constrained('cities')->onDelete('cascade');
+            $table->decimal('shipping_price', 10, 2)->default(0);
             $table->string('code')->nullable();
             $table->timestamps();
         });

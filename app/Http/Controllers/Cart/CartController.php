@@ -26,18 +26,23 @@ class CartController extends Controller
         return $this->cartService->updateCartItemQuantity($id, $request->validated());
     }
 
+    public function getUserCart()
+    {
+        return $this->cartService->getUserCart();
+    }
+
+    public function deleteCartItem($id)
+    {
+        return $this->cartService->deleteCartItem($id);
+    }
+
     public function applyCoupon(ApplyCouponRequest $request)
     {
         return $this->cartService->applyCoupon($request->validated());
     }
 
-    public function getUserCart()
+    public function removeCoupon()
     {
-        return $this->cartService->getUserCart();
-    }
-    
-    public function deleteCartItem($id)
-    {
-        return $this->cartService->deleteCartItem($id);
+        return $this->cartService->removeCoupon();
     }
 }

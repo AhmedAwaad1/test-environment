@@ -211,6 +211,8 @@ Route::prefix('cart')->namespace('Cart')->group(function () {
 
     //apply coupon
     Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
+    //remove coupon
+    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('cart.remove-coupon');
 });
 // Route::prefix('order')->namespace('Order')->group(function () {
 //     // Get all orders

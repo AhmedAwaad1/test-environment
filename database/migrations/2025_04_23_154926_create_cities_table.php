@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name_en')->unique();
             $table->string('name_ar')->unique();
             $table->foreignId('country_id')->constrained('countries')->onDelete('cascade');
+            $table->decimal('shipping_price', 10, 2)->default(0);
             $table->timestamps();
         });
     }

@@ -264,6 +264,27 @@ class CartService
         }
     }
 
+    public function removeCoupon()
+    {
+        try {
+            $user = Auth::user();
+            $cart = $this->cartRepo->findUserCart($user->id);
+
+            if (!$cart) {
+                return Response::errorResponse('Cart not found', [], 404);
+            }
+
+            $cart->coupon_code = null;
+            $cart->discount_amount = 0;
+            $cart->total_price_after_discount = null;
+            $cart->save();
+
+            return Response::successResponse(new CartResource($cart), 'Coupon removed successfully');
+
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'remove coupon');
+        }
+    }
     public function calculateTotalPriceAfterDiscount(Cart $cart, $coupon)
     {
         $total = $cart->total_price;

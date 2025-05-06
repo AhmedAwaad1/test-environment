@@ -44,6 +44,7 @@ class DistrictRequest extends FormRequest
             'name_en' => ['required', 'string', 'max:255'],
             'name_ar' => ['required', 'string', 'max:255'],
             'city_id' => ['required', 'exists:countries,id'],
+            'shipping_price' => ['nullable', 'numeric'],
         ];
     }
 
@@ -53,6 +54,7 @@ class DistrictRequest extends FormRequest
             'name_en' => ['nullable', 'string', 'max:255'],
             'name_ar' => ['nullable', 'string', 'max:255'],
             'city_id' => ['nullable', 'exists:countries,id'],
+            'shipping_price' => ['nullable', 'numeric'],
         ];
     }
 }
