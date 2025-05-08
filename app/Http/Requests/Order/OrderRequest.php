@@ -35,6 +35,7 @@ class OrderRequest extends FormRequest
     {
         return [
             'per_page' => ['nullable', 'integer', 'min:1'],
+            'status' => ['nullable', 'string', 'in:pending,processing,completed,canceled'],
         ];
     }
 
@@ -43,14 +44,13 @@ class OrderRequest extends FormRequest
         return [
             'address_id' => ['required', 'exists:addresses,id'],
             'payment_method' => ['required', 'string', 'in:cod, paymob, stripe'],
-            
         ];
     }
 
     private function updateRules(): array
     {
         return [
-
+            'status' => ['required', 'string', 'in:pending,processing,completed,canceled'],
         ];
     }
 }

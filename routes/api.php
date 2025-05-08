@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Address\AddressController;
+use App\Http\Controllers\Admin\Order\OrderController as OrderAdminController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Banner\BannerController;
 use App\Http\Controllers\Cart\CartController;
@@ -217,7 +218,7 @@ Route::prefix('cart')->namespace('Cart')->group(function () {
 });
 
 Route::prefix('order')->namespace('Order')->group(function () {
-    // Get all orders
+    // Get all user orders
     Route::get('/', [OrderController::class, 'index'])->name('order.index');
     // Get specific order
     Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
@@ -229,27 +230,9 @@ Route::prefix('order')->namespace('Order')->group(function () {
     Route::delete('/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
 });
 
-// Route::prefix('order-status')->namespace('OrderStatus')->group(function () {
-//     // Get all order statuses
-//     Route::get('/', [OrderStatusController::class, 'index'])->name('order-status.index');
-//     // Get specific order status
-//     Route::get('/{id}', [OrderStatusController::class, 'show'])->name('order-status.show');
-//     // Create order status
-//     Route::post('/', [OrderStatusController::class, 'store'])->name('order-status.store');
-//     // Update order status
-//     Route::put('/{id}', [OrderStatusController::class, 'update'])->name('order-status.update');
-//     // Delete order status
-//     Route::delete('/{id}', [OrderStatusController::class, 'destroy'])->name('order-status.destroy');
-// });
-// Route::prefix('order-item')->namespace('OrderItem')->group(function () {
-//     // Get all order items
-//     Route::get('/', [OrderItemController::class, 'index'])->name('order-item.index');
-//     // Get specific order item
-//     Route::get('/{id}', [OrderItemController::class, 'show'])->name('order-item.show');
-//     // Create order item
-//     Route::post('/', [OrderItemController::class, 'store'])->name('order-item.store');
-//     // Update order item
-//     Route::put('/{id}', [OrderItemController::class, 'update'])->name('order-item.update');
-//     // Delete order item
-//     Route::delete('/{id}', [OrderItemController::class, 'destroy'])->name('order-item.destroy');
-// });
+Route::prefix('admin/order')->middleware('role.admin')->group(function () {
+    Route::get('/', [OrderAdminController::class, 'index'])->name('admin.orders.index');
+    Route::get('/{id}', [OrderAdminController::class, 'show'])->name('admin.orders.show');
+    Route::put('/{id}', [OrderAdminController::class, 'update'])->name('admin.orders.update');
+});
+
