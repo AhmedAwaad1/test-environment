@@ -33,7 +33,7 @@ class ProductResource extends JsonResource
                 ->pluck('size')
                 ->filter()
                 ->unique('id')
-                ->orderBy('size_id')
+                ->sortBy('id') 
                 ->values();
         }
 
