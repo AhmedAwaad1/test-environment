@@ -19,7 +19,7 @@ return new class extends Migration
 
             $table->unsignedBigInteger('address_id')->nullable();
             $table->foreign('address_id')->references('id')->on('addresses')->onDelete('set null');
-            
+
             $table->decimal('subtotal', 10, 2);
             $table->decimal('shipping_price', 10, 2);
             $table->decimal('total_price', 10, 2);

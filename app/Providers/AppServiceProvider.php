@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Http\Mixins\ResponseMixins;
 use App\Http\Services\Payment\PaymentFactoryService;
+use App\Models\Order;
+use App\Observers\Order\OrderObserver;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
@@ -28,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Schema::defaultStringLength(191);
         Response::mixin(new ResponseMixins());
+        Order::observe(OrderObserver::class);
     }
 
 }

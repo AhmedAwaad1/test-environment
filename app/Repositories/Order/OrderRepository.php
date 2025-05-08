@@ -28,6 +28,7 @@ class OrderRepository
             'shipping_price'=> $data['shipping_price'],
             'total_price'   => $cart->total_price + $data['shipping_price'],
             'payment_method'=> $data['payment_method'],
+            'status'        => $data['payment_method'] == 'cod' ? 'processing' : 'pending',
         ]);
     }
 
