@@ -181,11 +181,6 @@ class CartService
 
         $cartItem->delete();
 
-        // Check if the cart is empty after deletion
-        if ($cart->cartItems()->count() === 0) {
-            $cart->delete();
-            return Response::successResponse(null, 'Cart item deleted successfully and cart is empty', 200);
-        }
 
         // Recalculate the total price of the cart
         $this->calculateTotalPrice($cart);
