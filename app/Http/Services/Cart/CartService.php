@@ -38,7 +38,7 @@ class CartService
             $cart = $this->cartRepo->findUserCart($user->id);
 
             if (!$cart) {
-                return Response::successResponse(null, 'Cart is empty', 200);
+                return Response::successResponse([], 'Cart is empty', 200);
             }
 
             return Response::successResponse(new CartResource($cart), 'Cart retrieved successfully', 200);
