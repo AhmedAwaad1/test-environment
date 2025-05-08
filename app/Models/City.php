@@ -12,6 +12,7 @@ class City extends Model
         'name_en',
         'name_ar',
         'country_id',
+        'shipping_price',
     ];
 
     public function country()

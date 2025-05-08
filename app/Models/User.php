@@ -61,9 +61,13 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasOne(Cart::class);
     }
+    public function address()
+    {
+        return $this->hasMany(Address::class);
+    }
     // public function usedCoupons()
     // {
     //     return $this->belongsToMany(PromoCode::class, 'coupon_user')->withTimestamps();
     // }
-    
+
 }

@@ -1,0 +1,129 @@
+<?php
+
+namespace App\Http\Services\Order;
+
+use App\Http\Resources\PaginationResource\PaginationResource;
+use App\Http\Resources\Order\OrderResource;
+use App\Http\Services\Payment\PaymentFactoryService;
+use App\Repositories\Address\AddressRepository;
+use App\Repositories\Cart\CartRepository;
+use App\Repositories\Order\OrderRepository;
+use App\Repositories\OrderItem\OrderItemRepository;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Response;
+
+class OrderService
+{
+    protected $orderRepo, $cartRepo, $paymentFactory, $addressRepo, $orderItemRepo;
+
+    public function __construct(
+        OrderRepository $orderRepo,
+        OrderItemRepository $orderItemRepo,
+        CartRepository $cartRepo,
+        AddressRepository $addressRepo,
+        PaymentFactoryService $paymentFactory)
+    {
+        $this->cartRepo = $cartRepo;
+        $this->paymentFactory = $paymentFactory;
+        $this->orderRepo = $orderRepo;
+        $this->addressRepo = $addressRepo;
+        $this->orderItemRepo = $orderItemRepo;
+    }
+
+    public function getAllUserOrders($request)
+    {
+        $user = auth()->user();
+        $request['user_id'] = $user->id;
+        $query = $this->orderRepo->getAllUserOrder($request);
+
+        if ($request->per_page) {
+            $orders = new PaginationResource($query->paginate($request->per_page), OrderResource::class);
+        } else {
+            $orders = OrderResource::collection($query->get());
+        }
+
+        return Response::successResponse($orders, 'orders retrieved successfully');
+    }
+
+    public function getOrderById($id)
+    {
+        try {
+            $user = auth()->user();
+            $order = $this->orderRepo->findOrderById($id);
+
+            if (!$order) {
+                return Response::errorResponse('order not found', [], 404);
+            }
+
+            return Response::successResponse(new OrderResource($order), 'order found successfully');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            //exception if id not found
+            return Response::handleModelNotFoundException($e, 'order');
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'Failed to retrieve order');
+        }
+    }
+
+    public function checkout($request)
+    {
+        $user = auth()->user();
+        $cart = $this->cartRepo->findUserCart($user->id);
+
+        $orderNumber = $this->generateOrderNumber();
+
+        $userAddress = $this->addressRepo->find($request['address_id'], $user->id);
+
+        if (!$userAddress) {
+            return Response::errorResponse('address not found', [], 404);
+        }
+
+        $shippingPrice = $userAddress->city->shipping_price ?? 0;
+
+        $request = array_merge($request, [
+            'order_number' => $orderNumber,
+            'user_id' => $user->id,
+            'shipping_price' => $shippingPrice,
+        ]);
+
+        if (!$cart || $cart->cartItems->isEmpty()) {
+            return Response::errorResponse('cart is empty', [], 404);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $order = $this->orderRepo->createOrder($request, $cart);
+
+            $orderItems = $this->orderItemRepo->createOrderItems($order->id, $cart->cartItems);
+
+            // Payment handling
+            $paymentMethod = $request['payment_method'];
+            $paymentHandler = $this->paymentFactory->make($paymentMethod);
+            $paymentResult = $paymentHandler->pay($order);
+
+            if(!$paymentResult['success']) {
+                DB::rollBack();
+                return Response::errorResponse($paymentResult['message'], [], 400);
+            }
+
+            DB::commit();
+
+            return Response::successResponse(new OrderResource($order->load('orderItems')), 'order created successfully', 201);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            return Response::handleModelNotFoundException($e, 'order');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return Response::handleException($e, 'Failed to retrieve order');
+        }
+    }
+
+    private function generateOrderNumber(): string
+    {
+        $prefix = 'ORD-';
+        $randomNumber = mt_rand(100000, 999999);
+        $timestamp = now()->format('YmdHis');
+
+        return $prefix . $timestamp . '-' . $randomNumber;
+    }
+}

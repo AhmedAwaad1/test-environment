@@ -9,6 +9,7 @@ use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Color\ColorController;
 use App\Http\Controllers\Country\CountryController;
 use App\Http\Controllers\District\DistrictController;
+use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\ProductType\ProductTypeController;
 use App\Http\Controllers\ProductVariant\ProductVariantController;
@@ -214,18 +215,20 @@ Route::prefix('cart')->namespace('Cart')->group(function () {
     //remove coupon
     Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('cart.remove-coupon');
 });
-// Route::prefix('order')->namespace('Order')->group(function () {
-//     // Get all orders
-//     Route::get('/', [OrderController::class, 'index'])->name('order.index');
-//     // Get specific order
-//     Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
-//     // Create order
-//     Route::post('/', [OrderController::class, 'store'])->name('order.store');
-//     // Update order
-//     Route::put('/{id}', [OrderController::class, 'update'])->name('order.update');
-//     // Delete order
-//     Route::delete('/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
-// });
+
+Route::prefix('order')->namespace('Order')->group(function () {
+    // Get all orders
+    Route::get('/', [OrderController::class, 'index'])->name('order.index');
+    // Get specific order
+    Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
+    // Create order
+    Route::post('/checkout', [OrderController::class, 'checkout'])->name('order.checkout');
+    // Update order
+    Route::put('/{id}', [OrderController::class, 'update'])->name('order.update');
+    // Delete order
+    Route::delete('/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
+});
+
 // Route::prefix('order-status')->namespace('OrderStatus')->group(function () {
 //     // Get all order statuses
 //     Route::get('/', [OrderStatusController::class, 'index'])->name('order-status.index');

@@ -14,6 +14,7 @@ class District extends Model
         'name_ar',
         'city_id',
         'code',
+        'shipping_price',
     ];
 
     public function city()
