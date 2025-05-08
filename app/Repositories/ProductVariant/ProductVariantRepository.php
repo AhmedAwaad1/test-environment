@@ -16,6 +16,7 @@ class ProductVariantRepository
     public function find($id)
     {
         return ProductVariant::with('product', 'color', 'size', 'images')
+            ->orderBy('size_id', 'asc')
             ->find($id);
     }
 
