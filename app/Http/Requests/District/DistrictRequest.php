@@ -53,7 +53,7 @@ class DistrictRequest extends FormRequest
         return [
             'name_en' => ['nullable', 'string', 'max:255'],
             'name_ar' => ['nullable', 'string', 'max:255'],
-            'city_id' => ['nullable', 'exists:countries,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
             'shipping_price' => ['nullable', 'numeric'],
         ];
     }
