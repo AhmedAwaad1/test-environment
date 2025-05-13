@@ -10,12 +10,14 @@ use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Color\ColorController;
 use App\Http\Controllers\Country\CountryController;
 use App\Http\Controllers\District\DistrictController;
+use App\Http\Controllers\Favorite\FavoriteController;
 use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\ProductType\ProductTypeController;
 use App\Http\Controllers\ProductVariant\ProductVariantController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\Size\SizeController;
+use App\Http\Controllers\UserProfile\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -236,3 +238,18 @@ Route::prefix('admin/order')->middleware('role.admin')->group(function () {
     Route::put('/{id}', [OrderAdminController::class, 'update'])->name('admin.orders.update');
 });
 
+Route::prefix('favorite')->namespace('Favorite')->group(function () {
+    // Get all user favorites
+    Route::get('/', [FavoriteController::class, 'index'])->name('favorite.index');
+    // Get specific favorite
+    Route::get('/{id}', [FavoriteController::class, 'show'])->name('favorite.show');
+    // Create favorite
+    Route::post('/', [FavoriteController::class, 'store'])->name('favorite.store');
+    // Delete favorite
+    Route::delete('/{id}', [FavoriteController::class, 'destroy'])->name('favorite.destroy');
+});
+
+Route::prefix('user-profile')->namespace('UserProfile')->group(function () {
+    // Update user profile
+    Route::put('/', [UserProfileController::class, 'update'])->name('user-profile.update');
+});
