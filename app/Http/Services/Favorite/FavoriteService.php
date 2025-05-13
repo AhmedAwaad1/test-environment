@@ -35,7 +35,7 @@ class FavoriteService
             $favorite = $this->favoriteRepo->find($id);
 
             if (!$favorite) {
-                return Response::errorResponse('favorite not found', [], 404);
+                return Response::successResponse([], 'favorite not found', 200);
             }
 
             return Response::successResponse(new FavoriteResource($favorite), 'favorite found successfully');

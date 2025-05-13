@@ -10,7 +10,7 @@ class FavoriteRepository
     public function getAll()
     {
         return Favorite::where('user_id', auth()->id())
-            ->with('product');
+            ->with('product.images');
     }
 
     public function find($id)
