@@ -31,7 +31,7 @@ class ProductResource extends JsonResource
             'price_after_discount' => (int) $this->price_after_discount,
             'sizes' => SizeResource::collection(
                 collect($this->productVariants)
-                    ->pluck('variantSizes') // لو sizes جاية من علاقة variantSizes
+                    ->pluck('variantSizes')
                     ->flatten()
                     ->pluck('size')
                     ->unique('id')
