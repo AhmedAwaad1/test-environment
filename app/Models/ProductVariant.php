@@ -35,6 +35,10 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(Size::class);
     }
+    public function variantSizes()
+    {
+        return $this->hasMany(VariantSize::class);
+    }
     public function getIsActiveAttribute($value)
     {
         return $value == 1;
@@ -46,9 +50,6 @@ class ProductVariant extends Model
         }
         if (isset($filters['color_id'])) {
             $query->where('color_id', $filters['color_id']);
-        }
-        if (isset($filters['size_id'])) {
-            $query->where('size_id', $filters['size_id']);
         }
         if (isset($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);

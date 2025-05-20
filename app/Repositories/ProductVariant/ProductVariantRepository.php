@@ -9,23 +9,19 @@ class ProductVariantRepository
     public function getAll($request)
     {
         return ProductVariant::query()
-            ->with('product', 'color', 'size', 'images')
+            ->with('product', 'color', 'size', 'images', 'variantSizes')
             ->filter($request);
     }
 
     public function find($id)
     {
-        return ProductVariant::with('product', 'color', 'size', 'images')
-            ->orderBy('size_id', 'asc')
+        return ProductVariant::with('product', 'color', 'size', 'images', 'variantSizes')
             ->find($id);
     }
 
     public function findVariantByProductId($data)
     {
         return ProductVariant::where('product_id', $data['product_id'])
-            ->when(isset($data['size_id']), function ($query) use ($data) {
-                $query->where('size_id', $data['size_id']);
-            })
             ->when(isset($data['color_id']), function ($query) use ($data) {
                 $query->where('color_id', $data['color_id']);
             })

@@ -6,6 +6,7 @@ use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\ProductVariant\ProductVariantResource;
 use App\Models\ProductVariantImage;
 use App\Repositories\ProductVariant\ProductVariantRepository;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
@@ -56,9 +57,18 @@ class ProductVariantService
         try {
             DB::beginTransaction();
 
-            // create the productVariant
-            $productVariant = $this->productVariantRepo->create($request);
+            $productVariantData = Arr::except($request, ['sizes', 'images']);
 
+            // create the productVariant
+            $productVariant = $this->productVariantRepo->create($productVariantData);
+
+            // Handle sizes
+            foreach ($request['sizes'] as $sizeData) {
+                $productVariant->variantSizes()->create([
+                    'size_id' => $sizeData['size_id'],
+                    'quantity' => $sizeData['quantity'],
+                ]);
+            }
             // Handle images
             if (isset($request['images'])) {
                 $imagesData = array_map(function($image) {
@@ -96,6 +106,16 @@ class ProductVariantService
             // Update the productVariant details
             $this->productVariantRepo->update($id, $data);
 
+            if (isset($data['sizes'])) {
+                $productVariant->variantSizes()->delete();
+
+                foreach ($data['sizes'] as $sizeData) {
+                    $productVariant->sizes()->create([
+                        'size_id' => $sizeData['size_id'],
+                        'quantity' => $sizeData['quantity'],
+                    ]);
+                }
+            }
             // Handle new uploaded images
             if (isset($data['images'])) {
                 foreach ($data['images'] as $image) {
