@@ -29,6 +29,9 @@ class ProductResource extends JsonResource
             'description_ar' => $this->description_ar,
             'price' => (int) $this->price,
             'price_after_discount' => (int) $this->price_after_discount,
+            'quantity' => $this->productVariants->isEmpty()
+            ? $this->quantity
+            : null,
             'sizes' => SizeResource::collection(
                 collect($this->productVariants)
                     ->pluck('variantSizes')

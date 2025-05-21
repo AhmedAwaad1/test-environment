@@ -17,6 +17,7 @@ class Product extends Model
         'price_after_discount',
         'product_type_id',
         'category_id',
+        'quantity',
     ];
 
     public function productType()

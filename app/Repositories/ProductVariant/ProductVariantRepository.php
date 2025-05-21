@@ -21,10 +21,9 @@ class ProductVariantRepository
 
     public function findVariantByProductId($data)
     {
-        return ProductVariant::where('product_id', $data['product_id'])
-            ->when(isset($data['color_id']), function ($query) use ($data) {
-                $query->where('color_id', $data['color_id']);
-            })
+        return $productVariant = ProductVariant::where('product_id', $data['product_id'])
+            ->Where('size_id', $data['size_id'])
+            ->where('color_id', $data['color_id'])
             ->first();
     }
 
