@@ -20,6 +20,24 @@ class ProductResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $colors = collect();
+        $sizes = collect();
+        if ($this->relationLoaded('productVariants')) {
+            $variants = $this->productVariants;
+
+            $colors = $variants
+                ->pluck('color')
+                ->filter()
+                ->unique('id')
+                ->values();
+
+            $sizes = $variants
+                ->pluck('size')
+                ->filter()
+                ->unique('id')
+                ->sortBy('id')
+                ->values();
+        }
 
         return [
             "id" => $this->id,
@@ -29,24 +47,8 @@ class ProductResource extends JsonResource
             'description_ar' => $this->description_ar,
             'price' => (int) $this->price,
             'price_after_discount' => (int) $this->price_after_discount,
-            'quantity' => $this->productVariants->isEmpty()
-            ? $this->quantity
-            : null,
-            'sizes' => SizeResource::collection(
-                collect($this->productVariants)
-                    ->pluck('variantSizes')
-                    ->flatten()
-                    ->pluck('size')
-                    ->unique('id')
-                    ->values()
-            ),
-
-            'colors' => ColorResource::collection(
-                collect($this->productVariants)
-                    ->pluck('color')
-                    ->unique('id')
-                    ->values()
-            ),
+            'colors' => $colors,
+            'sizes' => $sizes,
             'category' => new CategoryResource($this->whenLoaded('category')),
             'product_type' => new ProductTypeResource($this->whenLoaded('productType')),
             'product_images' => ProductImageResource::collection($this->whenLoaded('images')),

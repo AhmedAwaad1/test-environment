@@ -30,27 +30,21 @@ class ProductSeeder extends Seeder
                 'variants' => [
                     [
                         'color_id' => 1,
+                        'size_id' => 1,
                         'sku' => 'NF-JACKET-001',
                         'price' => 1200,
                         'price_after_discount' => 1000,
+                        'quantity' => 10,
                         'is_active' => true,
-                        'variant_sizes' => [
-                            ['size_id' => 1, 'quantity' => 5],
-                            ['size_id' => 2, 'quantity' => 10],
-                            ['size_id' => 3, 'quantity' => 8],
-                        ],
                     ],
                     [
                         'color_id' => 2,
+                        'size_id' => 2,
                         'sku' => 'NF-JACKET-002',
                         'price' => 1200,
                         'price_after_discount' => 1000,
+                        'quantity' => 5,
                         'is_active' => true,
-                        'variant_sizes' => [
-                            ['size_id' => 1, 'quantity' => 3],
-                            ['size_id' => 2, 'quantity' => 7],
-                            ['size_id' => 3, 'quantity' => 6],
-                        ],
                     ],
                 ],
             ],
@@ -65,16 +59,12 @@ class ProductSeeder extends Seeder
                 'category_id' => 2,
                 'variant' => [
                     'color_id' => 2,
+                    'size_id' => 2,
                     'sku' => 'ZARA-TSHIRT-001',
                     'price' => 400,
                     'price_after_discount' => 350,
+                    'quantity' => 15,
                     'is_active' => true,
-                    'variant_sizes' => [
-                        ['size_id' => 1, 'quantity' => 10],
-                        ['size_id' => 2, 'quantity' => 5],
-                        ['size_id' => 3, 'quantity' => 8],
-                        ['size_id' => 4, 'quantity' => 12],
-                    ]
                 ],
             ],
             [
@@ -88,14 +78,12 @@ class ProductSeeder extends Seeder
                 'category_id' => 3,
                 'variant' => [
                     'color_id' => 3,
+                    'size_id' => 3,
                     'sku' => 'HM-SHORT-001',
                     'price' => 300,
                     'price_after_discount' => 250,
+                    'quantity' => 20,
                     'is_active' => true,
-                    'variant_sizes' => [
-                        ['size_id' => 2, 'quantity' => 7],
-                        ['size_id' => 3, 'quantity' => 15],
-                    ],
                 ],
             ],
         ];
@@ -110,24 +98,10 @@ class ProductSeeder extends Seeder
 
             if ($variants) {
                 foreach ($variants as $v) {
-                    $variantSizes = $v['variant_sizes'] ?? [];
-                    unset($v['variant_sizes']);
-
-                    $productVariant = ProductVariant::create(array_merge($v, ['product_id' => $product->id]));
-
-                    foreach ($variantSizes as $size) {
-                        $productVariant->variantSizes()->create($size);
-                    }
+                    ProductVariant::create(array_merge($v, ['product_id' => $product->id]));
                 }
             } elseif ($variant) {
-                $variantSizes = $variant['variant_sizes'] ?? [];
-                unset($variant['variant_sizes']);
-
-                $productVariant = ProductVariant::create(array_merge($variant, ['product_id' => $product->id]));
-
-                foreach ($variantSizes as $size) {
-                    $productVariant->variantSizes()->create($size);
-                }
+                ProductVariant::create(array_merge($variant, ['product_id' => $product->id]));
             }
         }
     }

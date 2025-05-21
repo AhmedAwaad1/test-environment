@@ -43,8 +43,8 @@ class ProductVariantRequest extends FormRequest
         return [
             'product_id' => ['required', 'exists:products,id'],
             'color_id' => ['required', 'exists:colors,id'],
-            'sizes.*.size_id' => ['required', 'exists:sizes,id'],
-            'sizes.*.quantity' => ['required', 'integer', 'min:1'],
+            'size_id' => ['required', 'exists:sizes,id'],
+            'quantity' => ['required', 'integer', 'min:1'],
             'sku' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'price_after_discount' => ['nullable', 'numeric', 'min:0'],
@@ -60,8 +60,8 @@ class ProductVariantRequest extends FormRequest
         return [
             'product_id' => ['nullable', 'exists:products,id'],
             'color_id' => ['nullable', 'exists:colors,id'],
-            'sizes.*.size_id' => ['required_with:sizes', 'exists:sizes,id'],
-            'sizes.*.quantity' => ['required_with:sizes', 'integer', 'min:1'],
+            'size_id' => ['nullable', 'exists:sizes,id'],
+            'quantity' => ['nullable', 'integer', 'min:1'],
             'sku' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'price_after_discount' => ['nullable', 'numeric', 'min:0'],

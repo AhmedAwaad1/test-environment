@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('color_id')->nullable()->constrained()->onDelete('cascade');
+            $table->foreignId('size_id')->nullable()->constrained()->onDelete('cascade');
+            $table->integer('quantity')->default(0);
             $table->decimal('price', 10, 2)->default(0);
             $table->decimal('price_after_discount', 10, 2)->nullable()->default(0);
             $table->string('sku')->nullable()->unique();
