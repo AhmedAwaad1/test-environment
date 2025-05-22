@@ -34,7 +34,24 @@ class ProductVariantRepository
 
     public function create(array $data)
     {
-        return ProductVariant::create($data);
+        $createdVariants = [];
+
+        foreach ($data['sizes'] as $sizeData) {
+            $variant = ProductVariant::create([
+                'product_id' => $data['product_id'],
+                'color_id' => $data['color_id'],
+                'size_id' => $sizeData['size_id'],
+                'price' => $data['price'],
+                'price_after_discount' => $data['price_after_discount'] ?? null,
+                'quantity' => $sizeData['quantity'],
+                'sku' => $data['sku'] ?? null,
+                'is_active' => $data['is_active'] ?? true,
+            ]);
+
+            $createdVariants[] = $variant;
+        }
+
+        return $createdVariants;
     }
 
     public function update($id, array $data)

@@ -14,6 +14,8 @@ class Category extends Model
         'name_ar',
         'slug',
         'image',
+        'order',
+        'is_active',
     ];
 
     // public function products()
@@ -38,5 +40,12 @@ class Category extends Model
     public function getSlugAttribute($value)
     {
         return $value;
+    }
+
+    public function scopeFilter($query, array $filters)
+    {
+        if (isset($filters['is_active'])) {
+            $query->where('is_active', (int) $filters['is_active']);
+        }
     }
 }

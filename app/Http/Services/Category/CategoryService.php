@@ -10,17 +10,17 @@ use Illuminate\Support\Facades\Storage;
 
 class CategoryService
 {
-    protected $productTypeRepo;
+    protected $categoryRepo;
 
-    public function __construct(CategoryRepository $productTypeRepo)
+    public function __construct(CategoryRepository $categoryRepo)
     {
-        $this->productTypeRepo = $productTypeRepo;
+        $this->categoryRepo = $categoryRepo;
     }
 
 
     public function getAllCategories($request)
     {
-        $query = $this->productTypeRepo->getAll();
+        $query = $this->categoryRepo->getAll($request->all());
 
         if ($request->per_page) {
             $categories = new PaginationResource($query->paginate($request->per_page), CategoryResource::class);
@@ -34,13 +34,13 @@ class CategoryService
     public function getCategoryById($id)
     {
         try {
-            $productType = $this->productTypeRepo->find($id);
+            $category = $this->categoryRepo->find($id);
 
-            if (!$productType) {
+            if (!$category) {
                 return Response::errorResponse('category not found', [], 404);
             }
 
-            return Response::successResponse(new CategoryResource($productType), 'category found successfully');
+            return Response::successResponse(new CategoryResource($category), 'category found successfully');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             //exception if id not found
             return Response::handleModelNotFoundException($e, 'category');
@@ -56,9 +56,9 @@ class CategoryService
                 $request['slug'] = str_replace(' ', '-', $request['name_en']);
             }
 
-            $productType = $this->productTypeRepo->create($request);
+            $category = $this->categoryRepo->create($request);
 
-            return Response::successResponse(new CategoryResource($productType), 'category created successfully', 201);
+            return Response::successResponse(new CategoryResource($category), 'category created successfully', 201);
 
         } catch (\Illuminate\Database\QueryException $e) {
             return Response::handleDatabaseException($e, 'create category');
@@ -74,13 +74,13 @@ class CategoryService
                 $data['slug'] = str_replace(' ', '-', $data['name_en']);
             }
 
-            $productType = $this->productTypeRepo->update($id, $data);
+            $category = $this->categoryRepo->update($id, $data);
 
-            if (!$productType) {
+            if (!$category) {
                 return Response::errorResponse('category not found', [], 404);
             }
 
-            return Response::successResponse(new CategoryResource($productType), 'category updated successfully');
+            return Response::successResponse(new CategoryResource($category), 'category updated successfully');
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             //exception if id not found
@@ -92,17 +92,17 @@ class CategoryService
 
     public function deleteCategory($id)
     {
-        $productType = $this->productTypeRepo->find($id);
+        $category = $this->categoryRepo->find($id);
 
-        if (!$productType) {
+        if (!$category) {
             return Response::errorResponse('category not found', [], 404);
         }
 
-        if ($productType->image) {
-            Storage::delete($productType->image);
+        if ($category->image) {
+            Storage::delete($category->image);
         }
 
-        $this->productTypeRepo->delete($id);
+        $this->categoryRepo->delete($id);
 
         return Response::successResponse(['is_success' => 1], 'category deleted successfully');
     }

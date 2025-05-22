@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\ProductType;
+namespace App\Http\Requests\SubCategory;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProductTypeRequest extends FormRequest
+class SubCategoryRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -35,14 +35,18 @@ class ProductTypeRequest extends FormRequest
     {
         return [
             'per_page' => ['nullable', 'integer', 'min:1'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 
     private function storeRules(): array
     {
         return [
+            'category_id' => ['required', 'exists:categories,id'],
             'name_en' => ['required', 'string', 'max:255'],
             'name_ar' => ['required', 'string', 'max:255'],
+            'order' => ['nullable', 'integer'],
+            'is_active' => ['nullable', 'boolean'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
         ];
     }
@@ -54,6 +58,8 @@ class ProductTypeRequest extends FormRequest
             'name_ar' => ['nullable', 'string', 'max:255'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
             'slug' => ['nullable', 'string', 'max:255'],
+            'order' => ['nullable', 'integer'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -35,6 +35,7 @@ class CategoryRequest extends FormRequest
     {
         return [
             'per_page' => ['nullable', 'integer', 'min:1'],
+            'is_active' => ['nullable', 'boolean'],
         ];
     }
 
@@ -43,6 +44,8 @@ class CategoryRequest extends FormRequest
         return [
             'name_en' => ['required', 'string', 'max:255'],
             'name_ar' => ['required', 'string', 'max:255'],
+            'order' => ['nullable', 'integer'],
+            'is_active' => ['nullable', 'boolean'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
         ];
     }
@@ -53,6 +56,8 @@ class CategoryRequest extends FormRequest
             'name_en' => ['nullable', 'string', 'max:255'],
             'name_ar' => ['nullable', 'string', 'max:255'],
             'slug' => ['nullable', 'string', 'max:255'],
+            'order' => ['nullable', 'integer'],
+            'is_active' => ['nullable', 'boolean'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
         ];
     }

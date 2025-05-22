@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('name_ar')->unique();
             $table->string('slug')->unique();
             $table->string('image')->nullable();
+            $table->integer('order')->default(0);
+            $table->boolean('is_active')->default(1);
             $table->timestamps();
         });
     }

@@ -6,9 +6,9 @@ use App\Models\Category;
 
 class CategoryRepository
 {
-    public function getAll()
+    public function getAll($request)
     {
-        return Category::query();
+        return Category::query()->filter($request)->orderBy('order', 'asc');
     }
 
     public function find($id)

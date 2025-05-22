@@ -43,8 +43,9 @@ class ProductVariantRequest extends FormRequest
         return [
             'product_id' => ['required', 'exists:products,id'],
             'color_id' => ['required', 'exists:colors,id'],
-            'size_id' => ['required', 'exists:sizes,id'],
-            'quantity' => ['required', 'integer', 'min:1'],
+            'sizes' => ['required', 'array', 'min:1'],
+            'sizes.*.size_id' => ['required', 'exists:sizes,id'],
+            'sizes.*.quantity' => ['required', 'integer', 'min:1'],
             'sku' => ['nullable', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'price_after_discount' => ['nullable', 'numeric', 'min:0'],

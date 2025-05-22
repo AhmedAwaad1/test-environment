@@ -13,10 +13,10 @@ use App\Http\Controllers\District\DistrictController;
 use App\Http\Controllers\Favorite\FavoriteController;
 use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Product\ProductController;
-use App\Http\Controllers\ProductType\ProductTypeController;
 use App\Http\Controllers\ProductVariant\ProductVariantController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\Size\SizeController;
+use App\Http\Controllers\SubCategory\SubCategoryController;
 use App\Http\Controllers\UserProfile\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -73,17 +73,17 @@ Route::prefix('city')->namespace('City')->group(function () {
     Route::delete('/{id}', [CityController::class, 'destroy'])->name('city.destroy');
 });
 
-Route::prefix('product-type')->namespace('ProductType')->group(function () {
-    // Get all product types
-    Route::get('/', [ProductTypeController::class, 'index'])->name('product-type.index');
-    // Get specific product type
-    Route::get('/{id}', [ProductTypeController::class, 'show'])->name('product-type.show');
-    // Create product type
-    Route::post('/', [ProductTypeController::class, 'store'])->name('product-type.store');
-    // Update product type
-    Route::put('/{id}', [ProductTypeController::class, 'update'])->name('product-type.update');
-    // Delete product type
-    Route::delete('/{id}', [ProductTypeController::class, 'destroy'])->name('product-type.destroy');
+Route::prefix('sub-category')->namespace('SubCategory')->group(function () {
+    // Get all sub-categories
+    Route::get('/', [SubCategoryController::class, 'index'])->name('sub-category.index');
+    // Get specific sub-category
+    Route::get('/{id}', [SubCategoryController::class, 'show'])->name('sub-category.show');
+    // Create sub-category
+    Route::post('/', [SubCategoryController::class, 'store'])->name('sub-category.store');
+    // Update sub-category
+    Route::put('/{id}', [SubCategoryController::class, 'update'])->name('sub-category.update');
+    // Delete sub-category
+    Route::delete('/{id}', [SubCategoryController::class, 'destroy'])->name('sub-category.destroy');
 });
 
 Route::prefix('category')->namespace('Category')->group(function () {

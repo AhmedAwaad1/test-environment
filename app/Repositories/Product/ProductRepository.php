@@ -9,13 +9,13 @@ class ProductRepository
     public function getAll($request)
     {
         return Product::query()
-            ->with('productType', 'category', 'images', 'productVariants')
+            ->with('subCategory', 'category', 'images', 'productVariants')
             ->filter($request);
     }
 
     public function find($id)
     {
-        return Product::with('productType', 'category', 'images',  'productVariants.color',
+        return Product::with('subCategory', 'category', 'images',  'productVariants.color',
         'productVariants.size', 'productVariants.images')
             ->find($id);
     }

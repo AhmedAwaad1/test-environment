@@ -2,37 +2,32 @@
 
 namespace App\Http\Services\Cart;
 
+use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Cart\CartResource;
 use App\Models\Cart;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\CartItem\CartItemRepository;
-use App\Repositories\Product\ProductRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
-use App\Repositories\VariantSize\VariantSizeRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
 class CartService
 {
-    protected $cartRepo, $cartItemRepo, $productVarRepo, $couponRepo, $variantSizeRepo, $productRepo;
+    protected $cartRepo, $cartItemRepo, $productVarRepo, $couponRepo, $variantSizeRepo;
 
     public function __construct(
         CartRepository $cartRepo,
         CartItemRepository $cartItemRepo,
         ProductVariantRepository $productVarRepo,
-        VariantSizeRepository $variantSizeRepo,
-        PromoCodeRepository $couponRepo,
-        ProductRepository $productRepo
+        PromoCodeRepository $couponRepo
     )
     {
         $this->cartRepo = $cartRepo;
         $this->cartItemRepo = $cartItemRepo;
         $this->productVarRepo = $productVarRepo;
         $this->couponRepo = $couponRepo;
-        $this->variantSizeRepo = $variantSizeRepo;
-        $this->productRepo = $productRepo;
     }
 
     public function getUserCart()
@@ -64,12 +59,16 @@ class CartService
 
             $cart = $this->cartRepo->findOrCreateUserCart($user->id);
 
-            //get product data and check if it's a variant or not
-            $productData = $this->getProductData($data);
+            $productVariant = $this->productVarRepo->findVariantByProductId($data);
+
+            $validateProductVariant = $this->validateProductVariant($productVariant, $data['quantity']);
+
+            if ($validateProductVariant !== true) {
+                return $validateProductVariant;
+            }
 
             $unitPrice = $productVariant->price_after_discount ?? $productVariant->price;
 
-            // Calculate the total price for the item based on its quantity
             $totalPrice = $this->calculateItemPrice($unitPrice, $data['quantity']);
 
             $existingItem = $this->cartItemRepo->findByCartAndVariant($cart->id, $productVariant->id);
@@ -84,8 +83,7 @@ class CartService
                 //create new item
                 $cartItem = $this->cartItemRepo->create([
                     'cart_id'            => $cart->id,
-                    'product_variant_id' => $productData['variant_id'],
-                    'product_id'         => $data['product_id'],
+                    'product_variant_id' => $productVariant->id,
                     'quantity'           => $data['quantity'],
                     'price'              => $productVariant->price_after_discount ?? $productVariant->price,
                     'total_price'        => $totalPrice,
@@ -162,45 +160,6 @@ class CartService
             return Response::handleModelNotFoundException($e, 'cart');
         } catch (\Exception $e) {
             return Response::handleException($e, 'update cart');
-        }
-    }
-
-    private function getProductData($data)
-    {
-        // Check if the product is not a variant
-        if (!$data['size_id'] && !$data['color_id']) {
-            $product = $this->productRepo->find($data['product_id']);
-
-            if ($product->quantity < $data['quantity']) {
-                return Response::errorResponse('Not enough quantity in stock', [], 400);
-            }
-
-            return [
-                'variant_id' => null,
-                'product_id' => $product->id,
-                'unit_price' => $product->price_after_discount ?? $product->price,
-            ];
-        } else {
-            // Check if the product is a variant
-            $variant = $this->productVarRepo->findVariantByProductId($data);
-            if (!$variant) {
-                return Response::errorResponse('Product variant not found', [], 404);
-            }
-
-            if (!$variant->is_active) {
-                return Response::errorResponse('Product variant is not available', [], 400);
-            }
-
-            $variantSize = $this->variantSizeRepo->findVariantSizeByVariantId($variant->id, $data['size_id']);
-            if (!$variantSize || $variantSize->quantity < $data['quantity']) {
-                return Response::errorResponse('Not enough quantity in stock', [], 400);
-            }
-
-            return [
-                'variant_id' => $variant->id,
-                'product_id' => $variant->product_id,
-                'unit_price' => $variant->price_after_discount ?? $variant->price,
-            ];
         }
     }
 

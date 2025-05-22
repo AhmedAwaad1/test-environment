@@ -25,7 +25,7 @@ class ProductSeeder extends Seeder
                 'description_ar' => 'جاكيت شتوي دافي',
                 'price' => 1200,
                 'price_after_discount' => 1000,
-                'product_type_id' => 1,
+                'sub_category_id' => 1,
                 'category_id' => 1,
                 'variants' => [
                     [
@@ -55,7 +55,7 @@ class ProductSeeder extends Seeder
                 'description_ar' => 'تيشيرت صيفي كاجوال',
                 'price' => 400,
                 'price_after_discount' => 350,
-                'product_type_id' => 2,
+                'sub_category_id' => 2,
                 'category_id' => 2,
                 'variant' => [
                     'color_id' => 2,
@@ -74,7 +74,7 @@ class ProductSeeder extends Seeder
                 'description_ar' => 'شورت قطني مريح',
                 'price' => 300,
                 'price_after_discount' => 250,
-                'product_type_id' => 3,
+                'sub_category_id' => 3,
                 'category_id' => 3,
                 'variant' => [
                     'color_id' => 3,

@@ -57,21 +57,22 @@ class ProductVariantService
             DB::beginTransaction();
 
             // create the productVariant
-            $productVariant = $this->productVariantRepo->create($request);
+            $productVariants = $this->productVariantRepo->create($request);
 
             // Handle images
             if (isset($request['images'])) {
                 $imagesData = array_map(function($image) {
-                    $path = $image->store('variants', 'public'); // saves file in storage/app/public/variants
+                    $path = $image->store('variants', 'public');
                     return ['image' => $path];
                 }, $request['images']);
 
-                $productVariant->images()->createMany($imagesData);
+                // attach the images to the first variant (because images for sizes are the same)
+                $productVariants[0]->images()->createMany($imagesData);
             }
 
             DB::commit();
 
-            return Response::successResponse(new ProductVariantResource($productVariant), 'product variant created successfully', 201);
+            return Response::successResponse(new ProductVariantResource($productVariants), 'product variant created successfully', 201);
 
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();

@@ -5,12 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class ProductType extends Model
+class SubCategory extends Model
 {
     use HasFactory;
     protected $fillable = [
+        'category_id',
         'name_en',
         'name_ar',
+        'is_active',
+        'order',
         'slug',
         'image',
     ];
@@ -33,5 +36,11 @@ class ProductType extends Model
     public function getSlugAttribute($value)
     {
         return $value;
+    }
+    public function scopeFilter($query, array $filters)
+    {
+        if (isset($filters['is_active'])) {
+            $query->where('is_active', (int) $filters['is_active']);
+        }
     }
 }

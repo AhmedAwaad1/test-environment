@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('url')->nullable();
             $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
             $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
-            $table->foreignId('product_type_id')->nullable()->constrained('product_types')->nullOnDelete();
+            $table->foreignId('sub_category_id')->nullable()->constrained('sub_categories')->nullOnDelete();
             $table->timestamps();
         });
     }
