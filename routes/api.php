@@ -126,16 +126,15 @@ Route::prefix('size')->namespace('Size')->group(function () {
 });
 
 Route::prefix('product')->namespace('Product')->group(function () {
-    // Get all size
-    Route::get('/', [ProductController::class, 'index'])->name('product.index');
-    // Get specific size
-    Route::get('/{id}', [ProductController::class, 'show'])->name('product.show');
-    // Create size
-    Route::post('/', [ProductController::class, 'store'])->name('product.store');
-    // Update size
-    Route::put('/{id}', [ProductController::class, 'update'])->name('product.update');
-    // Delete size
-    Route::delete('/{id}', [ProductController::class, 'destroy'])->name('product.destroy');
+    Route::get('/', [ProductController::class, 'index']);
+    Route::post('/', [ProductController::class, 'store']);
+    Route::get('/{id}', [ProductController::class, 'show']);
+    Route::put('/{id}', [ProductController::class, 'update']);
+    Route::delete('/{id}', [ProductController::class, 'destroy']);
+
+    // Variants related routes
+    Route::get('/{id}/options', [ProductController::class, 'getProductOptions']);
+    Route::post('/variants/find', [ProductController::class, 'getVariantByOptions']);
 });
 
 Route::prefix('banner')->namespace('Banner')->group(function () {

@@ -23,6 +23,8 @@ return new class extends Migration
             $table->foreignId('category_id')->nullable()->constrained()->onDelete('cascade');
             $table->foreignId('sub_category_id')->nullable()->constrained()->onDelete('cascade');
             $table->integer('quantity')->nullable()->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->boolean('has_variants')->default(false);
             $table->timestamps();
         });
     }

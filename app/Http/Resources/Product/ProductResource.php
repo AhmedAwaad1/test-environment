@@ -3,56 +3,94 @@
 namespace App\Http\Resources\Product;
 
 use App\Http\Resources\Category\CategoryResource;
-use App\Http\Resources\Color\ColorResource;
 use App\Http\Resources\ProductImage\ProductImageResource;
+use App\Http\Resources\ProductOption\ProductOptionResource;
 use App\Http\Resources\ProductVariant\ProductVariantResource;
-use App\Http\Resources\Size\SizeResource;
 use App\Http\Resources\SubCategory\SubCategoryResource;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
-    public function toArray(Request $request): array
+    public function toArray($request)
     {
-        $colors = collect();
-        $sizes = collect();
-        if ($this->relationLoaded('productVariants')) {
-            $variants = $this->productVariants;
-
-            $colors = $variants
-                ->pluck('color')
-                ->filter()
-                ->unique('id')
-                ->values();
-
-            $sizes = $variants
-                ->pluck('size')
-                ->filter()
-                ->unique('id')
-                ->sortBy('id')
-                ->values();
-        }
-
-        return [
-            "id" => $this->id,
+        $data = [
+            'id' => $this->id,
             'name_en' => $this->name_en,
             'name_ar' => $this->name_ar,
             'description_en' => $this->description_en,
             'description_ar' => $this->description_ar,
-            'price' => (int) $this->price,
-            'price_after_discount' => (int) $this->price_after_discount,
-            'colors' => $colors,
-            'sizes' => $sizes,
+            'sku' => $this->sku,
+            'has_variants' => $this->has_variants,
+            'is_active' => $this->is_active ?? true,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+
+            // Relationships
             'category' => new CategoryResource($this->whenLoaded('category')),
             'sub_category' => new SubCategoryResource($this->whenLoaded('subCategory')),
-            'product_images' => ProductImageResource::collection($this->whenLoaded('images')),
-            'product_variants' => ProductVariantResource::collection($this->whenLoaded('productVariants')),
+            'images' => ProductImageResource::collection($this->whenLoaded('images')),
+            'main_image' => $this->whenLoaded('images', function() {
+                return new ProductImageResource($this->images->firstWhere('is_main', true) ?? $this->images->first());
+            }),
         ];
+
+        if ($this->has_variants) {
+            // Calculate price range and total quantity from variants
+            $variants = $this->whenLoaded('productVariants', function() {
+                return $this->productVariants->where('is_active', true);
+            });
+
+            $priceRange = [
+                'min' => $variants ? $variants->min('price') : null,
+                'max' => $variants ? $variants->max('price') : null,
+            ];
+
+            $data = array_merge($data, [
+                'price' => null,
+                'price_after_discount' => null,
+                'quantity' => null,
+                'price_range' => $priceRange,
+                'total_quantity' => $variants ? $variants->sum('quantity') : 0,
+                'options' => ProductOptionResource::collection($this->whenLoaded('productOptions')),
+                'variants' => ProductVariantResource::collection($variants),
+                'variants_count' => $variants ? $variants->count() : 0,
+
+                // Add available options summary
+                'available_options' => $this->whenLoaded('productOptions', function() {
+                    return $this->productOptions->map(function($option) {
+                        $values = $option->values->map(function($value) use ($option) {
+                            $data = [
+                                'id' => $value->id,
+                                'value' => $value->value,
+                                'hex_code' => $value->hex_code,
+                            ];
+
+                            return $data;
+                        });
+
+                        return [
+                            'id' => $option->id,
+                            'label' => $option->label,
+                            'type' => $option->optionType->name,
+                            'values' => $values,
+                        ];
+                    });
+                }),
+            ]);
+        } else {
+            // Simple product without variants
+            $data = array_merge($data, [
+                'price' => $this->price,
+                'price_after_discount' => $this->price_after_discount,
+                'quantity' => $this->quantity,
+                'options' => null,
+                'variants' => null,
+                'variants_count' => 0,
+                'price_range' => null,
+                'total_quantity' => $this->quantity,
+            ]);
+        }
+
+        return $data;
     }
 }

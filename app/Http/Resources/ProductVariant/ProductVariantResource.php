@@ -2,14 +2,9 @@
 
 namespace App\Http\Resources\ProductVariant;
 
-use App\Http\Resources\Category\CategoryResource;
-use App\Http\Resources\Color\ColorResource;
 use App\Http\Resources\Product\ProductResource;
-use App\Http\Resources\ProductVariantImage\ProductVariantImageResource;
-use App\Http\Resources\ProductVariantType\ProductVariantTypeResource;
-use App\Http\Resources\Size\SizeResource;
-use App\Models\ProductVariant;
-use Illuminate\Http\Request;
+use App\Http\Resources\ProductImage\ProductImageResource;
+use App\Http\Resources\ProductOptionValue\ProductOptionValueResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductVariantResource extends JsonResource
@@ -19,41 +14,65 @@ class ProductVariantResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
+    public function toArray($request)
     {
+        // Get the variant's color option value if it exists
+        $colorValue = $this->whenLoaded('optionValues', function() {
+            return $this->optionValues->first(function($value) {
+                return strtolower($value->productOption->name) === 'color';
+            });
+        });
 
-        $data = [
-            "id" => $this->id,
-            'price' => (int) $this->price,
-            'price_after_discount' => (int) $this->price_after_discount,
+        return [
+            'id' => $this->id,
             'sku' => $this->sku,
+            'price' => $this->price,
+            'price_after_discount' => $this->price_after_discount,
             'quantity' => $this->quantity,
+            'barcode' => $this->barcode,
+            'weight' => $this->weight,
             'is_active' => $this->is_active,
-            'color_id' => $this->color_id,
-            'size_id' => $this->size_id,
-            'product_id' => $this->product_id,
+            'order' => $this->order,
+            'title' => $this->getVariantTitle(),
+            'attributes' => $this->getVariantAttributes(),
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+
+            // Images - only included for color variants
+            'images' => $colorValue ? ProductImageResource::collection($this->whenLoaded('images')) : null,
+            'main_image' => $colorValue ? $this->whenLoaded('images', function() {
+                return new ProductImageResource($this->images->firstWhere('is_main', true) ?? $this->images->first());
+            }) : null,
+
+            // Color information if this is a color variant
+            'color_info' => $colorValue ? [
+                'name' => $colorValue->value,
+                'hex_code' => $colorValue->standard_value,
+            ] : null,
+
+            // Relationships
             'product' => new ProductResource($this->whenLoaded('product')),
-            'color' => new ColorResource($this->whenLoaded('color')),
-            'size' => new SizeResource($this->whenLoaded('size')),
-            'images' => ProductVariantImageResource::collection($this->whenLoaded('images')),
+            'option_values' => ProductOptionValueResource::collection($this->whenLoaded('optionValues')),
         ];
+    }
 
-        if ($request->has('color_id') && $request->has('product_id')) {
-            $variants = ProductVariant::where('product_id', $request->product_id)
-                ->where('color_id', $request->color_id)
-                ->with('size')
-                ->get();
-
-            $sizesWithQuantities = $variants->map(function ($variant) {
-                return [
-                    'size' => new SizeResource($variant->size),
-                    'quantity' => $variant->quantity,
-                ];
-            })->unique('size.id')->values();
-
-            $data['available_sizes_for_color'] = $sizesWithQuantities;
+    protected function getVariantTitle()
+    {
+        if (!$this->optionValues->isEmpty()) {
+            return $this->optionValues->map(function($value) {
+                return $value->value;
+            })->join(' / ');
         }
+        return null;
+    }
 
-        return $data;
+    protected function getVariantAttributes()
+    {
+        if (!$this->optionValues->isEmpty()) {
+            return $this->optionValues->mapWithKeys(function($value) {
+                return [$value->productOption->name => $value->value];
+            });
+        }
+        return null;
     }
 }

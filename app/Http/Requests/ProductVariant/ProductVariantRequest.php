@@ -41,18 +41,9 @@ class ProductVariantRequest extends FormRequest
     private function storeRules(): array
     {
         return [
-            'product_id' => ['required', 'exists:products,id'],
-            'color_id' => ['required', 'exists:colors,id'],
-            'sizes' => ['required', 'array', 'min:1'],
-            'sizes.*.size_id' => ['required', 'exists:sizes,id'],
-            'sizes.*.quantity' => ['required', 'integer', 'min:1'],
-            'sku' => ['nullable', 'string', 'max:255'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'price_after_discount' => ['nullable', 'numeric', 'min:0'],
-            'is_active' => ['nullable', 'boolean'],
-
-            'images' => ['nullable', 'array'],
-            'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'product_id' => 'required|exists:products,id',
+            'options' => 'required|array',
+            'options.*' => 'required|string',
         ];
     }
 

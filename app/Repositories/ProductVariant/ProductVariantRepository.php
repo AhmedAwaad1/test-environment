@@ -3,72 +3,173 @@
 namespace App\Repositories\ProductVariant;
 
 use App\Models\ProductVariant;
+use App\Models\VariantOptionValue;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ProductVariantRepository
 {
-    public function getAll($request)
-    {
-        return ProductVariant::query()
-            ->with('product', 'color', 'size', 'images')
-            ->filter($request);
-    }
-
-    public function find($id)
-    {
-        return ProductVariant::with('product', 'color', 'size', 'images')
-            ->orderBy('size_id', 'asc')
-            ->find($id);
-    }
-
-    public function findVariantByProductId($data)
-    {
-        return ProductVariant::where('product_id', $data['product_id'])
-            ->when(isset($data['size_id']), function ($query) use ($data) {
-                $query->where('size_id', $data['size_id']);
-            })
-            ->when(isset($data['color_id']), function ($query) use ($data) {
-                $query->where('color_id', $data['color_id']);
-            })
-            ->first();
-    }
+    public function __construct(
+        protected ProductVariant $model,
+        protected VariantOptionValue $variantOptionValue
+    ) {}
 
     public function create(array $data)
     {
-        $createdVariants = [];
-
-        foreach ($data['sizes'] as $sizeData) {
-            $variant = ProductVariant::create([
-                'product_id' => $data['product_id'],
-                'color_id' => $data['color_id'],
-                'size_id' => $sizeData['size_id'],
-                'price' => $data['price'],
-                'price_after_discount' => $data['price_after_discount'] ?? null,
-                'quantity' => $sizeData['quantity'],
-                'sku' => $data['sku'] ?? null,
-                'is_active' => $data['is_active'] ?? true,
-            ]);
-
-            $createdVariants[] = $variant;
-        }
-
-        return $createdVariants;
+        return $this->model->create([
+            'product_id' => $data['product_id'],
+            'sku' => $data['sku'],
+            'price' => $data['price'],
+            'price_after_discount' => $data['price_after_discount'] ?? null,
+            'quantity' => $data['quantity'],
+            'barcode' => $data['barcode'] ?? null,
+            'weight' => $data['weight'] ?? null,
+            'is_active' => $data['is_active'] ?? true,
+            'order' => $data['order'] ?? 1,
+        ]);
     }
 
-    public function update($id, array $data)
+    public function createWithOptions($productId, array $data)
     {
-        $product = ProductVariant::find($id);
+        try {
+            DB::beginTransaction();
 
-        if ($product) {
-            $product->update($data);
+            // Create variant
+            $variant = $this->create([
+                'product_id' => $productId,
+                'sku' => $data['sku'],
+                'price' => $data['price'],
+                'price_after_discount' => $data['price_after_discount'] ?? null,
+                'quantity' => $data['quantity'],
+                'barcode' => $data['barcode'] ?? null,
+                'weight' => $data['weight'] ?? null,
+                'is_active' => $data['is_active'] ?? true,
+                'order' => $data['order'] ?? 1,
+            ]);
+
+            // Link variant with option values
+            foreach ($data['option_values'] as $optionValue) {
+                $this->variantOptionValue->create([
+                    'product_variant_id' => $variant->id,
+                    'product_option_value_id' => $optionValue['option_value_id'],
+                ]);
+            }
+
+            // Handle images if this is a color variant
+            if (isset($data['images'])) {
+                foreach ($data['images'] as $image) {
+                    $variant->images()->create([
+                        'image' => $image['path'],
+                        'is_main' => $image['is_main'] ?? false,
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return $variant;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
+    }
+
+    public function findByOptions($productId, array $selectedOptions)
+    {
+        $query = $this->model
+            ->where('product_id', $productId)
+            ->with(['optionValues', 'images']);
+
+        foreach ($selectedOptions as $optionId => $valueId) {
+            $query->whereHas('optionValues', function ($q) use ($optionId, $valueId) {
+                $q->where('product_option_id', $optionId)
+                  ->where('id', $valueId);
+            });
+        }
+
+        return $query->first();
     }
 
     public function delete($id)
     {
-        $product = $this->find($id);
-        if ($product) {
-            $product->delete();
+        $variant = $this->model->findOrFail($id);
+
+        // Delete variant images
+        foreach ($variant->images as $image) {
+            if (!empty($image->image) && Storage::exists($image->image)) {
+                Storage::delete($image->image);
+            }
+            $image->delete();
         }
-        return $product;
+
+        $variant->optionValues()->delete();
+        return $variant->delete();
+    }
+
+    public function find($id)
+    {
+        return ProductVariant::with(['optionValues.option', 'product'])->find($id);
+    }
+
+    public function getByProductId($productId)
+    {
+        return ProductVariant::with(['optionValues.option'])
+            ->where('product_id', $productId)
+            ->where('is_active', true)
+            ->orderBy('position')
+            ->get();
+    }
+
+    public function update($id, array $data)
+    {
+        $variant = ProductVariant::find($id);
+        if ($variant) {
+            $variant->update($data);
+            return $variant;
+        }
+        return null;
+    }
+
+    public function toggleStatus($id)
+    {
+        $variant = ProductVariant::find($id);
+        if ($variant) {
+            $variant->is_active = !$variant->is_active;
+            $variant->save();
+            return $variant;
+        }
+        return null;
+    }
+
+    public function createProductVariants($product, array $variants, array $optionValueMap)
+    {
+        foreach ($variants as $index => $variantData) {
+            $variant = $this->create([
+                'product_id' => $product->id,
+                'sku' => $variantData['sku'],
+                'price' => $variantData['price'],
+                'price_after_discount' => $variantData['price_after_discount'] ?? null,
+                'quantity' => $variantData['quantity'],
+                'barcode' => $variantData['barcode'] ?? null,
+                'weight' => $variantData['weight'] ?? null,
+                'order' => $index + 1,
+                'is_active' => true,
+            ]);
+
+            $this->linkVariantToOptionValues($variant, $variantData['option_values'], $optionValueMap);
+        }
+    }
+
+    private function linkVariantToOptionValues($variant, array $optionValues, array $optionValueMap)
+    {
+        $optionValueIds = [];
+        foreach ($optionValues as $optionName => $optionValue) {
+            if (isset($optionValueMap[$optionName][$optionValue])) {
+                $optionValueIds[] = $optionValueMap[$optionName][$optionValue];
+            }
+        }
+
+        if (!empty($optionValueIds)) {
+            $variant->optionValues()->attach($optionValueIds);
+        }
     }
 }

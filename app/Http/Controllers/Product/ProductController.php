@@ -4,38 +4,45 @@ namespace App\Http\Controllers\Product;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\ProductRequest;
-use App\Http\Services\Product\ProductService;
+use App\Http\Resources\PaginationResource\PaginationResource;
+use App\Http\Resources\Product\ProductResource;
+use App\Services\Product\ProductService;
+use Illuminate\Http\JsonResponse;
 
 class ProductController extends Controller
 {
-    public $productService;
-    public function __construct(ProductService $productService)
+    public function __construct(
+        protected ProductService $service
+    ) {}
+
+    public function index(ProductRequest $request): JsonResponse
     {
-        $this->productService = $productService;
+        $products = $this->service->getAll($request);
+        return response()->json(new PaginationResource($products, ProductResource::class));
     }
 
-    public function index(ProductRequest $request)
+    public function show($id): JsonResponse
     {
-        return $this->productService->getAllProducts($request);
+        $product = $this->service->find($id);
+        return response()->json(new ProductResource($product));
     }
 
-    public function show(ProductRequest $request)
+    public function store(ProductRequest $request): JsonResponse
     {
-        return $this->productService->getProductById($request->id);
+        $product = $this->service->create($request);
+        return response()->json(new ProductResource($product), 201);
     }
 
-    public function store(ProductRequest $request)
+    public function update($id, ProductRequest $request): JsonResponse
     {
-        return $this->productService->createProduct($request->validated());
+        $product = $this->service->update($id, $request);
+        return response()->json(new ProductResource($product));
     }
 
-    public function update(ProductRequest $request, $id)
+    public function destroy($id): JsonResponse
     {
-        return $this->productService->updateProduct($id, $request->validated());
-    }
-
-    public function destroy(ProductRequest $request)
-    {
-        return $this->productService->deleteProduct($request->id);
+        $this->service->delete($id);
+        return response()->json(null, 204);
     }
 }
+

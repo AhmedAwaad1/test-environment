@@ -22,6 +22,10 @@ class Category extends Model
     // {
     //     return $this->hasMany(Product::class);
     // }
+    public function subCategories()
+    {
+        return $this->hasMany(SubCategory::class)->orderBy('order', 'asc');
+    }
     public function getImageAttribute($value)
     {
         if ($value) {

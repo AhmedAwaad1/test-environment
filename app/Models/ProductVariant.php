@@ -10,12 +10,13 @@ class ProductVariant extends Model
     use HasFactory;
     protected $fillable = [
         'product_id',
-        'color_id',
-        'size_id',
         'sku',
         'price',
         'price_after_discount',
         'quantity',
+        'barcode',
+        'weight',
+        'order',
         'is_active',
     ];
 
@@ -27,18 +28,40 @@ class ProductVariant extends Model
     {
         return $this->hasMany(ProductVariantImage::class);
     }
-    public function color()
+
+    public function optionValues()
     {
-        return $this->belongsTo(Color::class);
+        return $this->belongsToMany(ProductOptionValue::class, 'variant_option_values');
     }
-    public function size()
+    public function variantOptionValues()
     {
-        return $this->belongsTo(Size::class);
+        return $this->hasMany(VariantOptionValue::class);
     }
+
     public function getIsActiveAttribute($value)
     {
         return $value == 1;
     }
+
+    // public function getTitle()
+    // {
+    //     return $this->optionValues()
+    //         ->orderBy('option_id')
+    //         ->pluck('value')
+    //         ->implode(' / ');
+    // }
+
+    // public function getAttributes()
+    // {
+    //     return $this->optionValues()
+    //         ->with('option')
+    //         ->get()
+    //         ->mapWithKeys(function ($item) {
+    //             return [$item->option->name => $item->value];
+    //         })
+    //         ->toArray();
+    // }
+
     public function scopeFilter($query, $filters)
     {
         if (isset($filters['product_id'])) {

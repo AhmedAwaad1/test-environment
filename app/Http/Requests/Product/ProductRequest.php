@@ -41,18 +41,37 @@ class ProductRequest extends FormRequest
     private function storeRules(): array
     {
         return [
-            'name_en' => ['required', 'string', 'max:255'],
-            'name_ar' => ['required', 'string', 'max:255'],
-            'description_en' => ['required', 'string'],
-            'description_ar' => ['required', 'string'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'price_after_discount' => ['nullable', 'numeric', 'min:0'],
-            'category_id' => ['required', 'exists:categories,id'],
-            'product_type_id' => ['required', 'exists:product_types,id'],
+            'name_en' => 'required|string|max:255',
+            'name_ar' => 'required|string|max:255',
+            'description_en' => 'nullable|string',
+            'description_ar' => 'nullable|string',
+            'category_id' => 'required|exists:categories,id',
+            'sub_category_id' => 'nullable|exists:sub_categories,id',
+            'has_variants' => 'boolean',
 
             'images' => ['nullable', 'array'],
             'images.*.path' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
             'images.*.is_main' => ['nullable', 'boolean'],
+
+            // Simple product fields (when has_variants = false)
+            'price' => 'required_if:has_variants,false|numeric|min:0',
+            'quantity' => 'required_if:has_variants,false|integer|min:0',
+            'sku' => 'required_if:has_variants,false|string|unique:products,sku',
+
+            // Variants data (when has_variants = true)
+            'options' => 'required_if:has_variants,true|array',
+            'options.*.option_type_id' => 'required|exists:product_option_types,id',
+            'options.*.label' => 'required|string|max:255',
+            'options.*.values' => 'required|array|min:1',
+            'options.*.values.*.value' => 'required|string|max:255',
+            'options.*.values.*.hex_code' => 'nullable|string|max:7',
+
+            'variants' => 'required_if:has_variants,true|array|min:1',
+            'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.quantity' => 'required|integer|min:0',
+            'variants.*.sku' => 'required|string|unique:product_variants,sku',
+            'variants.*.option_values' => 'required|array',
+            'variants.*.option_values.*' => 'required|exists:product_option_values,id',
         ];
     }
 
@@ -66,13 +85,32 @@ class ProductRequest extends FormRequest
             'price' => ['nullable', 'numeric', 'min:0'],
             'price_after_discount' => ['nullable', 'numeric', 'min:0'],
             'category_id' => ['nullable', 'exists:categories,id'],
-            'product_type_id' => ['nullable', 'exists:product_types,id'],
+            'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
 
             'images' => ['nullable', 'array'],
             'images.*.path' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
             'main_image_id' => 'nullable|exists:product_images,id',
             'deleted_images' => 'nullable|array',
             'deleted_images.*' => 'exists:product_images,id',
+
+            // Options update
+            'options' => 'nullable|array',
+            'options.*.id' => 'nullable|exists:product_options,id',
+            'options.*.option_type_id' => 'required|exists:product_option_types,id',
+            'options.*.label' => 'required|string|max:255',
+            'options.*.values' => 'required|array|min:1',
+            'options.*.values.*.id' => 'nullable|exists:product_option_values,id',
+            'options.*.values.*.value' => 'required|string|max:255',
+            'options.*.values.*.hex_code' => 'nullable|string|max:7',
+
+            // Variants update
+            'variants' => 'nullable|array',
+            'variants.*.id' => 'nullable|exists:product_variants,id',
+            'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.quantity' => 'required|integer|min:0',
+            'variants.*.sku' => 'required|string',
+            'variants.*.option_values' => 'required|array',
+            'variants.*.option_values.*' => 'required|exists:product_option_values,id',
         ];
     }
 }
