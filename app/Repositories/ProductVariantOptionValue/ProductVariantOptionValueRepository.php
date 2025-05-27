@@ -1,22 +1,30 @@
 <?php
 
-namespace App\Repositories\ProductOption;
+namespace App\Repositories\ProductVariantOptionValue;
 
-use App\Models\ProductOption;
-use App\Models\ProductOptionType;
+use App\Models\VariantOptionValue;
 use Illuminate\Support\Facades\DB;
 
-class ProductOptionRepository
+class ProductVariantOptionValueRepository
 {
     public function __construct(
-        protected ProductOption $model
+        protected VariantOptionValue $model
     ) {}
-
 
     public function create(array $data)
     {
-        return ProductOption::create($data);
+        return $this->model->create([
+            'product_id' => $data['product_id'],
+            'product_option_type_id' => $data['product_option_type_id'],
+            'order' => $data['order'] ?? 1,
+        ]);
     }
+
+    public function create(array $data)
+    {
+        return ProductVariantOptionValue::create($data);
+    }
+
 
     public function delete($id)
     {
@@ -34,7 +42,7 @@ class ProductOptionRepository
 
     public function update($id, array $data)
     {
-        $option = ProductOption::find($id);
+        $option = ProductVariantOptionValue::find($id);
         if ($option) {
             $option->update($data);
             return $option;

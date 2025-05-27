@@ -14,7 +14,6 @@ class ProductOption extends Model
     protected $fillable = [
         'product_id',
         'product_option_type_id',
-        'label',
         'order',
     ];
     protected $casts = [

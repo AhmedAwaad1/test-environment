@@ -23,7 +23,7 @@ class ProductRepository
     public function getAll($request)
     {
         return $this->model
-            ->with(['category', 'subCategory', 'images', 'productOptions.productOptionValues', 'productVariants'])
+            ->with(['category', 'subCategory', 'images'])
             ->when($request->per_page, function ($query) use ($request) {
                 return $query->paginate($request->per_page);
             }, function ($query) {
@@ -34,7 +34,7 @@ class ProductRepository
     public function find($id)
     {
         return $this->model
-            ->with(['category', 'subCategory', 'images', 'productOptions.productOptionValues', 'productVariants'])
+            ->with(['category', 'subCategory', 'images', 'productOptions.values', 'productVariants'])
             ->findOrFail($id);
     }
 
@@ -42,15 +42,26 @@ class ProductRepository
     {
         return $this->model
             ->with([
-                'category',
-                'subCategory',
-                'images',
-                'productOptions.productOptionValues',
-                'productVariants.optionValues',
-                'productVariants.images'
+                'category:id,name_en,name_ar',
+                'subCategory:id,name_en,name_ar',
+                'images' => function($query) {
+                    // $query->orderBy('order');
+                },
+                'productOptions.values' => function($query) {
+                    $query->orderBy('order');
+                },
+                'productVariants' => function($query) {
+                    $query->orderBy('order')->with([
+                        'optionValues.productOption',
+                        'images' => function($imageQuery) {
+                            $imageQuery;
+                        }
+                    ]);
+                }
             ])
             ->findOrFail($id);
     }
+
 
     public function create(array $data)
     {
@@ -66,6 +77,7 @@ class ProductRepository
                 'sub_category_id' => $data['sub_category_id'] ?? null,
                 'has_variants' => $data['has_variants'] ?? false,
                 'price' => $data['price'] ?? null,
+                'price_after_discount' => $data['price_after_discount'] ?? null,
                 'quantity' => $data['quantity'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'is_active' => $data['is_active'] ?? true,

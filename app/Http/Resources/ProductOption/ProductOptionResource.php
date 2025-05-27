@@ -12,7 +12,6 @@ class ProductOptionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'label' => $this->label,
             'order' => $this->order,
             'option_type' => new ProductOptionTypeResource($this->whenLoaded('optionType')),
             'values' => ProductOptionValueResource::collection($this->whenLoaded('values')),

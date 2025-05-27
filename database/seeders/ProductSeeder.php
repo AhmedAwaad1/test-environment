@@ -47,7 +47,6 @@ class ProductSeeder extends Seeder
         $sizeOption = ProductOption::create([
             'product_id' => $tshirt->id,
             'product_option_type_id' => $sizeTypeId,
-            'label' => 'Size',
             'order' => 1,
         ]);
 
@@ -65,7 +64,6 @@ class ProductSeeder extends Seeder
         $colorOption = ProductOption::create([
             'product_id' => $tshirt->id,
             'product_option_type_id' => $colorTypeId,
-            'label' => 'Color',
             'order' => 2,
         ]);
 
@@ -130,7 +128,6 @@ class ProductSeeder extends Seeder
         $storageOption = ProductOption::create([
             'product_id' => $smartphone->id,
             'product_option_type_id' => $storageTypeId,
-            'label' => 'Storage',
             'order' => 1,
         ]);
 
@@ -148,7 +145,6 @@ class ProductSeeder extends Seeder
         $phoneColorOption = ProductOption::create([
             'product_id' => $smartphone->id,
             'product_option_type_id' => $colorTypeId,
-            'label' => 'Color',
             'order' => 2,
         ]);
 

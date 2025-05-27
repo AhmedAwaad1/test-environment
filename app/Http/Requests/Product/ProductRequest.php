@@ -55,23 +55,30 @@ class ProductRequest extends FormRequest
 
             // Simple product fields (when has_variants = false)
             'price' => 'required_if:has_variants,false|numeric|min:0',
+            'price_after_discount' => 'nullable|numeric|min:0',
             'quantity' => 'required_if:has_variants,false|integer|min:0',
             'sku' => 'required_if:has_variants,false|string|unique:products,sku',
 
             // Variants data (when has_variants = true)
             'options' => 'required_if:has_variants,true|array',
             'options.*.option_type_id' => 'required|exists:product_option_types,id',
-            'options.*.label' => 'required|string|max:255',
             'options.*.values' => 'required|array|min:1',
             'options.*.values.*.value' => 'required|string|max:255',
             'options.*.values.*.hex_code' => 'nullable|string|max:7',
 
+            // Variants data - إزالة distinct مؤقتاً
             'variants' => 'required_if:has_variants,true|array|min:1',
-            'variants.*.price' => 'required|numeric|min:0',
-            'variants.*.quantity' => 'required|integer|min:0',
             'variants.*.sku' => 'required|string|unique:product_variants,sku',
-            'variants.*.option_values' => 'required|array',
-            'variants.*.option_values.*' => 'required|exists:product_option_values,id',
+            'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.price_after_discount' => 'nullable|numeric|min:0',
+            'variants.*.quantity' => 'required|integer|min:0',
+            'variants.*.barcode' => 'nullable|string|unique:product_variants,barcode',
+            'variants.*.weight' => 'nullable|numeric|min:0',
+            'variants.*.is_active' => 'boolean',
+            'variants.*.order' => 'nullable|integer|min:1',
+            'variants.*.option_values' => 'required|array|min:1',
+            'variants.*.images' => 'nullable|array|max:5',
+            'variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ];
     }
 
@@ -97,7 +104,6 @@ class ProductRequest extends FormRequest
             'options' => 'nullable|array',
             'options.*.id' => 'nullable|exists:product_options,id',
             'options.*.option_type_id' => 'required|exists:product_option_types,id',
-            'options.*.label' => 'required|string|max:255',
             'options.*.values' => 'required|array|min:1',
             'options.*.values.*.id' => 'nullable|exists:product_option_values,id',
             'options.*.values.*.value' => 'required|string|max:255',

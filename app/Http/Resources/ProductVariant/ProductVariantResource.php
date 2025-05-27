@@ -16,14 +16,7 @@ class ProductVariantResource extends JsonResource
      */
     public function toArray($request)
     {
-        // Get the variant's color option value if it exists
-        $colorValue = $this->whenLoaded('optionValues', function() {
-            return $this->optionValues->first(function($value) {
-                return strtolower($value->productOption->name) === 'color';
-            });
-        });
-
-        return [
+        $data = [
             'id' => $this->id,
             'sku' => $this->sku,
             'price' => $this->price,
@@ -33,46 +26,45 @@ class ProductVariantResource extends JsonResource
             'weight' => $this->weight,
             'is_active' => $this->is_active,
             'order' => $this->order,
-            'title' => $this->getVariantTitle(),
-            'attributes' => $this->getVariantAttributes(),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-
-            // Images - only included for color variants
-            'images' => $colorValue ? ProductImageResource::collection($this->whenLoaded('images')) : null,
-            'main_image' => $colorValue ? $this->whenLoaded('images', function() {
+            'images' => ProductImageResource::collection($this->whenLoaded('images')),
+            'main_image' => $this->whenLoaded('images', function() {
                 return new ProductImageResource($this->images->firstWhere('is_main', true) ?? $this->images->first());
-            }) : null,
-
-            // Color information if this is a color variant
-            'color_info' => $colorValue ? [
-                'name' => $colorValue->value,
-                'hex_code' => $colorValue->standard_value,
-            ] : null,
-
-            // Relationships
+            }),
             'product' => new ProductResource($this->whenLoaded('product')),
             'option_values' => ProductOptionValueResource::collection($this->whenLoaded('optionValues')),
         ];
-    }
 
-    protected function getVariantTitle()
-    {
-        if (!$this->optionValues->isEmpty()) {
-            return $this->optionValues->map(function($value) {
+        // Add variant title and attributes only if optionValues are loaded
+        if ($this->relationLoaded('optionValues') && !$this->optionValues->isEmpty()) {
+            $data['title'] = $this->optionValues->map(function($value) {
                 return $value->value;
             })->join(' / ');
-        }
-        return null;
-    }
 
-    protected function getVariantAttributes()
-    {
-        if (!$this->optionValues->isEmpty()) {
-            return $this->optionValues->mapWithKeys(function($value) {
+            $data['attributes'] = $this->optionValues->mapWithKeys(function($value) {
                 return [$value->productOption->name => $value->value];
             });
+
+            // Handle color information
+            $colorValue = $this->optionValues->first(function($value) {
+                return $value->productOption && strtolower($value->productOption->name) === 'color';
+            });
+
+            if ($colorValue) {
+                $data['color_info'] = [
+                    'name' => $colorValue->value,
+                    'hex_code' => $colorValue->hex_code,
+                ];
+            } else {
+                $data['color_info'] = null;
+            }
+        } else {
+            $data['title'] = null;
+            $data['attributes'] = null;
+            $data['color_info'] = null;
         }
-        return null;
+
+        return $data;
     }
 }

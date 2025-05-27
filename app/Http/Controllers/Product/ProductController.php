@@ -6,8 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Product\ProductRequest;
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Product\ProductResource;
-use App\Services\Product\ProductService;
-use Illuminate\Http\JsonResponse;
+use App\Http\Services\Product\ProductService;
 
 class ProductController extends Controller
 {
@@ -15,34 +14,29 @@ class ProductController extends Controller
         protected ProductService $service
     ) {}
 
-    public function index(ProductRequest $request): JsonResponse
+    public function index(ProductRequest $request)
     {
-        $products = $this->service->getAll($request);
-        return response()->json(new PaginationResource($products, ProductResource::class));
+        return $this->service->getAllProducts($request);
     }
 
-    public function show($id): JsonResponse
+    public function show($id)
     {
-        $product = $this->service->find($id);
-        return response()->json(new ProductResource($product));
+        return $this->service->findProduct($id);
     }
 
-    public function store(ProductRequest $request): JsonResponse
+    public function store(ProductRequest $request)
     {
-        $product = $this->service->create($request);
-        return response()->json(new ProductResource($product), 201);
+        return $this->service->createProduct($request->validated());
     }
 
-    public function update($id, ProductRequest $request): JsonResponse
+    public function update($id, ProductRequest $request)
     {
-        $product = $this->service->update($id, $request);
-        return response()->json(new ProductResource($product));
+        return $this->service->updateProduct($id, $request->validated());
     }
 
-    public function destroy($id): JsonResponse
+    public function destroy($id)
     {
-        $this->service->delete($id);
-        return response()->json(null, 204);
+        return $this->service->deleteProduct($id);
     }
 }
 

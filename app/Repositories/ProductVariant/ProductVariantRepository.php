@@ -16,61 +16,7 @@ class ProductVariantRepository
 
     public function create(array $data)
     {
-        return $this->model->create([
-            'product_id' => $data['product_id'],
-            'sku' => $data['sku'],
-            'price' => $data['price'],
-            'price_after_discount' => $data['price_after_discount'] ?? null,
-            'quantity' => $data['quantity'],
-            'barcode' => $data['barcode'] ?? null,
-            'weight' => $data['weight'] ?? null,
-            'is_active' => $data['is_active'] ?? true,
-            'order' => $data['order'] ?? 1,
-        ]);
-    }
-
-    public function createWithOptions($productId, array $data)
-    {
-        try {
-            DB::beginTransaction();
-
-            // Create variant
-            $variant = $this->create([
-                'product_id' => $productId,
-                'sku' => $data['sku'],
-                'price' => $data['price'],
-                'price_after_discount' => $data['price_after_discount'] ?? null,
-                'quantity' => $data['quantity'],
-                'barcode' => $data['barcode'] ?? null,
-                'weight' => $data['weight'] ?? null,
-                'is_active' => $data['is_active'] ?? true,
-                'order' => $data['order'] ?? 1,
-            ]);
-
-            // Link variant with option values
-            foreach ($data['option_values'] as $optionValue) {
-                $this->variantOptionValue->create([
-                    'product_variant_id' => $variant->id,
-                    'product_option_value_id' => $optionValue['option_value_id'],
-                ]);
-            }
-
-            // Handle images if this is a color variant
-            if (isset($data['images'])) {
-                foreach ($data['images'] as $image) {
-                    $variant->images()->create([
-                        'image' => $image['path'],
-                        'is_main' => $image['is_main'] ?? false,
-                    ]);
-                }
-            }
-
-            DB::commit();
-            return $variant;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        return ProductVariant::create($data);
     }
 
     public function findByOptions($productId, array $selectedOptions)

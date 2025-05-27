@@ -12,12 +12,7 @@ class ProductOptionValueRepository
 
     public function create(array $data)
     {
-        return $this->model->create([
-            'product_option_id' => $data['product_option_id'],
-            'value' => $data['value'],
-            'order' => $data['order'] ?? 1,
-            'hex_code' => $data['hex_code'] ?? null,
-        ]);
+        return ProductOptionValue::create($data);
     }
 
     public function delete($id)

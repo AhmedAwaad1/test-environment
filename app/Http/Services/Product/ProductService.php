@@ -6,15 +6,14 @@ use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Product\ProductResource;
 use App\Http\Resources\ProductOption\ProductOptionResource;
 use App\Http\Resources\ProductVariant\ProductVariantResource;
-use App\Models\ProductImage;
 use App\Repositories\Product\ProductRepository;
 use App\Repositories\ProductOption\ProductOptionRepository;
 use App\Repositories\ProductOptionValue\ProductOptionValueRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Storage;
 use App\Models\VariantOptionValue;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Response;
 
 class ProductService
 {
@@ -22,7 +21,8 @@ class ProductService
         protected ProductRepository $productRepo,
         protected ProductOptionRepository $productOptionRepo,
         protected ProductOptionValueRepository $productOptionValueRepo,
-        protected ProductVariantRepository $productVariantRepo
+        protected ProductVariantRepository $productVariantRepo,
+        protected VariantOptionValue $variantOptionValue
     ) {}
 
     public function getAllProducts($request)
@@ -40,7 +40,7 @@ class ProductService
         }
     }
 
-    public function getProductById($id)
+    public function findProduct($id)
     {
         try {
             $product = $this->productRepo->findWithVariants($id);
@@ -58,43 +58,72 @@ class ProductService
         }
     }
 
-    public function createProduct($request)
+    public function createProduct(array $data)
     {
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
+            //Create product
+            $product = $this->productRepo->create($data);
 
-            // Create the product
-            $product = $this->productRepo->create($request);
-
-            // Handle images
-            if (isset($request['images'])) {
-                $this->handleProductImages($product, $request['images']);
+            //Attach images
+            if (!empty($data['images'])) {
+                $this->handleProductImages($product, $data['images']);
             }
 
-            // Handle variants if product has variants
-            if (isset($request['has_variants']) && $request['has_variants']) {
-                $this->createProductVariants($product->id, $request);
+            //Create options & values
+            $optionValueMap = [];
+            if (!empty($data['options'])) {
+                $optionValueMap = $this->createOptionsAndValues($product->id, $data['options']);
             }
 
-            // Fetch the complete product with all relationships
-            $product = $this->productRepo->findWithVariants($product->id);
+            //Create variants & attach values
+            if (!empty($data['variants'])) {
+                $this->createVariants($product->id, $data['variants'], $optionValueMap);
+            }
 
             DB::commit();
-
             return Response::successResponse(
-                new ProductResource($product),
+                new ProductResource($product->load('productVariants', 'productOptions.values')),
                 'Product created successfully',
                 201
             );
-        } catch (\Illuminate\Database\QueryException $e) {
-            DB::rollBack();
-            return Response::handleDatabaseException($e, 'create product');
+
         } catch (\Exception $e) {
             DB::rollBack();
             return Response::handleException($e, 'Failed to create product');
         }
     }
 
+    private function createVariants(int $productId, array $variants, array $optionValueMap): void
+    {
+        foreach ($variants as $variant) {
+            $createdVariant = $this->productVariantRepo->create([
+                'product_id' => $productId,
+                'sku' => $variant['sku'],
+                'price' => $variant['price'],
+                'price_after_discount' => $variant['price_after_discount'] ?? null,
+                'quantity' => $variant['quantity'],
+                'barcode' => $variant['barcode'] ?? null,
+                'weight' => $variant['weight'] ?? null,
+                'is_active' => $variant['is_active'] ?? true,
+                'order' => $variant['order'] ?? 1,
+            ]);
+
+            foreach ($variant['option_values'] as $value) {
+                $valueKey = strtolower($value); // lowercase for consistency
+
+                foreach ($optionValueMap as $optionType => $valuesMap) {
+                    if (isset($valuesMap[$valueKey])) {
+                        $this->variantOptionValue->create([
+                            'product_variant_id' => $createdVariant->id,
+                            'product_option_value_id' => $valuesMap[$valueKey],
+                        ]);
+                        break;
+                    }
+                }
+            }
+        }
+    }
     public function updateProduct($id, array $data)
     {
         try {
@@ -185,7 +214,7 @@ class ProductService
         }
     }
 
-    public function getVariantByOptions($productId, $selectedOptions)
+    public function getVariantByOptions($productId, array $selectedOptions)
     {
         try {
             $product = $this->productRepo->find($productId);
@@ -232,31 +261,67 @@ class ProductService
         }
     }
 
-    private function createProductVariants($productId, array $data)
+    private function createOptionsAndValues(int $productId, array $options): array
     {
-        // Validate required data
-        if (!isset($data['options']) || !isset($data['variants'])) {
-            throw new \Exception('Options and variants are required for products with variants');
+        $map = [];
+
+        foreach ($options as $option) {
+            $createdOption = $this->productOptionRepo->create([
+                'product_id' => $productId,
+                'product_option_type_id' => $option['option_type_id'],
+                'order' => $option['order'] ?? 1,
+            ]);
+
+
+            // Eager load the 'type' relation to avoid null issue
+            $createdOption->load('optionType');
+
+            foreach ($option['values'] as $index => $value) {
+                $createdValue = $this->productOptionValueRepo->create([
+                    'product_option_id' => $createdOption->id,
+                    'value' => $value['value'],
+                    'hex_code' => $value['hex_code'] ?? null,
+                    'order' => $index + 1,
+                ]);
+
+                // Safe mapping with lowercase keys for consistency
+                if (!empty($createdOption->type) && is_string($createdOption->type->name)) {
+                    $optionTypeName = strtolower($createdOption->type->name);
+                    $valueKey = strtolower($value['value']); // ensure lowercase
+
+                    $map[$optionTypeName][$valueKey] = $createdValue->id;
+                }
+            }
         }
 
-        // Create options and their values
-        foreach ($data['options'] as $optionData) {
-            $this->productOptionRepo->createWithValues($productId, $optionData);
-        }
+        logger()->info('Creating value', [
+            'index' => $index,
+            'value' => $value,
+            'createdOption' => $createdOption,
+        ]);
 
-        // Create variants
-        foreach ($data['variants'] as $variantData) {
-            $this->productVariantRepo->createWithOptions($productId, $variantData);
-        }
+        
+        dd($map);
+
+        return $map;
     }
+
 
     private function updateProductVariants($productId, array $data)
     {
         // First delete all existing variants and options
         $this->deleteAllVariants($this->productRepo->find($productId));
 
-        // Then create new ones
-        $this->createProductVariants($productId, $data);
+        // Create new options and values
+        $optionValueMap = [];
+        if (!empty($data['options'])) {
+            $optionValueMap = $this->createOptionsAndValues($productId, $data['options']);
+        }
+
+        // Create new variants
+        if (!empty($data['variants'])) {
+            $this->createVariants($productId, $data['variants'], $optionValueMap);
+        }
     }
 
     private function deleteAllVariants($product)
