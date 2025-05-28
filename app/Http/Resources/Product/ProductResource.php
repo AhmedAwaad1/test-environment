@@ -40,9 +40,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
                 });
 
                 $data = array_merge($data, [
-                    'price' => null,
-                    'price_after_discount' => null,
-                    'quantity' => null,
+                    'price' => $this->price ?? null,
+                    'price_after_discount' => $this->price_after_discount ?? null,
+                    'quantity' => $this->quantity ?? null,
                     'options' => ProductOptionResource::collection($this->whenLoaded('productOptions')),
                     'variants' => ProductVariantResource::collection($variants),
                     'available_options' => $this->whenLoaded('productOptions', function() {
