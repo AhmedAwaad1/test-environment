@@ -16,23 +16,23 @@ class ProductVariantRepository
 
     public function create(array $data)
     {
-        return ProductVariant::create($data);
+        return $this->model->create($data);
     }
 
     public function findByOptions($productId, array $selectedOptions)
     {
-        $query = $this->model
+        return $this->model
             ->where('product_id', $productId)
-            ->with(['optionValues', 'images']);
-
-        foreach ($selectedOptions as $optionId => $valueId) {
-            $query->whereHas('optionValues', function ($q) use ($optionId, $valueId) {
-                $q->where('product_option_id', $optionId)
-                  ->where('id', $valueId);
-            });
-        }
-
-        return $query->first();
+            ->whereHas('optionValues', function ($query) use ($selectedOptions) {
+                foreach ($selectedOptions as $optionId => $valueId) {
+                    $query->where(function ($q) use ($optionId, $valueId) {
+                        $q->where('product_option_id', $optionId)
+                            ->where('product_option_value_id', $valueId);
+                    });
+                }
+            })
+            ->with('optionValues.productOption')
+            ->first();
     }
 
     public function delete($id)
@@ -67,12 +67,9 @@ class ProductVariantRepository
 
     public function update($id, array $data)
     {
-        $variant = ProductVariant::find($id);
-        if ($variant) {
-            $variant->update($data);
-            return $variant;
-        }
-        return null;
+        $variant = $this->model->findOrFail($id);
+        $variant->update($data);
+        return $variant;
     }
 
     public function toggleStatus($id)

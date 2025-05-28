@@ -20,6 +20,7 @@ use App\Http\Controllers\SubCategory\SubCategoryController;
 use App\Http\Controllers\UserProfile\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Product\ProductOptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -251,4 +252,28 @@ Route::prefix('favorite')->namespace('Favorite')->group(function () {
 Route::prefix('user-profile')->namespace('UserProfile')->group(function () {
     // Update user profile
     Route::put('/', [UserProfileController::class, 'update'])->name('user-profile.update');
+});
+
+// Product Variants Management
+Route::prefix('products')->group(function () {
+    Route::get('{productId}/variants', [ProductVariantController::class, 'index']);
+    Route::get('{productId}/variants/by-options', [ProductVariantController::class, 'getByOptions']);
+    Route::put('variants/{variantId}', [ProductVariantController::class, 'update']);
+    Route::put('variants/{variantId}/stock', [ProductVariantController::class, 'updateStock']);
+    Route::put('variants/{variantId}/toggle-status', [ProductVariantController::class, 'toggleStatus']);
+    Route::delete('variants/{variantId}', [ProductVariantController::class, 'destroy']);
+});
+
+// Product Options Management
+Route::prefix('products')->group(function () {
+    Route::get('{productId}/options', [ProductOptionController::class, 'index']);
+    Route::post('{productId}/options', [ProductOptionController::class, 'store']);
+    Route::put('options/{optionId}', [ProductOptionController::class, 'update']);
+    Route::delete('options/{optionId}', [ProductOptionController::class, 'destroy']);
+
+    // Option Values
+    Route::post('options/{optionId}/values', [ProductOptionController::class, 'addValue']);
+    Route::put('options/values/{valueId}', [ProductOptionController::class, 'updateValue']);
+    Route::delete('options/values/{valueId}', [ProductOptionController::class, 'deleteValue']);
+    Route::put('options/{optionId}/reorder', [ProductOptionController::class, 'reorderValues']);
 });
