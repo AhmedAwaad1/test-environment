@@ -110,13 +110,11 @@ class ProductService
             ]);
 
             foreach ($variant['option_values'] as $value) {
-                $valueKey = strtolower($value); // lowercase for consistency
-
                 foreach ($optionValueMap as $optionType => $valuesMap) {
-                    if (isset($valuesMap[$valueKey])) {
+                    if (isset($valuesMap[strtolower($value['value'])])) {
                         $this->variantOptionValue->create([
                             'product_variant_id' => $createdVariant->id,
-                            'product_option_value_id' => $valuesMap[$valueKey],
+                            'product_option_value_id' => $valuesMap[strtolower($value['value'])],
                         ]);
                         break;
                     }
@@ -193,6 +191,7 @@ class ProductService
     public function getProductOptions($id)
     {
         try {
+            dd($id);
             $product = $this->productRepo->find($id);
 
             if (!$product) {
@@ -272,8 +271,6 @@ class ProductService
                 'order' => $option['order'] ?? 1,
             ]);
 
-
-            // Eager load the 'type' relation to avoid null issue
             $createdOption->load('optionType');
 
             foreach ($option['values'] as $index => $value) {
@@ -281,30 +278,29 @@ class ProductService
                     'product_option_id' => $createdOption->id,
                     'value' => $value['value'],
                     'hex_code' => $value['hex_code'] ?? null,
-                    'order' => $index + 1,
+                    'order' => $value['order'] ?? ($index + 1),
                 ]);
 
-                // Safe mapping with lowercase keys for consistency
-                if (!empty($createdOption->type) && is_string($createdOption->type->name)) {
-                    $optionTypeName = strtolower($createdOption->type->name);
-                    $valueKey = strtolower($value['value']); // ensure lowercase
+                // Handle images for the option value if they exist
+                if (!empty($value['images'])) {
+                    foreach ($value['images'] as $imageIndex => $imagePath) {
+                        $createdValue->images()->create([
+                            'image' => $imagePath,
+                            'order' => $imageIndex + 1,
+                        ]);
+                    }
+                }
 
-                    $map[$optionTypeName][$valueKey] = $createdValue->id;
+                if (!empty($createdOption->optionType) && is_string($createdOption->optionType->name)) {
+                    $optionTypeName = strtolower($createdOption->optionType->name);
+                    $map[$optionTypeName][strtolower($value['value'])] = $createdValue->id;
                 }
             }
         }
 
-        logger()->info('Creating value', [
-            'index' => $index,
-            'value' => $value,
-            'createdOption' => $createdOption,
-        ]);
-
-        
-        dd($map);
-
         return $map;
     }
+
 
 
     private function updateProductVariants($productId, array $data)

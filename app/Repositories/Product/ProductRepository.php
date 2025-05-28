@@ -40,26 +40,27 @@ class ProductRepository
 
     public function findWithVariants($id)
     {
-        return $this->model
+        $productWithVariants = $this->model
             ->with([
                 'category:id,name_en,name_ar',
                 'subCategory:id,name_en,name_ar',
                 'images' => function($query) {
                     // $query->orderBy('order');
                 },
+                'productOptions.values.images',
                 'productOptions.values' => function($query) {
                     $query->orderBy('order');
                 },
                 'productVariants' => function($query) {
                     $query->orderBy('order')->with([
                         'optionValues.productOption',
-                        'images' => function($imageQuery) {
-                            $imageQuery;
-                        }
+                        'optionValues.images'
                     ]);
                 }
             ])
             ->findOrFail($id);
+
+        return $productWithVariants;
     }
 
 

@@ -54,19 +54,22 @@ class ProductRequest extends FormRequest
             'images.*.is_main' => ['nullable', 'boolean'],
 
             // Simple product fields (when has_variants = false)
-            'price' => 'required_if:has_variants,false|numeric|min:0',
-            'price_after_discount' => 'nullable|numeric|min:0',
+            'price' => 'required|numeric|min:0',
+            'price_after_discount' => 'required|numeric|min:0',
             'quantity' => 'required_if:has_variants,false|integer|min:0',
             'sku' => 'required_if:has_variants,false|string|unique:products,sku',
 
-            // Variants data (when has_variants = true)
+            // Options data (when has_variants = true)
             'options' => 'required_if:has_variants,true|array',
             'options.*.option_type_id' => 'required|exists:product_option_types,id',
             'options.*.values' => 'required|array|min:1',
             'options.*.values.*.value' => 'required|string|max:255',
             'options.*.values.*.hex_code' => 'nullable|string|max:7',
+            'options.*.values.*.order' => 'nullable|integer|min:1',
+            'options.*.values.*.images' => 'nullable|array',
+            'options.*.values.*.images.*' => 'required|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
 
-            // Variants data - إزالة distinct مؤقتاً
+            // Variants data
             'variants' => 'required_if:has_variants,true|array|min:1',
             'variants.*.sku' => 'required|string|unique:product_variants,sku',
             'variants.*.price' => 'required|numeric|min:0',
@@ -77,8 +80,7 @@ class ProductRequest extends FormRequest
             'variants.*.is_active' => 'boolean',
             'variants.*.order' => 'nullable|integer|min:1',
             'variants.*.option_values' => 'required|array|min:1',
-            'variants.*.images' => 'nullable|array|max:5',
-            'variants.*.images.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'variants.*.option_values.*.value' => 'required|string|max:255',
         ];
     }
 

@@ -19,6 +19,10 @@ class ProductOptionValue extends Model
         'order',
     ];
 
+    protected $casts = [
+        'order' => 'integer',
+    ];
+
     protected static function boot()
     {
         parent::boot();
@@ -122,5 +126,15 @@ class ProductOptionValue extends Model
     public function variantOptionValues(): HasMany
     {
         return $this->hasMany(VariantOptionValue::class);
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductOptionValueImage::class);
+    }
+
+    public function variants()
+    {
+        return $this->belongsToMany(ProductVariant::class, 'variant_option_values');
     }
 }
