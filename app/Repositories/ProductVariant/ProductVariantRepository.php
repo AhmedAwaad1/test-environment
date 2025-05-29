@@ -24,10 +24,10 @@ class ProductVariantRepository
         $query = $this->model
             ->where('product_id', $productId)
             ->with(['optionValues.productOption', 'images']);
-        dd($query);
+
         // Count how many option values we're looking for
         $optionValuesCount = count($optionValues);
-        dd($optionValuesCount);
+
         // Find variant that has exactly these option values (no more, no less)
         $query->whereHas('optionValues', function ($q) use ($optionValues) {
             $q->whereIn('product_option_values.id', collect($optionValues)->pluck('id'));

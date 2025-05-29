@@ -22,13 +22,13 @@ class ProductRepository
 
     public function getAll($request)
     {
-        return $this->model
-            ->with(['category', 'subCategory', 'images'])
-            ->when($request->per_page, function ($query) use ($request) {
-                return $query->paginate($request->per_page);
-            }, function ($query) {
-                return $query->get();
-            });
+        $query = $this->model->with(['category', 'subCategory', 'images'])->filter($request);
+
+        if ($request->has('per_page')) {
+            return $query->paginate($request->per_page);
+        }
+
+        return $query->get();
     }
 
     public function find($id)

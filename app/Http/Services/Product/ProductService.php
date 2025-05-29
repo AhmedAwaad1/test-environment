@@ -29,9 +29,11 @@ class ProductService
         try {
             $products = $this->productRepo->getAll($request);
 
-            $response = $request->per_page
-                ? new PaginationResource($products, ProductResource::class)
-                : ProductResource::collection($products);
+            if ($request->per_page) {
+                $response = new PaginationResource($products, ProductResource::class);
+            } else {
+                $response = ProductResource::collection($products);
+            }
 
             return Response::successResponse($response, 'Products retrieved successfully');
         } catch (\Exception $e) {
