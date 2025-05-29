@@ -45,7 +45,7 @@ class BannerRequest extends FormRequest
             'url'             => ['nullable', 'string', 'max:255'],
             'product_id'      => ['nullable', 'exists:products,id'],
             'category_id'     => ['nullable', 'exists:categories,id'],
-            'product_type_id' => ['nullable', 'exists:product_types,id'],
+            'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
         ];
     }
 
@@ -56,7 +56,7 @@ class BannerRequest extends FormRequest
             'url'             => ['nullable', 'string', 'max:255'],
             'product_id'      => ['nullable', 'exists:products,id'],
             'category_id'     => ['nullable', 'exists:categories,id'],
-            'product_type_id' => ['nullable', 'exists:product_types,id'],
+            'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
         ];
     }
 }

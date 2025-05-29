@@ -54,13 +54,13 @@ class BannerService
             $relations = [
                 $request['product_id'] ?? null,
                 $request['category_id'] ?? null,
-                $request['product_type_id'] ?? null,
+                $request['sub_category_id'] ?? null,
             ];
 
             $nonNullRelations = array_filter($relations);
 
             if (count($nonNullRelations) !== 1) {
-                return Response::errorResponse('You must provide exactly one of product_id, category_id, or product_type_id', [], 422);
+                return Response::errorResponse('You must provide exactly one of product_id, category_id, or sub_category_id', [], 422);
             }
 
             $banner = $this->bannerRepo->create($request);
@@ -80,14 +80,14 @@ class BannerService
             $relations = [
                 $data['product_id'] ?? null,
                 $data['category_id'] ?? null,
-                $data['product_type_id'] ?? null,
+                $data['sub_category_id'] ?? null,
             ];
 
             $nonNullRelations = array_filter($relations);
             if (count($nonNullRelations) !== 1) {
-                return Response::errorResponse('You must provide exactly one of product_id, category_id, or product_type_id', [], 422);
+                return Response::errorResponse('You must provide exactly one of product_id, category_id, or sub_category_id', [], 422);
             }
-            
+
             $banner = $this->bannerRepo->update($id, $data);
 
             if (!$banner) {

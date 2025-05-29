@@ -21,7 +21,7 @@ class BannerResource extends JsonResource
             'url' => $this->url,
             'product_id' => $this->product_id,
             'category_id' => $this->category_id,
-            'product_type_id' => $this->product_type_id,
+            'sub_category_id' => $this->sub_category_id,
         ];
     }
 }

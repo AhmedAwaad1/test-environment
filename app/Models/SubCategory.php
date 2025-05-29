@@ -30,7 +30,7 @@ class SubCategory extends Model
         if (is_string($value)) {
             $this->attributes['image'] = $value;
         } else {
-            $this->attributes['image'] = $value->store('product_types', 'public');
+            $this->attributes['image'] = $value->store('sub_categories', 'public');
         }
     }
     public function getSlugAttribute($value)

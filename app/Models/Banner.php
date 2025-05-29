@@ -13,7 +13,7 @@ class Banner extends Model
         'url',
         'product_id',
         'category_id',
-        'product_type_id',
+        'sub_category_id',
     ];
 
     public function getImageAttribute($value)
