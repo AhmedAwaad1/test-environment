@@ -26,7 +26,13 @@ class ProductOptionRepository
 
     public function delete($id)
     {
-        return $this->model->findOrFail($id)->delete();
+        $query = $this->model->where('id', $id)->first();
+
+        if ($query) {
+            return $query->delete();
+        }
+
+        return null;
     }
 
     public function getByProductId($productId)
@@ -45,7 +51,7 @@ class ProductOptionRepository
 
     public function update($id, array $data)
     {
-        $option = ProductOption::find($id);
+        $option = ProductOption::where('id', $id)->first();
         if ($option) {
             $option->update($data);
             return $option;

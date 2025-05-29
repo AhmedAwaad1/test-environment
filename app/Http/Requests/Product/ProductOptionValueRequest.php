@@ -18,7 +18,7 @@ class ProductOptionValueRequest extends FormRequest
             'hex_code' => ['nullable', 'string', 'max:7'],
             'order' => ['nullable', 'integer', 'min:1'],
             'images' => ['nullable', 'array'],
-            'images.*' => ['required', 'string'],
+            'images.*' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
         ];
     }
 }

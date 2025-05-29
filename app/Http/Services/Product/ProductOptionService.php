@@ -232,7 +232,7 @@ class ProductOptionService
             $isDeleted = $this->optionValueRepo->delete($valueId);
 
             if (!$isDeleted) {
-                return Response::errorResponse('Failed to delete option value', [], 400);
+                return Response::errorResponse('Option value not found', [], 404);
             }
 
             return Response::successResponse(

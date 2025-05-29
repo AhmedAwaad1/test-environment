@@ -17,7 +17,13 @@ class ProductOptionValueRepository
 
     public function delete($id)
     {
-        return $this->model->findOrFail($id)->delete();
+        $query = $this->model->where('id', $id)->first();
+
+        if($query) {
+            return $query->delete();
+        }
+
+        return null;
     }
 
     public function getByOptionId($optionId)
