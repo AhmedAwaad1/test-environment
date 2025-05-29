@@ -99,7 +99,7 @@ class ProductRequest extends FormRequest
 
             // Images
             'images' => ['nullable', 'array'],
-            'images.*.path' => ['required', 'string'],
+            'images.*.path' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
             'images.*.is_main' => ['nullable', 'boolean'],
             'deleted_images' => ['nullable', 'array'],
             'deleted_images.*' => ['exists:product_images,id'],

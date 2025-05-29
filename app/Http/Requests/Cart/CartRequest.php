@@ -41,9 +41,8 @@ class CartRequest extends FormRequest
     private function storeRules(): array
     {
         return [
-            'product_id'      => ['required', 'exists:products,id'],
-            'size_id'         => ['required', 'exists:sizes,id'],
-            'color_id'        => ['required', 'exists:colors,id'],
+            'product_id'      => ['nullable', 'exists:products,id'],
+            'product_variant_id' => ['nullable', 'exists:product_variants,id'],
             'quantity'        => ['required', 'integer', 'min:1'],
         ];
     }

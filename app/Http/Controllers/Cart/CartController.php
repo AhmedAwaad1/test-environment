@@ -36,13 +36,4 @@ class CartController extends Controller
         return $this->cartService->deleteCartItem($id);
     }
 
-    public function applyCoupon(ApplyCouponRequest $request)
-    {
-        return $this->cartService->applyCoupon($request->validated());
-    }
-
-    public function removeCoupon()
-    {
-        return $this->cartService->removeCoupon();
-    }
 }

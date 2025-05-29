@@ -20,8 +20,7 @@ class CartRepository
     public function findUserCart($userId)
     {
         return Cart::where('user_id', $userId)
-            ->with('cartItems.productVariant.product', 'cartItems.productVariant.color',
-                    'cartItems.productVariant.size', 'cartItems.productVariant.images')
+            ->with('cartItems.product.images', 'cartItems.productVariant.product', 'cartItems.productVariant.optionValues.images')
             ->first();
     }
 

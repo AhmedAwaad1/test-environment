@@ -2,12 +2,12 @@
 
 namespace App\Http\Services\Cart;
 
-use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Cart\CartResource;
 use App\Models\Cart;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\CartItem\CartItemRepository;
-use App\Repositories\Product\ProductVariantRepository;
+use App\Repositories\Product\ProductRepository;
+use App\Repositories\ProductVariant\ProductVariantRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,19 +15,26 @@ use Illuminate\Support\Facades\Response;
 
 class CartService
 {
-    protected $cartRepo, $cartItemRepo, $productVarRepo, $couponRepo, $variantSizeRepo;
+    protected $cartRepo, $cartItemRepo, $productVarRepo, $couponService,
+        $productRepo, $productValidator, $cartItemService;
 
     public function __construct(
         CartRepository $cartRepo,
         CartItemRepository $cartItemRepo,
+        ProductRepository $productRepo,
         ProductVariantRepository $productVarRepo,
-        PromoCodeRepository $couponRepo
+        ProductValidatorService $productValidator,
+        CartItemService $cartItemService,
+        CouponService $couponService
     )
     {
         $this->cartRepo = $cartRepo;
         $this->cartItemRepo = $cartItemRepo;
         $this->productVarRepo = $productVarRepo;
-        $this->couponRepo = $couponRepo;
+        $this->productRepo = $productRepo;
+        $this->productValidator = $productValidator;
+        $this->cartItemService = $cartItemService;
+        $this->couponService = $couponService;
     }
 
     public function getUserCart()
@@ -50,64 +57,42 @@ class CartService
         }
     }
 
-    public function addToCart($data)
+    public function addToCart(array $data)
     {
         try {
             DB::beginTransaction();
 
-            $user = Auth::user();
+            $userId = Auth::id();
 
-            $cart = $this->cartRepo->findOrCreateUserCart($user->id);
+            $cart = $this->cartRepo->findOrCreateUserCart($userId);
 
-            $productVariant = $this->productVarRepo->findVariantByProductId($data);
-
-            $validateProductVariant = $this->validateProductVariant($productVariant, $data['quantity']);
-
-            if ($validateProductVariant !== true) {
-                return $validateProductVariant;
+            $itemData = $this->getCartItemData($data, $cart->id);
+            if ($itemData['error']) {
+                return Response::errorResponse($itemData['error'], [], 400);
             }
 
-            $unitPrice = $productVariant->price_after_discount ?? $productVariant->price;
-
-            $totalPrice = $this->calculateItemPrice($unitPrice, $data['quantity']);
-
-            $existingItem = $this->cartItemRepo->findByCartAndVariant($cart->id, $productVariant->id);
+            $item = $itemData['item'];
+            $existingItem = $itemData['existing'];
+            $type = $itemData['type'];
 
             if ($existingItem) {
-                //update existing item
-                $existingItem->quantity += $data['quantity'];
-                $existingItem->price = $unitPrice;
-                $existingItem->total_price = $this->calculateItemPrice($existingItem->price, $existingItem->quantity);
-                $existingItem->save();
-            }else {
-                //create new item
-                $cartItem = $this->cartItemRepo->create([
-                    'cart_id'            => $cart->id,
-                    'product_variant_id' => $productVariant->id,
-                    'quantity'           => $data['quantity'],
-                    'price'              => $productVariant->price_after_discount ?? $productVariant->price,
-                    'total_price'        => $totalPrice,
-                ]);
+                $this->cartItemService->updateQuantityAndPrice($existingItem, $item->price_after_discount ?? $item->price, $data['quantity']);
+            } else {
+                $this->cartItemService->createNewCartItem($cart->id, $item, $data['quantity'], $type);
             }
 
+            // Update total cart price
             $this->calculateTotalPrice($cart);
-            // Check if the cart has a coupon code applied
-            if($cart->coupon_code != null){
-                $coupon = $this->couponRepo->findByCode($cart->coupon_code);
-                if($coupon != null){
-                    $this->calculateTotalPriceAfterDiscount($cart, $coupon);
-                }
-            }
+
+            // Apply coupon discount
+            $this->couponService->checkAndApplyCouponIfExists($cart);
 
             DB::commit();
-            return Response::successResponse(new CartResource($cart), 'new item added to cart', 201);
 
-        } catch (\Illuminate\Database\QueryException $e) {
+            return Response::successResponse(new CartResource($cart), 'Item added to cart', 201);
+        } catch (\Throwable $e) {
             DB::rollBack();
-            return Response::handleDatabaseException($e, 'create cart');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return Response::handleException($e, 'create cart');
+            return Response::handleException($e, 'Error adding item to cart');
         }
     }
 
@@ -116,79 +101,54 @@ class CartService
         try {
             DB::beginTransaction();
 
-            $user = Auth::user();
-            $cart = $this->cartRepo->findUserCart($user->id);
+            $updatedItem = $this->cartItemService->updateCartItemQuantity($cartItemId, $data);
 
-            if (!$cart) {
-                return Response::errorResponse('Cart not found', [], 404);
-            }
+            // Update total cart price
+            $this->calculateTotalPrice($updatedItem->cart);
 
-            $cartItem = $this->cartItemRepo->findById($cartItemId);
-
-            if (!$cartItem || $cartItem->cart_id !== $cart->id) {
-                return Response::errorResponse('Cart item not found in user cart', [], 404);
-            }
-
-            $productVariant = $this->productVarRepo->find($cartItem->product_variant_id);
-
-            $validationResponse = $this->validateProductVariant($productVariant, $data['quantity']);
-
-            if ($validationResponse !== true) {
-                return $validationResponse;
-            }
-
-            $cartItem->quantity = $data['quantity'];
-            $cartItem->price = $productVariant->price_after_discount ?? $productVariant->price;
-            $cartItem->total_price = $this->calculateItemPrice($cartItem->price, $data['quantity']);
-            $cartItem->save();
-
-            $this->calculateTotalPrice($cart);
-
-            // Check if the cart has a coupon code applied
-            if($cart->coupon_code != null){
-                $coupon = $this->couponRepo->findByCode($cart->coupon_code);
-                if($coupon != null){
-                    $this->calculateTotalPriceAfterDiscount($cart, $coupon);
-                }
-            }
+            // Apply coupon discount
+            $this->couponService->checkAndApplyCouponIfExists($updatedItem->cart);
 
             DB::commit();
-            return Response::successResponse(new CartResource($cart), 'Cart item quantity updated successfully');
 
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            //exception if id not found
-            return Response::handleModelNotFoundException($e, 'cart');
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'update cart');
+            return Response::successResponse(new CartResource($updatedItem), 'Item quantity updated successfully', 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return Response::handleException($e, 'Error updating item quantity');
         }
     }
 
     public function deleteCartItem($cartItemId)
     {
-        $user = Auth::user();
+        try {
+            DB::beginTransaction();
 
-        $cart = $this->cartRepo->findUserCart($user->id);
-        if (!$cart) {
-            return Response::errorResponse('Cart not found', [], 404);
-        }
+            $cart = $this->cartRepo->findUserCart(Auth::id());
 
-        $cartItem = $this->cartItemRepo->findById($cartItemId);
-
-        if (!$cartItem || $cartItem->cart_id !== $cart->id) {
-            return Response::errorResponse('Cart item not found or unauthorized', [], 403);
-        }
-
-        $cartItem->delete();
-
-        // Recalculate the total price of the cart
-        $this->calculateTotalPrice($cart);
-        if($cart->coupon_code != null){
-            $coupon = $this->couponRepo->findByCode($cart->coupon_code);
-            if($coupon != null){
-                $this->calculateTotalPriceAfterDiscount($cart, $coupon);
+            if (!$cart) {
+                return Response::errorResponse('Cart not found', [], 404);
             }
+
+            $deletedItem = $this->cartItemService->deleteCartItem($cartItemId, $cart->id);
+
+            if (!$deletedItem) {
+                return Response::errorResponse('Item not found', [], 404);
+            }
+            // Update total cart price
+            $this->calculateTotalPrice($cart);
+
+            // Apply coupon discount
+            $this->couponService->checkAndApplyCouponIfExists($cart);
+
+            $cart->refresh();
+
+            DB::commit();
+
+            return Response::successResponse(new CartResource($cart), 'Item deleted successfully', 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return Response::handleException($e, 'Error deleting item');
         }
-        return Response::successResponse(null, 'Cart item deleted successfully', 200);
     }
 
     public function calculateItemPrice($unitPrice, $quantity)
@@ -206,92 +166,28 @@ class CartService
         return $total;
     }
 
-    private function validateProductVariant($variant, $requestedQty)
+    private function getCartItemData(array $data, $cartId): array
     {
-        if (!$variant) {
-            return Response::errorResponse('Product variant not found', [], 404);
-        }
-
-        if (!$variant->is_active) {
-            return Response::errorResponse('Product variant is not available', [], 400);
-        }
-
-        if ($variant->quantity < $requestedQty) {
-            return Response::errorResponse('Not enough quantity in stock', [], 400);
-        }
-
-        return true;
-    }
-
-    public function applyCoupon($data)
-    {
-        try {
-            $user = Auth::user();
-            $cart = $this->cartRepo->findUserCart($user->id);
-
-            if (!$cart) {
-                return Response::errorResponse('Cart not found', [], 404);
-            }
-
-            $coupon = $this->couponRepo->findByCode($data['coupon_code']);
-
-            if (!$coupon) {
-                return Response::errorResponse('Coupon not found', [], 404);
-            }
-
-            if (!$coupon->is_active) {
-                return Response::errorResponse('Coupon is not active', [], 400);
-            }
-
-            // Check if user used this coupon before
-            // if ($user->usedCoupons()->where('coupon_id', $coupon->id)->exists()) {
-            //     return Response::errorResponse('You have already used this coupon', [], 400);
-            // }
-
-            $this->calculateTotalPriceAfterDiscount($cart, $coupon);
-
-            return Response::successResponse(new CartResource($cart), 'Coupon applied successfully');
-
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'apply coupon');
-        }
-    }
-
-    public function removeCoupon()
-    {
-        try {
-            $user = Auth::user();
-            $cart = $this->cartRepo->findUserCart($user->id);
-
-            if (!$cart) {
-                return Response::errorResponse('Cart not found', [], 404);
-            }
-
-            $cart->coupon_code = null;
-            $cart->discount_amount = 0;
-            $cart->total_price_after_discount = null;
-            $cart->save();
-
-            return Response::successResponse(new CartResource($cart), 'Coupon removed successfully');
-
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'remove coupon');
-        }
-    }
-    public function calculateTotalPriceAfterDiscount(Cart $cart, $coupon)
-    {
-        $total = $cart->total_price;
-
-        if ($coupon->discount_percentage) {
-            $cart->coupon_code = $coupon->code;
-            $cart->discount_amount = ($total * $coupon->discount_percentage) / 100;
+        if (!empty($data['product_variant_id'])) {
+            $item = $this->productVarRepo->find($data['product_variant_id']);
+            $validation = $this->productValidator->validateVariant($item, $data['quantity']);
+            $existing = $this->cartItemRepo->variantExistsInCart($cartId, $item->id);
+            $type = 'variant';
         } else {
-            $cart->discount_amount = 0;
+            $item = $this->productRepo->find($data['product_id']);
+            if ($item->has_variants) {
+                return ['error' => 'Product has variants and cannot be added to cart'];
+            }
+            $validation = $this->productValidator->validateProduct($item, $data['quantity']);
+            $existing = $this->cartItemRepo->productExistsInCart($cartId, $item->id);
+            $type = 'product';
         }
 
-        $cart->total_price_after_discount = $total - $cart->discount_amount;
-        $cart->save();
+        if ($validation !== true) {
+            return ['error' => $validation];
+        }
 
-        return $cart->total_price_after_discount;
+        return ['item' => $item, 'existing' => $existing, 'type' => $type, 'error' => false];
     }
-}
+
+ }

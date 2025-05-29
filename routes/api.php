@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Order\OrderController as OrderAdminController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Banner\BannerController;
 use App\Http\Controllers\Cart\CartController;
+use App\Http\Controllers\Cart\CouponController;
 use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Color\ColorController;
@@ -224,9 +225,9 @@ Route::prefix('cart')->namespace('Cart')->group(function () {
     Route::delete('/item/{id}', [CartController::class, 'deleteCartItem'])->name('cart.delete');
 
     //apply coupon
-    Route::post('/apply-coupon', [CartController::class, 'applyCoupon'])->name('cart.apply-coupon');
+    Route::post('/apply-coupon', [CouponController::class, 'applyCoupon'])->name('cart.apply-coupon');
     //remove coupon
-    Route::post('/remove-coupon', [CartController::class, 'removeCoupon'])->name('cart.remove-coupon');
+    Route::post('/remove-coupon', [CouponController::class, 'removeCoupon'])->name('cart.remove-coupon');
 });
 
 Route::prefix('order')->namespace('Order')->group(function () {
