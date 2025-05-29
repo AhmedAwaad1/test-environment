@@ -12,7 +12,6 @@ use App\Repositories\ProductOptionValue\ProductOptionValueRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
 use App\Models\VariantOptionValue;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 
 class ProductService
@@ -339,31 +338,6 @@ class ProductService
             return Response::errorResponse('Product not found', [], 404);
         } catch (\Exception $e) {
             return Response::handleException($e, 'Failed to delete product');
-        }
-    }
-
-    public function getProductOptions($id)
-    {
-        try {
-            dd($id);
-            $product = $this->productRepo->find($id);
-
-            if (!$product) {
-                return Response::errorResponse('Product not found', [], 404);
-            }
-
-            if (!$product->has_variants) {
-                return Response::errorResponse('Product does not have variants', [], 400);
-            }
-
-            $options = $this->productOptionRepo->getByProductId($id);
-
-            return Response::successResponse(
-                ProductOptionResource::collection($options),
-                'Product options retrieved successfully'
-            );
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to retrieve product options');
         }
     }
 

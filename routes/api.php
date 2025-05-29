@@ -13,7 +13,7 @@ use App\Http\Controllers\District\DistrictController;
 use App\Http\Controllers\Favorite\FavoriteController;
 use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Product\ProductController;
-use App\Http\Controllers\ProductVariant\ProductVariantController;
+use App\Http\Controllers\Product\ProductVariantController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\Size\SizeController;
 use App\Http\Controllers\SubCategory\SubCategoryController;
@@ -126,16 +126,39 @@ Route::prefix('size')->namespace('Size')->group(function () {
     Route::delete('/{id}', [SizeController::class, 'destroy'])->name('size.destroy');
 });
 
-Route::prefix('product')->namespace('Product')->group(function () {
+// Product Management
+Route::prefix('products')->group(function () {
+    // Basic Product CRUD
     Route::get('/', [ProductController::class, 'index']);
     Route::post('/', [ProductController::class, 'store']);
     Route::get('/{id}', [ProductController::class, 'show']);
     Route::put('/{id}', [ProductController::class, 'update']);
     Route::delete('/{id}', [ProductController::class, 'destroy']);
 
-    // Variants related routes
-    Route::get('/{id}/options', [ProductController::class, 'getProductOptions']);
-    Route::post('/variants/find', [ProductController::class, 'getVariantByOptions']);
+    // Variants Management
+    Route::prefix('{productId}')->group(function () {
+        Route::get('variants', [ProductVariantController::class, 'index']);
+        Route::get('options', [ProductOptionController::class, 'index']);
+        Route::post('options', [ProductOptionController::class, 'store']);
+    });
+
+    // Variant Operations
+    Route::prefix('variants')->group(function () {
+        Route::put('{variantId}', [ProductVariantController::class, 'update']);
+        Route::put('{variantId}/stock', [ProductVariantController::class, 'updateStock']);
+        Route::put('{variantId}/toggle-status', [ProductVariantController::class, 'toggleStatus']);
+        Route::delete('{variantId}', [ProductVariantController::class, 'destroy']);
+    });
+
+    // Options Operations
+    Route::prefix('options')->group(function () {
+        Route::put('{optionId}', [ProductOptionController::class, 'update']);
+        Route::delete('{optionId}', [ProductOptionController::class, 'destroy']);
+        Route::post('{optionId}/values', [ProductOptionController::class, 'addValue']);
+        Route::put('values/{valueId}', [ProductOptionController::class, 'updateValue']);
+        Route::delete('values/{valueId}', [ProductOptionController::class, 'deleteValue']);
+        Route::put('{optionId}/reorder', [ProductOptionController::class, 'reorderValues']);
+    });
 });
 
 Route::prefix('banner')->namespace('Banner')->group(function () {
@@ -149,19 +172,6 @@ Route::prefix('banner')->namespace('Banner')->group(function () {
     Route::put('/{id}', [BannerController::class, 'update'])->name('banner.update');
     // Delete banner
     Route::delete('/{id}', [BannerController::class, 'destroy'])->name('banner.destroy');
-});
-
-Route::prefix('product-variant')->namespace('ProductVariant')->group(function () {
-    // Get all product variants
-    Route::get('/', [ProductVariantController::class, 'index'])->name('product-variant.index');
-    // Get specific product variant
-    Route::get('/{id}', [ProductVariantController::class, 'show'])->name('product-variant.show');
-    // Create product variant
-    Route::post('/', [ProductVariantController::class, 'store'])->name('product-variant.store');
-    // Update product variant
-    Route::put('/{id}', [ProductVariantController::class, 'update'])->name('product-variant.update');
-    // Delete product variant
-    Route::delete('/{id}', [ProductVariantController::class, 'destroy'])->name('product-variant.destroy');
 });
 
 Route::prefix('district')->namespace('District')->group(function () {
@@ -254,26 +264,4 @@ Route::prefix('user-profile')->namespace('UserProfile')->group(function () {
     Route::put('/', [UserProfileController::class, 'update'])->name('user-profile.update');
 });
 
-// Product Variants Management
-Route::prefix('products')->group(function () {
-    Route::get('{productId}/variants', [ProductVariantController::class, 'index']);
-    Route::get('{productId}/variants/by-options', [ProductVariantController::class, 'getByOptions']);
-    Route::put('variants/{variantId}', [ProductVariantController::class, 'update']);
-    Route::put('variants/{variantId}/stock', [ProductVariantController::class, 'updateStock']);
-    Route::put('variants/{variantId}/toggle-status', [ProductVariantController::class, 'toggleStatus']);
-    Route::delete('variants/{variantId}', [ProductVariantController::class, 'destroy']);
-});
 
-// Product Options Management
-Route::prefix('products')->group(function () {
-    Route::get('{productId}/options', [ProductOptionController::class, 'index']);
-    Route::post('{productId}/options', [ProductOptionController::class, 'store']);
-    Route::put('options/{optionId}', [ProductOptionController::class, 'update']);
-    Route::delete('options/{optionId}', [ProductOptionController::class, 'destroy']);
-
-    // Option Values
-    Route::post('options/{optionId}/values', [ProductOptionController::class, 'addValue']);
-    Route::put('options/values/{valueId}', [ProductOptionController::class, 'updateValue']);
-    Route::delete('options/values/{valueId}', [ProductOptionController::class, 'deleteValue']);
-    Route::put('options/{optionId}/reorder', [ProductOptionController::class, 'reorderValues']);
-});

@@ -34,7 +34,7 @@ class ProductRepository
     public function find($id)
     {
         return $this->model
-            ->with(['category', 'subCategory', 'images', 'productOptions.values', 'productVariants'])
+            ->with(['category', 'subCategory', 'productOptions.values', 'productVariants'])
             ->findOrFail($id);
     }
 
@@ -45,7 +45,6 @@ class ProductRepository
                 'category:id,name_en,name_ar',
                 'subCategory:id,name_en,name_ar',
                 'images' => function($query) {
-                    // $query->orderBy('order');
                 },
                 'productOptions.values.images',
                 'productOptions.values' => function($query) {

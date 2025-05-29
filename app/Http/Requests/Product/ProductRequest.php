@@ -119,7 +119,7 @@ class ProductRequest extends FormRequest
             'options.*.values.*.hex_code' => ['nullable', 'string', 'max:7'],
             'options.*.values.*.order' => ['nullable', 'integer', 'min:1'],
             'options.*.values.*.images' => ['nullable', 'array'],
-            'options.*.values.*.images.*' => ['nullable', 'string'],
+            'options.*.values.*.images.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
 
             // Variants update
             'variants' => ['required_if:has_variants,true', 'nullable', 'array'],

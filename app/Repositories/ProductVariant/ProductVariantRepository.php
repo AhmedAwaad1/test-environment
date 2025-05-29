@@ -19,20 +19,24 @@ class ProductVariantRepository
         return $this->model->create($data);
     }
 
-    public function findByOptions($productId, array $selectedOptions)
+    public function findByOptions($productId, array $optionValues)
     {
-        return $this->model
+        $query = $this->model
             ->where('product_id', $productId)
-            ->whereHas('optionValues', function ($query) use ($selectedOptions) {
-                foreach ($selectedOptions as $optionId => $valueId) {
-                    $query->where(function ($q) use ($optionId, $valueId) {
-                        $q->where('product_option_id', $optionId)
-                            ->where('product_option_value_id', $valueId);
-                    });
-                }
-            })
-            ->with('optionValues.productOption')
-            ->first();
+            ->with(['optionValues.productOption', 'images']);
+        dd($query);
+        // Count how many option values we're looking for
+        $optionValuesCount = count($optionValues);
+        dd($optionValuesCount);
+        // Find variant that has exactly these option values (no more, no less)
+        $query->whereHas('optionValues', function ($q) use ($optionValues) {
+            $q->whereIn('product_option_values.id', collect($optionValues)->pluck('id'));
+        }, '=', $optionValuesCount);
+
+        // Also ensure the variant doesn't have any other option values
+        $query->has('optionValues', '=', $optionValuesCount);
+
+        return $query->first();
     }
 
     public function delete($id)
@@ -40,11 +44,13 @@ class ProductVariantRepository
         $variant = $this->model->findOrFail($id);
 
         // Delete variant images
-        foreach ($variant->images as $image) {
-            if (!empty($image->image) && Storage::exists($image->image)) {
-                Storage::delete($image->image);
+        if(!empty($variant->image) && Storage::exists($variant->image)) {
+            foreach ($variant->images as $image) {
+                if (!empty($image->image) && Storage::exists($image->image)) {
+                    Storage::delete($image->image);
+                }
+                $image->delete();
             }
-            $image->delete();
         }
 
         $variant->optionValues()->delete();
@@ -53,15 +59,17 @@ class ProductVariantRepository
 
     public function find($id)
     {
-        return ProductVariant::with(['optionValues.option', 'product'])->find($id);
+        return $this->model
+            ->with(['optionValues.productOption', 'optionValues.images'])
+            ->find($id);
     }
 
     public function getByProductId($productId)
     {
-        return ProductVariant::with(['optionValues.option'])
+        return $this->model
+            ->with(['optionValues.productOption', 'optionValues.images'])
             ->where('product_id', $productId)
-            ->where('is_active', true)
-            ->orderBy('position')
+            ->orderBy('order')
             ->get();
     }
 
@@ -69,18 +77,14 @@ class ProductVariantRepository
     {
         $variant = $this->model->findOrFail($id);
         $variant->update($data);
-        return $variant;
+        return $variant->fresh();
     }
 
     public function toggleStatus($id)
     {
-        $variant = ProductVariant::find($id);
-        if ($variant) {
-            $variant->is_active = !$variant->is_active;
-            $variant->save();
-            return $variant;
-        }
-        return null;
+        $variant = $this->model->findOrFail($id);
+        $variant->update(['is_active' => !$variant->is_active]);
+        return $variant->fresh();
     }
 
     public function createProductVariants($product, array $variants, array $optionValueMap)

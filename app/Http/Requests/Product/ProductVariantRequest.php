@@ -39,8 +39,8 @@ class ProductVariantRequest extends FormRequest
     private function updateRules(): array
     {
         return [
-            'sku' => ['required', 'string', 'unique:product_variants,sku,' . $this->route('variantId')],
-            'price' => ['required', 'numeric', 'min:0'],
+            'sku' => ['nullable', 'string', 'unique:product_variants,sku,' . $this->route('variantId')],
+            'price' => ['nullable', 'numeric', 'min:0'],
             'price_after_discount' => ['nullable', 'numeric', 'min:0'],
             'quantity' => ['required', 'integer', 'min:0'],
             'barcode' => ['nullable', 'string', 'unique:product_variants,barcode,' . $this->route('variantId')],

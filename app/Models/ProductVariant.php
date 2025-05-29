@@ -24,10 +24,6 @@ class ProductVariant extends Model
     {
         return $this->belongsTo(Product::class);
     }
-    public function images()
-    {
-        return $this->hasMany(ProductVariantImage::class);
-    }
 
     public function optionValues()
     {
@@ -67,12 +63,7 @@ class ProductVariant extends Model
         if (isset($filters['product_id'])) {
             $query->where('product_id', $filters['product_id']);
         }
-        if (isset($filters['color_id'])) {
-            $query->where('color_id', $filters['color_id']);
-        }
-        if (isset($filters['size_id'])) {
-            $query->where('size_id', $filters['size_id']);
-        }
+
         if (isset($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);
         }

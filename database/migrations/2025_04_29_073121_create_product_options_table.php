@@ -19,6 +19,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['product_id', 'order']);
+            $table->unique(['product_id', 'product_option_type_id']);
         });
     }
 

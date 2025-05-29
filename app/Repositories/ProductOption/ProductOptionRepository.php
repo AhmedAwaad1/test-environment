@@ -15,7 +15,13 @@ class ProductOptionRepository
 
     public function create(array $data)
     {
-        return ProductOption::create($data);
+        return $this->model->updateOrCreate(
+            [
+                'product_id' => $data['product_id'],
+                'product_option_type_id' => $data['product_option_type_id'],
+            ],
+            $data
+        );
     }
 
     public function delete($id)
@@ -27,9 +33,14 @@ class ProductOptionRepository
     {
         return $this->model
             ->where('product_id', $productId)
-            ->with(['values', 'optionType'])
+            ->with(['values.images', 'optionType'])
             ->orderBy('order')
             ->get();
+    }
+
+    public function getById($id)
+    {
+        return $this->model->findOrFail($id);
     }
 
     public function update($id, array $data)

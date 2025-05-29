@@ -7,7 +7,7 @@ use App\Http\Resources\Cart\CartResource;
 use App\Models\Cart;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\CartItem\CartItemRepository;
-use App\Repositories\ProductVariant\ProductVariantRepository;
+use App\Repositories\Product\ProductVariantRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;

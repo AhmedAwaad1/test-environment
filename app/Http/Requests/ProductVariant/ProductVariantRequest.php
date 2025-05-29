@@ -50,19 +50,7 @@ class ProductVariantRequest extends FormRequest
     private function updateRules(): array
     {
         return [
-            'product_id' => ['nullable', 'exists:products,id'],
-            'color_id' => ['nullable', 'exists:colors,id'],
-            'size_id' => ['nullable', 'exists:sizes,id'],
-            'quantity' => ['nullable', 'integer', 'min:1'],
-            'sku' => ['nullable', 'string', 'max:255'],
-            'price' => ['required', 'numeric', 'min:0'],
-            'price_after_discount' => ['nullable', 'numeric', 'min:0'],
-            'is_active' => ['nullable', 'boolean'],
-
-            'images' => ['nullable', 'array'],
-            'images.*' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
-            'deleted_images' => 'nullable|array',
-            'deleted_images.*' => 'exists:product_images,id',
+            //
         ];
     }
 }

@@ -60,7 +60,7 @@ class ProductVariantService
             DB::commit();
 
             return Response::successResponse(
-                new ProductVariantResource($variant),
+                new ProductVariantResource($variant->load('optionValues')),
                 'Variant updated successfully'
             );
         } catch (\Exception $e) {
@@ -137,6 +137,34 @@ class ProductVariantService
         } catch (\Exception $e) {
             DB::rollBack();
             return Response::handleException($e, 'Failed to delete variant');
+        }
+    }
+
+    public function getVariantByOptions($productId, array $optionValues)
+    {
+        try {
+            $product = $this->productRepo->find($productId);
+
+            if (!$product) {
+                return Response::errorResponse('Product not found', [], 404);
+            }
+
+            if (!$product->has_variants) {
+                return Response::errorResponse('Product does not have variants', [], 400);
+            }
+
+            $variant = $this->variantRepo->findByOptions($productId, $optionValues);
+
+            if (!$variant) {
+                return Response::errorResponse('Variant not found', [], 404);
+            }
+
+            return Response::successResponse(
+                new ProductVariantResource($variant->load('optionValues')),
+                'Variant found successfully'
+            );
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'Failed to find variant');
         }
     }
 

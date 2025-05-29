@@ -34,6 +34,10 @@ class ProductVariantController extends Controller
      */
     public function updateStock($variantId, Request $request)
     {
+        $request->validate([
+            'quantity' => 'required|integer|min:0'
+        ]);
+
         return $this->variantService->updateVariantStock($variantId, $request->quantity);
     }
 
@@ -58,6 +62,11 @@ class ProductVariantController extends Controller
      */
     public function getByOptions($productId, Request $request)
     {
+        $request->validate([
+            'option_values' => 'required|array',
+            'option_values.*.id' => 'required|exists:product_option_values,id'
+        ]);
+
         return $this->variantService->getVariantByOptions($productId, $request->option_values);
     }
 }

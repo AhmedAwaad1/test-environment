@@ -5,6 +5,7 @@ namespace App\Http\Resources\ProductVariant;
 use App\Http\Resources\Product\ProductResource;
 use App\Http\Resources\ProductImage\ProductImageResource;
 use App\Http\Resources\ProductOptionValue\ProductOptionValueResource;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductVariantResource extends JsonResource
@@ -14,10 +15,11 @@ class ProductVariantResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray($request)
+    public function toArray(Request $request): array
     {
         $data = [
             'id' => $this->id,
+            'product_id' => $this->product_id,
             'sku' => $this->sku,
             'price' => $this->price,
             'price_after_discount' => $this->price_after_discount,
@@ -26,14 +28,21 @@ class ProductVariantResource extends JsonResource
             'weight' => $this->weight,
             'is_active' => $this->is_active,
             'order' => $this->order,
+            'in_stock' => $this->quantity > 0,
+            'discount_percentage' => $this->when($this->price_after_discount, function() {
+                return round((($this->price - $this->price_after_discount) / $this->price) * 100);
+            }),
+            'images' => $this->whenLoaded('images', function() {
+                return $this->images->map(function($image) {
+                    return [
+                        'id' => $image->id,
+                        'image' => $image->image,
+                    ];
+                });
+            }),
+            'option_values' => ProductOptionValueResource::collection($this->whenLoaded('optionValues')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-            'images' => ProductImageResource::collection($this->whenLoaded('images')),
-            'main_image' => $this->whenLoaded('images', function() {
-                return new ProductImageResource($this->images->firstWhere('is_main', true) ?? $this->images->first());
-            }),
-            'product' => new ProductResource($this->whenLoaded('product')),
-            'option_values' => ProductOptionValueResource::collection($this->whenLoaded('optionValues')),
         ];
 
         // Add variant title and attributes only if optionValues are loaded
