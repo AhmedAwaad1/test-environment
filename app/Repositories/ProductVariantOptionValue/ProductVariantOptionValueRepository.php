@@ -20,12 +20,6 @@ class ProductVariantOptionValueRepository
         ]);
     }
 
-    public function create(array $data)
-    {
-        return ProductVariantOptionValue::create($data);
-    }
-
-
     public function delete($id)
     {
         return $this->model->findOrFail($id)->delete();
@@ -40,13 +34,4 @@ class ProductVariantOptionValueRepository
             ->get();
     }
 
-    public function update($id, array $data)
-    {
-        $option = ProductVariantOptionValue::find($id);
-        if ($option) {
-            $option->update($data);
-            return $option;
-        }
-        return null;
-    }
 }

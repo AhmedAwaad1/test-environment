@@ -14,12 +14,20 @@ class ProductVariantRequest extends FormRequest
     public function rules(): array
     {
         return match ($this->method()) {
+            'GET' => $this->getRules(),
             'POST' => $this->storeRules(),
             'PUT', 'PATCH' => $this->updateRules(),
             default => [],
         };
     }
 
+    private function getRules(): array
+    {
+        return [
+            'option_value_ids' => ['required', 'array'],
+            'option_value_ids.*' => ['required', 'exists:product_option_values,id'],
+        ];
+    }
     private function storeRules(): array
     {
         return [

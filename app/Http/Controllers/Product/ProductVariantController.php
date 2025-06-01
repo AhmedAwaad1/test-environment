@@ -20,7 +20,6 @@ class ProductVariantController extends Controller
     {
         return $this->variantService->getProductVariants($productId);
     }
-
     /**
      * Update variant details
      */

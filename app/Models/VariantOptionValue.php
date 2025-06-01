@@ -18,7 +18,7 @@ class VariantOptionValue extends Model
     }
     public function optionValue()
     {
-        return $this->belongsTo(ProductOptionValue::class, 'option_value_id');
+        return $this->belongsTo(ProductOptionValue::class, 'product_option_value_id');
     }
     public function option()
     {

@@ -139,6 +139,7 @@ Route::prefix('products')->group(function () {
     // Variants Management
     Route::prefix('{productId}')->group(function () {
         Route::get('variants', [ProductVariantController::class, 'index']);
+        Route::get('variant/by-options', [ProductVariantController::class, 'getByOptions']);
         Route::get('options', [ProductOptionController::class, 'index']);
         Route::post('options', [ProductOptionController::class, 'store']);
     });
@@ -237,10 +238,6 @@ Route::prefix('order')->namespace('Order')->group(function () {
     Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
     // Create order
     Route::post('/checkout', [OrderController::class, 'checkout'])->name('order.checkout');
-    // Update order
-    Route::put('/{id}', [OrderController::class, 'update'])->name('order.update');
-    // Delete order
-    Route::delete('/{id}', [OrderController::class, 'destroy'])->name('order.destroy');
 });
 
 Route::prefix('admin/order')->middleware('role.admin')->group(function () {

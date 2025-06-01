@@ -23,7 +23,11 @@ class ProductVariantRepository
     {
         $query = $this->model
             ->where('product_id', $productId)
-            ->with(['optionValues.productOption', 'images']);
+            ->with([
+                'optionValues' => function($q) {
+                    $q->with(['productOption.optionType', 'images']);
+                }
+            ]);
 
         // Count how many option values we're looking for
         $optionValuesCount = count($optionValues);

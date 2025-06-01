@@ -160,7 +160,7 @@ class ProductVariantService
             }
 
             return Response::successResponse(
-                new ProductVariantResource($variant->load('optionValues')),
+                new ProductVariantResource($variant->load(['optionValues.productOption.optionType', 'optionValues.images'])),
                 'Variant found successfully'
             );
         } catch (\Exception $e) {
