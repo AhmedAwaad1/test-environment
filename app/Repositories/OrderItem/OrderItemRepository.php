@@ -22,8 +22,9 @@ class OrderItemRepository
         foreach ($cartItems as $item) {
             OrderItem::create([
                 'order_id' => $orderId,
-                'product_variant_id' => $item->product_variant_id,
-                'product_name' => $item->productVariant->product->name_en,
+                'product_id' => $item->product_id ?? null,
+                'product_variant_id' => $item->product_variant_id ?? null,
+                'product_name' => $item->productVariant->product->name_en ?? $item->product->name_en,
                 'quantity' => $item->quantity,
                 'price' => $item->price,
                 'total' => $item->total_price,

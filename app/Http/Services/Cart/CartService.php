@@ -170,16 +170,20 @@ class CartService
     {
         if (!empty($data['product_variant_id'])) {
             $item = $this->productVarRepo->find($data['product_variant_id']);
-            $validation = $this->productValidator->validateVariant($item, $data['quantity']);
             $existing = $this->cartItemRepo->variantExistsInCart($cartId, $item->id);
+            $currentQty = $existing ? $existing->quantity : 0;
+            $totalQty = $currentQty + $data['quantity'];
+            $validation = $this->productValidator->validateVariant($item, $totalQty);
             $type = 'variant';
         } else {
             $item = $this->productRepo->find($data['product_id']);
             if ($item->has_variants) {
                 return ['error' => 'Product has variants and cannot be added to cart'];
             }
-            $validation = $this->productValidator->validateProduct($item, $data['quantity']);
             $existing = $this->cartItemRepo->productExistsInCart($cartId, $item->id);
+            $currentQty = $existing ? $existing->quantity : 0;
+            $totalQty = $currentQty + $data['quantity'];
+            $validation = $this->productValidator->validateProduct($item, $totalQty);
             $type = 'product';
         }
 

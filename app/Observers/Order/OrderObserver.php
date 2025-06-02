@@ -32,6 +32,8 @@ class OrderObserver
         $cart = Cart::where('user_id', $userId)->first();
         if ($cart) {
             $cart->cartItems()->delete();
+            $cart->total_price = 0;
+            $cart->save();
         }
     }
 

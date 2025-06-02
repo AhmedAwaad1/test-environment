@@ -14,7 +14,7 @@ class ProductValidatorService
             return Response::errorResponse('Product not found', 404);
         }
 
-        if ($product->quantity < $quantity) {
+        if ($product->quantity < $quantity && $product->quantity > 0) {
             return Response::errorResponse('Insufficient stock for the product', 400);
         }
 
@@ -31,7 +31,7 @@ class ProductValidatorService
             return Response::errorResponse('Product variant not found', 404);
         }
 
-        if ($variant->quantity < $quantity) {
+        if ($variant->quantity < $quantity && $variant->quantity > 0) {
             return Response::errorResponse('Insufficient stock for the product variant', 400);
         }
 

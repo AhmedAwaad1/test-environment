@@ -4,7 +4,9 @@ namespace App\Http\Services\Order;
 
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Order\OrderResource;
+use App\Http\Services\Cart\ProductValidatorService;
 use App\Http\Services\Payment\PaymentFactoryService;
+use App\Models\Product;
 use App\Repositories\Address\AddressRepository;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Order\OrderRepository;
@@ -14,20 +16,22 @@ use Illuminate\Support\Facades\Response;
 
 class OrderService
 {
-    protected $orderRepo, $cartRepo, $paymentFactory, $addressRepo, $orderItemRepo;
+    protected $orderRepo, $cartRepo, $paymentFactory, $addressRepo, $orderItemRepo, $productValidator;
 
     public function __construct(
         OrderRepository $orderRepo,
         OrderItemRepository $orderItemRepo,
         CartRepository $cartRepo,
         AddressRepository $addressRepo,
-        PaymentFactoryService $paymentFactory)
+        PaymentFactoryService $paymentFactory,
+        ProductValidatorService $productValidatorService)
     {
         $this->cartRepo = $cartRepo;
         $this->paymentFactory = $paymentFactory;
         $this->orderRepo = $orderRepo;
         $this->addressRepo = $addressRepo;
         $this->orderItemRepo = $orderItemRepo;
+        $this->productValidator = $productValidatorService;
     }
 
     public function getAllUserOrders($request)
@@ -92,6 +96,8 @@ class OrderService
         DB::beginTransaction();
 
         try {
+            $ProductValidation =  $this->validateProductsAndStock($cart->cartItems);
+
             $order = $this->orderRepo->createOrder($request, $cart);
 
             $orderItems = $this->orderItemRepo->createOrderItems($order->id, $cart->cartItems);
@@ -104,6 +110,15 @@ class OrderService
             if(!$paymentResult['success']) {
                 DB::rollBack();
                 return Response::errorResponse($paymentResult['message'], [], 400);
+            }
+
+            // Decrement product or variant stock
+            foreach ($cart->cartItems as $item) {
+                if ($item->product_id) {
+                    $item->product->decrement('quantity', $item->quantity);
+                } else {
+                    $item->productVariant->decrement('quantity', $item->quantity);
+                }
             }
 
             DB::commit();
@@ -125,5 +140,22 @@ class OrderService
         $timestamp = now()->format('YmdHis');
 
         return $prefix . $timestamp . '-' . $randomNumber;
+    }
+
+    protected function validateProductsAndStock($cartItems)
+    {
+        foreach ($cartItems as $item) {
+            if($item->product_id){
+                $validation = $this->productValidator->validateProduct($item->product, $item->quantity);
+            } else {
+                $validation = $this->productValidator->validateVariant($item->productVariant, $item->quantity);
+            }
+
+            if ($validation !== true) {
+                return ['error' => $validation, 'product' => $item->product_id ? $item->product : $item->productVariant];
+            }
+
+        }
+        return true;
     }
 }
