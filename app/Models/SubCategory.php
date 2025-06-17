@@ -39,8 +39,18 @@ class SubCategory extends Model
     }
     public function scopeFilter($query, array $filters)
     {
-        if (isset($filters['is_active'])) {
-            $query->where('is_active', (int) $filters['is_active']);
-        }
+        $query->when(
+            $filters['is_active'] ?? false,
+            function ($query, $is_active) {
+                $query->where('is_active', (int) $is_active);
+            }
+        );
+
+        $query->when(
+            $filters['category_id'] ?? false,
+            function ($query, $category_id) {
+                $query->where('category_id', $category_id);
+            }
+        );
     }
 }

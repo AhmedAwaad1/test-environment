@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\SubCategory;
 
+use App\Http\Resources\Category\CategoryResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -22,6 +23,8 @@ class SubCategoryResource extends JsonResource
             'image' => $this->image,
             'is_active' => $this->is_active,
             'order' => $this->order,
+            'category_id' => $this->category_id,
+            'category' => new CategoryResource($this->category),
         ];
     }
 }
