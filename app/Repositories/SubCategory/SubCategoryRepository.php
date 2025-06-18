@@ -8,7 +8,7 @@ class SubCategoryRepository
 {
     public function getAll($request)
     {
-        return SubCategory::query()->filter($request)->orderBy('order', 'asc');
+        return SubCategory::with('category')->filter($request)->orderBy('order', 'asc');
     }
 
     public function find($id)

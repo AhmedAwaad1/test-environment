@@ -37,6 +37,11 @@ class SubCategory extends Model
     {
         return $value;
     }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
     public function scopeFilter($query, array $filters)
     {
         $query->when(

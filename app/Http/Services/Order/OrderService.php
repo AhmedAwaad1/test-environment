@@ -6,7 +6,6 @@ use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Order\OrderResource;
 use App\Http\Services\Cart\ProductValidatorService;
 use App\Http\Services\Payment\PaymentFactoryService;
-use App\Models\Product;
 use App\Repositories\Address\AddressRepository;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Order\OrderRepository;

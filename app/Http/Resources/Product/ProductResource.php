@@ -24,7 +24,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
                 'is_active' => $this->is_active ?? true,
                 'created_at' => $this->created_at,
                 'updated_at' => $this->updated_at,
-
+                'category_id' => $this->category_id,
+                'sub_category_id' => $this->sub_category_id,
                 // Relationships
                 'category' => new CategoryResource($this->whenLoaded('category')),
                 'sub_category' => new SubCategoryResource($this->whenLoaded('subCategory')),
