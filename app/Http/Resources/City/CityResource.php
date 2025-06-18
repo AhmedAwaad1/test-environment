@@ -21,6 +21,7 @@ class CityResource extends JsonResource
             'name_ar' => $this->name_ar,
             'country_id' => $this->country_id,
             'country' => new CountryResource($this->whenLoaded('country')),
+            'shipping_price' => $this->shipping_price,
         ];
     }
 }
