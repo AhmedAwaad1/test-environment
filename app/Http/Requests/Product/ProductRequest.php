@@ -62,15 +62,15 @@ class ProductRequest extends FormRequest
             // Options data (when has_variants = true)
             'options' => 'required_if:has_variants,true|array',
             'options.*.option_type_id' => 'required|exists:product_option_types,id',
-            'options.*.values' => 'required|array|min:1',
+            'options.*.values' => 'required|array',
             'options.*.values.*.value' => 'required|string|max:255',
             'options.*.values.*.hex_code' => 'nullable|string|max:7',
-            'options.*.values.*.order' => 'nullable|integer|min:1',
+            'options.*.values.*.order' => 'nullable|integer',
             'options.*.values.*.images' => 'nullable|array',
             'options.*.values.*.images.*' => 'required|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
 
             // Variants data
-            'variants' => 'required_if:has_variants,true|array|min:1',
+            'variants' => 'required_if:has_variants,true|array',
             'variants.*.sku' => 'required|string|unique:product_variants,sku',
             'variants.*.price' => 'required|numeric|min:0',
             'variants.*.price_after_discount' => 'nullable|numeric|min:0',
@@ -79,7 +79,7 @@ class ProductRequest extends FormRequest
             'variants.*.weight' => 'nullable|numeric|min:0',
             'variants.*.is_active' => 'boolean',
             'variants.*.order' => 'nullable|integer|min:1',
-            'variants.*.option_values' => 'required|array|min:1',
+            'variants.*.option_values' => 'required|array',
             'variants.*.option_values.*.value' => 'required|string|max:255',
         ];
     }
@@ -112,12 +112,12 @@ class ProductRequest extends FormRequest
             'options' => ['required_if:has_variants,true', 'array'],
             'options.*.id' => ['nullable', 'exists:product_options,id'],
             'options.*.option_type_id' => ['required', 'exists:product_option_types,id'],
-            'options.*.order' => ['nullable', 'integer', 'min:1'],
-            'options.*.values' => ['required', 'array', 'min:1'],
+            'options.*.order' => ['nullable', 'integer'],
+            'options.*.values' => ['required', 'array'],
             'options.*.values.*.id' => ['nullable', 'exists:product_option_values,id'],
             'options.*.values.*.value' => ['required', 'string', 'max:255'],
             'options.*.values.*.hex_code' => ['nullable', 'string', 'max:7'],
-            'options.*.values.*.order' => ['nullable', 'integer', 'min:1'],
+            'options.*.values.*.order' => ['nullable', 'integer'],
             'options.*.values.*.images' => ['nullable', 'array'],
             'options.*.values.*.images.*' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
 
