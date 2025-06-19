@@ -74,6 +74,7 @@ class CategoryService
                 $data['slug'] = str_replace(' ', '-', $data['name_en']);
             }
 
+
             $category = $this->categoryRepo->update($id, $data);
 
             if (!$category) {
