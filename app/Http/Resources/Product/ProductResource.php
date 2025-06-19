@@ -21,7 +21,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
                 'description_ar' => $this->description_ar,
                 'sku' => $this->sku,
                 'has_variants' => $this->has_variants,
-                'is_active' => $this->is_active ?? true,
+                'status' => $this->is_active ?? true,
                 'created_at' => $this->created_at,
                 'updated_at' => $this->updated_at,
                 'category_id' => $this->category_id,
