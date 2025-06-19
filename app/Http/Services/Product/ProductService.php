@@ -141,6 +141,10 @@ class ProductService
                 $this->handleProductImages($product, $data['images']);
             }
 
+            if( isset($data['deleted_images'])) {
+                $product->images()->whereIn('id', $data['deleted_images'])->delete();
+            }
+            
             $this->handleProductVariantsUpdate($product, $data);
 
             // Fetch the complete product with all relationships

@@ -70,7 +70,7 @@ class CategoryService
     public function updateCategory($id, array $data)
     {
         try {
-            if ((!isset($data['slug']) || empty($data['slug'])) && isset($data['name_en'])) {
+            if (!isset($data['slug']) || empty($data['slug']) && isset($data['name_en'])) {
                 $data['slug'] = str_replace(' ', '-', $data['name_en']);
             }
 
