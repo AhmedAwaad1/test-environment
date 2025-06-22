@@ -26,6 +26,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
                 'updated_at' => $this->updated_at,
                 'category_id' => $this->category_id,
                 'sub_category_id' => $this->sub_category_id,
+                'avg_rating' => round($this->reviews()->avg('rating'), 1),
                 // Relationships
                 'category' => new CategoryResource($this->whenLoaded('category')),
                 'sub_category' => new SubCategoryResource($this->whenLoaded('subCategory')),
