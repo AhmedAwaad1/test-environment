@@ -136,10 +136,12 @@ class ProductRepository
             }
 
             // Delete variants and their images
-            foreach ($product->productVariants as $variant) {
-                foreach ($variant->images as $image) {
-                    if (!empty($image->image) && Storage::exists($image->image)) {
-                        Storage::delete($image->image);
+            if($product->has_variants && $product->productVariants->has('images')) {
+                foreach ($product->productVariants as $variant) {
+                    foreach ($variant->images as $image) {
+                        if (!empty($image->image) && Storage::exists($image->image)) {
+                            Storage::delete($image->image);
+                        }
                     }
                 }
             }
