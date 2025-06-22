@@ -19,9 +19,9 @@ class BlogController extends Controller
         return $this->blogService->getAllBlogs($request);
     }
 
-    public function show(BlogRequest $request)
+    public function show($slug)
     {
-        return $this->blogService->getBlogById($request->id);
+        return $this->blogService->getBlogBySlug($slug);
     }
 
     public function store(BlogRequest $request)

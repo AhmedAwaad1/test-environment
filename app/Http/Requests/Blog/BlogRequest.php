@@ -19,67 +19,54 @@ class BlogRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules()
+    public function rules(): array
     {
-        $endPoint = $this->segment(count($this->segments()));
-
-        switch ($endPoint) {
-            case '':
-                return $this->allValidation();
-            case 'create':
-                return $this->createValidation();
-            case 'update':
-                return $this->updateValidation();
-            case 'delete':
-                return $this->idValidation();
-            case 'get':
-                return $this->idValidation();
-            default:
-                if (is_numeric($endPoint)) {
-                    return $this->idValidation();
-                }
-                return [];
-        }
+        return match ($this->method()) {
+            'GET' => $this->indexRules(),
+            'POST' => $this->storeRules(),
+            'PUT', 'PATCH' => $this->updateRules(),
+            'DELETE' => [],
+            default => [],
+        };
     }
 
 
-    public function createValidation()
+    private function indexRules(): array
     {
         return [
-            'title_en' => 'required|string|max:255',
-            'title_ar' => 'required|string|max:255',
-            'cover_image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'content_en' => 'required|string',
-            'content_ar' => 'required|string',
-
+            'per_page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
-    public function updateValidation()
+    private function storeRules(): array
     {
         return [
-            'id' => ['required', 'exists:blogs,id'],
-            'title_en' => 'nullable|string|max:255',
-            'title_ar' => 'nullable|string|max:255',
-            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'content_en' => 'nullable|string',
-            'content_ar' => 'nullable|string',
-            'is_active' => 'nullable|boolean',
-        ];
-    }
-    public function idValidation()
-    {
-        return [
-            'id' => ['required', 'exists:blogs,id'],
+            'title_en' => ['nullable', 'string', 'max:255'],
+            'title_ar' => ['nullable', 'string', 'max:255'],
+            'slug' => ['required', 'string', 'unique:blogs,slug'],
+            'description_en' => ['nullable', 'string'],
+            'description_ar' => ['nullable', 'string'],
+            'content_en' => ['nullable', 'string'],
+            'content_ar' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'max:2048'], // 2MB max
+            'published_at' => ['nullable', 'date'],
+            'is_active' => ['boolean'],
         ];
     }
 
-    public function allValidation()
+    private function updateRules(): array
     {
         return [
-            'per_page' => ['nullable', 'integer'],
+            'title_en' => ['nullable', 'string', 'max:255'],
+            'title_ar' => ['nullable', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'unique:blogs,slug,' . $this->route('blog')],
+            'description_en' => ['nullable', 'string'],
+            'description_ar' => ['nullable', 'string'],
+            'content_en' => ['nullable', 'string'],
+            'content_ar' => ['nullable', 'string'],
+            'image' => ['nullable', 'image', 'max:2048'],
+            'published_at' => ['nullable', 'date'],
+            'is_active' => ['boolean'],
         ];
     }
 }

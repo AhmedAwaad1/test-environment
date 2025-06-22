@@ -4,11 +4,12 @@ use App\Http\Controllers\Address\AddressController;
 use App\Http\Controllers\Admin\Order\OrderController as OrderAdminController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Banner\BannerController;
+use App\Http\Controllers\Blog\BlogController;
 use App\Http\Controllers\Cart\CartController;
 use App\Http\Controllers\Cart\CouponController;
 use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
-use App\Http\Controllers\Color\ColorController;
+use App\Http\Controllers\Contact\ContactController;
 use App\Http\Controllers\Country\CountryController;
 use App\Http\Controllers\District\DistrictController;
 use App\Http\Controllers\Favorite\FavoriteController;
@@ -16,12 +17,12 @@ use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\ProductVariantController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
-use App\Http\Controllers\Size\SizeController;
 use App\Http\Controllers\SubCategory\SubCategoryController;
 use App\Http\Controllers\UserProfile\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Product\ProductOptionController;
+use App\Http\Controllers\Review\ReviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -101,31 +102,6 @@ Route::prefix('category')->namespace('Category')->group(function () {
     Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
 });
 
-Route::prefix('color')->namespace('Color')->group(function () {
-    // Get all colors
-    Route::get('/', [ColorController::class, 'index'])->name('color.index');
-    // Get specific color
-    Route::get('/{id}', [ColorController::class, 'show'])->name('color.show');
-    // Create color
-    Route::post('/', [ColorController::class, 'store'])->name('color.store');
-    // Update color
-    Route::put('/{id}', [ColorController::class, 'update'])->name('color.update');
-    // Delete color
-    Route::delete('/{id}', [ColorController::class, 'destroy'])->name('color.destroy');
-});
-
-Route::prefix('size')->namespace('Size')->group(function () {
-    // Get all size
-    Route::get('/', [SizeController::class, 'index'])->name('size.index');
-    // Get specific size
-    Route::get('/{id}', [SizeController::class, 'show'])->name('size.show');
-    // Create size
-    Route::post('/', [SizeController::class, 'store'])->name('size.store');
-    // Update size
-    Route::put('/{id}', [SizeController::class, 'update'])->name('size.update');
-    // Delete size
-    Route::delete('/{id}', [SizeController::class, 'destroy'])->name('size.destroy');
-});
 
 // Product Management
 Route::prefix('products')->group(function () {
@@ -263,3 +239,32 @@ Route::prefix('user-profile')->namespace('UserProfile')->group(function () {
 });
 
 
+Route::prefix('contact')->namespace('Contact')->group(function () {
+    Route::get('/', [ContactController::class, 'index'])->name('contact.index');
+    Route::get('/{id}', [ContactController::class, 'show'])->name('contact.show');
+    Route::post('/', [ContactController::class, 'store'])->name('contact.store');
+    Route::delete('/{id}', [ContactController::class, 'destroy'])->name('contact.destroy');
+    // Mark as checked form
+    Route::put('/{id}/mark-checked', [ContactController::class, 'markAsChecked'])
+         ->name('contact.mark_checked');
+});
+
+Route::prefix('blog')->namespace('Blog')->group(function () {
+    Route::get('/', [BlogController::class, 'index'])->name('blog.index');
+    Route::get('/{slug}', [BlogController::class, 'show'])->name('blog.show');
+    Route::post('/', [BlogController::class, 'store'])->name('blog.store');
+    Route::put('/{id}', [BlogController::class, 'update'])->name('blog.update');
+    Route::delete('/{id}', [BlogController::class, 'destroy'])->name('blog.destroy');
+});
+
+// Review Routes
+Route::prefix('review')->namespace('Review')->group(function () {
+    // Get all Reviews
+    Route::get('/', [ReviewController::class, 'all'])->name('review.all');
+    // Get a specific Review
+    Route::get('/{id}', [ReviewController::class, 'show'])->name('review.get');
+    // Create a new Review
+    Route::post('/', [ReviewController::class, 'create'])->name('review.create')->middleware('auth:api');
+    // Delete a Review
+    Route::delete('/{id}', [ReviewController::class, 'delete'])->name('review.delete');
+});

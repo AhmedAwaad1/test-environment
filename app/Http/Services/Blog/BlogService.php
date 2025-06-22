@@ -23,9 +23,9 @@ class BlogService
 
     }
 
-    public function getBlogById($id)
+    public function getBlogBySlug($slug)
     {
-        $blog = Blog::find($id);
+        $blog = Blog::where('slug', $slug)->first();
 
         if (!$blog) {
             return Response::errorResponse('Blog not found', [], 404);
@@ -39,12 +39,6 @@ class BlogService
         try {
             $blog = Blog::create($request->all());
 
-            if ($request->hasFile('cover_image')) {
-                $path = $request->file('cover_image')->store('blog', 'public');
-
-                $blog->cover_image = $path;
-                $blog->save();
-            }
             if ($request->hasFile('image')) {
                 $path = $request->file('image')->store('blog', 'public');
 
@@ -67,16 +61,6 @@ class BlogService
                 return Response::errorResponse('Blog not found', [], 404);
             }
             $blog->update($request->all());
-
-            if ($request->hasFile('cover_image')) {
-                if ($blog->cover_image) {
-                    Storage::delete($blog->cover_image);
-                }
-                $path = $request->file('cover_image')->store('blog', 'public');
-
-                $blog->cover_image = $path;
-                $blog->save();
-            }
 
             if ($request->hasFile('image')) {
                 if ($blog->image) {

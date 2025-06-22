@@ -19,12 +19,14 @@ class BlogResource extends JsonResource
             "id" => $this->id,
             'title_en' => $this->title_en,
             'title_ar' => $this->title_ar,
+            'description_en' => $this->description_en,
+            'description_ar' => $this->description_ar,
+            'slug' => $this->slug,
             'content_en' => $this->content_en,
             'content_ar' => $this->content_ar,
-            "cover_image" => $this->cover_image,
             'image' => $this->image,
             'is_active' => $this->is_active,
-            'created_at' => $this->created_at,
+            'published_at' => $this->published_at,
         ];
     }
 }
