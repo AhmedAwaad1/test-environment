@@ -44,16 +44,14 @@ class ProductService
     public function findProduct($id)
     {
         try {
-            $product = $this->productRepo->findWithVariants($id);
+            $product = $this->productRepo->findWithVariants($id)
+                ->load(['productPrices.currency']);
 
             if (!$product) {
                 return Response::errorResponse('Product not found', [], 404);
             }
 
-            return Response::successResponse(
-                new ProductResource($product),
-                'Product found successfully'
-            );
+            return Response::successResponse(new ProductResource($product), 'Product found successfully');
         } catch (\Exception $e) {
             return Response::handleException($e, 'Failed to retrieve product');
         }
@@ -69,6 +67,11 @@ class ProductService
             //Attach images
             if (!empty($data['images'])) {
                 $this->handleProductImages($product, $data['images']);
+            }
+
+            //Attach prices
+            if (!empty($data['prices'])) {
+                $this->productRepo->createProductPrices($product, $data['prices']);
             }
 
             //Create options & values
@@ -101,8 +104,6 @@ class ProductService
             $createdVariant = $this->productVariantRepo->create([
                 'product_id' => $productId,
                 'sku' => $variant['sku'],
-                'price' => $variant['price'],
-                'price_after_discount' => $variant['price_after_discount'] ?? null,
                 'quantity' => $variant['quantity'],
                 'barcode' => $variant['barcode'] ?? null,
                 'weight' => $variant['weight'] ?? null,
@@ -136,6 +137,11 @@ class ProductService
             }
 
             $product = $this->productRepo->update($id, $data);
+
+            if (isset($data['prices']) && is_array($data['prices'])) {
+                $this->productRepo->updateProductPrices($product, $data['prices']);
+            }
+
 
             if (isset($data['images'])) {
                 $this->handleProductImages($product, $data['images']);
@@ -190,10 +196,8 @@ class ProductService
             if (isset($variantData['id'])) {
                 // Update existing variant
                 $variant = $this->productVariantRepo->update($variantData['id'], [
-                    'price' => $variantData['price'],
                     'quantity' => $variantData['quantity'],
                     'sku' => $variantData['sku'],
-                    'price_after_discount' => $variantData['price_after_discount'] ?? null,
                     'barcode' => $variantData['barcode'] ?? null,
                     'weight' => $variantData['weight'] ?? null,
                     'is_active' => $variantData['is_active'] ?? true,
@@ -206,10 +210,8 @@ class ProductService
                 // Create new variant
                 $variant = $this->productVariantRepo->create([
                     'product_id' => $productId,
-                    'price' => $variantData['price'],
                     'quantity' => $variantData['quantity'],
                     'sku' => $variantData['sku'],
-                    'price_after_discount' => $variantData['price_after_discount'] ?? null,
                     'barcode' => $variantData['barcode'] ?? null,
                     'weight' => $variantData['weight'] ?? null,
                     'is_active' => $variantData['is_active'] ?? true,
@@ -445,5 +447,7 @@ class ProductService
             $this->productOptionRepo->delete($option->id);
         }
     }
+
+
 }
 

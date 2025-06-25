@@ -7,6 +7,8 @@ use App\Http\Resources\ProductImage\ProductImageResource;
 use App\Http\Resources\ProductOption\ProductOptionResource;
 use App\Http\Resources\ProductVariant\ProductVariantResource;
 use App\Http\Resources\SubCategory\SubCategoryResource;
+use App\Http\Resources\ProductPrice\ProductPriceResource;
+use App\Http\Resources\Currency\CurrencyResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
     class ProductResource extends JsonResource
@@ -34,6 +36,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
                 'main_image' => $this->whenLoaded('images', function() {
                     return new ProductImageResource($this->images->firstWhere('is_main', true) ?? $this->images->first());
                 }),
+                'prices' => $this->whenLoaded('productPrices', function () {
+                    return $this->productPrices->map(function ($price) {
+                        return [
+                            'id' => $price->id,
+                            'price' => $price->price,
+                            'price_after_discount' => $price->price_after_discount,
+                            'currency' => $price->currency->name,
+                        ];
+                    });
+                }),
             ];
 
             if ($this->has_variants) {
@@ -42,8 +54,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
                 });
 
                 $data = array_merge($data, [
-                    'price' => $this->price ?? null,
-                    'price_after_discount' => $this->price_after_discount ?? null,
+                   
                     'quantity' => $this->quantity ?? null,
                     'options' => ProductOptionResource::collection($this->whenLoaded('productOptions')),
                     'variants' => ProductVariantResource::collection($variants),
@@ -71,8 +82,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
             } else {
                 // Simple product without variants
                 $data = array_merge($data, [
-                    'price' => $this->price,
-                    'price_after_discount' => $this->price_after_discount,
+                    // 'price' => $this->price,
+                    // 'price_after_discount' => $this->price_after_discount,
                     'quantity' => $this->quantity,
                     'options' => null,
                     'variants' => null,

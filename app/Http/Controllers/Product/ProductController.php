@@ -10,9 +10,9 @@ use App\Http\Services\Product\ProductService;
 
 class ProductController extends Controller
 {
-    public function __construct(
-        protected ProductService $service
-    ) {}
+    public function __construct(protected ProductService $service) {
+
+    }
 
     public function index(ProductRequest $request)
     {

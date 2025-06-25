@@ -11,11 +11,15 @@ use App\Http\Controllers\Category\CategoryController;
 use App\Http\Controllers\City\CityController;
 use App\Http\Controllers\Contact\ContactController;
 use App\Http\Controllers\Country\CountryController;
+use App\Http\Controllers\Currency\CurrencyController;
+use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\District\DistrictController;
 use App\Http\Controllers\Favorite\FavoriteController;
 use App\Http\Controllers\Order\OrderController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\ProductVariantController;
+use App\Http\Controllers\ProductPrice\ProductPriceController;
+use App\Http\Controllers\ProductSetItems\ProductSetItemsController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\SubCategory\SubCategoryController;
 use App\Http\Controllers\UserProfile\UserProfileController;
@@ -268,3 +272,38 @@ Route::prefix('review')->namespace('Review')->group(function () {
     // Delete a Review
     Route::delete('/{id}', [ReviewController::class, 'delete'])->name('review.delete');
 });
+
+Route::prefix('dashboard')->namespace('Dashboard')->group(function () {
+    Route::get('/stats', [DashboardController::class, 'getStatistics']);
+});
+
+Route::prefix('product-set-items')->group(function () {
+    // Get all Product Set Items Management
+    Route::get('/', [ProductSetItemsController::class, 'index'])->name('product-set-items.index');
+    // Create a new Product Set Item
+    Route::post('/', [ProductSetItemsController::class, 'store'])->name('product-set-items.store');
+    // Get Product Set Item
+    Route::get('/{id}', [ProductSetItemsController::class, 'show'])->name('product-set-items.show');
+    // Update a specific Product Set Item
+    Route::put('/{id}', [ProductSetItemsController::class, 'update'])->name('product-set-items.update');
+    // Delete a specific Product Set Item
+    Route::delete('/{id}', [ProductSetItemsController::class, 'destroy'])->name('product-set-items.destroy');
+});
+
+Route::prefix('product-price')->group(function () {
+    // Get all Product Prices
+    Route::get('/', [ProductPriceController::class, 'index'])->name('product-price.index');
+    // Create a new Product Price
+    Route::post('/', [ProductPriceController::class, 'store'])->name('product-price.store');
+    // Get a specific Product Price
+    Route::get('/{id}', [ProductPriceController::class, 'show'])->name('product-price.show');
+    // Update a specific Product Price
+    Route::put('/{id}', [ProductPriceController::class, 'update'])->name('product-price.update');
+    // Delete a specific Product Price
+    Route::delete('/{id}', [ProductPriceController::class, 'destroy'])->name('product-price.destroy');
+});
+
+Route::get('/currencies', [CurrencyController::class, 'index']);
+
+
+

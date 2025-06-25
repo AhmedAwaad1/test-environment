@@ -22,7 +22,7 @@ class ProductRepository
 
     public function getAll($request)
     {
-        $query = $this->model->with(['category', 'subCategory', 'images'])->filter($request);
+        $query = $this->model->with(['category', 'subCategory', 'images', 'productPrices.currency'])->filter($request);
 
         if ($request->has('per_page')) {
             return $query->paginate($request->per_page);
@@ -34,7 +34,7 @@ class ProductRepository
     public function find($id)
     {
         return $this->model
-            ->with(['category', 'subCategory', 'productOptions.values', 'productVariants'])
+            ->with(['category', 'subCategory', 'productOptions.values', 'productVariants', 'productPrices.currency'])
             ->findOrFail($id);
     }
 
@@ -44,6 +44,7 @@ class ProductRepository
             ->with([
                 'category:id,name_en,name_ar',
                 'subCategory:id,name_en,name_ar',
+                'productPrices.currency',
                 'images' => function($query) {
                 },
                 'productOptions.values.images',
@@ -76,8 +77,6 @@ class ProductRepository
                 'category_id' => $data['category_id'],
                 'sub_category_id' => $data['sub_category_id'] ?? null,
                 'has_variants' => $data['has_variants'] ?? false,
-                'price' => $data['price'] ?? null,
-                'price_after_discount' => $data['price_after_discount'] ?? null,
                 'quantity' => $data['quantity'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
@@ -106,8 +105,6 @@ class ProductRepository
                 'category_id' => $data['category_id'] ?? null,
                 'sub_category_id' => $data['sub_category_id'] ?? null,
                 'has_variants' => $data['has_variants'] ?? $product->has_variants,
-                'price' => $data['price'] ?? null,
-                'price_after_discount' => $data['price_after_discount'] ?? null,
                 'quantity' => $data['quantity'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'is_active' => $data['is_active'] ?? $product->is_active,
@@ -155,4 +152,32 @@ class ProductRepository
             throw $e;
         }
     }
+
+    public function updateProductPrices(Product $product, array $prices): void
+    {
+        // Delete old prices
+        $product->prices()->delete();
+
+        // Recreate new ones
+        foreach ($prices as $priceData) {
+            $product->prices()->create([
+                'currency_id' => $priceData['currency_id'],
+                'price' => $priceData['price'],
+                'price_after_discount' => $priceData['price_after_discount'] ?? null,
+            ]);
+        }
+    }
+
+    public function createProductPrices(Product $product, array $prices): void
+    {
+        foreach ($prices as $priceData) {
+            $product->prices()->create([
+                'currency_id' => $priceData['currency_id'],
+                'price' => $priceData['price'],
+                'price_after_discount' => $priceData['price_after_discount'] ?? null,
+            ]);
+        }
+    }
+
+
 }

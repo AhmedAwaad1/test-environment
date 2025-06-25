@@ -13,8 +13,6 @@ class Product extends Model
         'name_ar',
         'description_en',
         'description_ar',
-        'price',
-        'price_after_discount',
         'sub_category_id',
         'category_id',
         'quantity',
@@ -27,6 +25,12 @@ class Product extends Model
         'has_variants' => 'boolean',
         'is_active'    => 'boolean',
     ];
+
+    public function prices()
+    {
+        return $this->hasMany(ProductPrice::class);
+    }
+
     public function productVariants()
     {
         return $this->hasMany(ProductVariant::class);
@@ -58,6 +62,11 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function productPrices()
+    {
+        return $this->hasMany(ProductPrice::class);
+    }
+
     public function scopeFilter($query, $filters)
     {
         // Search in name and description
@@ -74,14 +83,6 @@ class Product extends Model
         }
         if ($filters['sub_category_id'] ?? false) {
             $query->where('sub_category_id', $filters['sub_category_id']);
-        }
-
-        // Price range filter
-        if ($filters['min_price'] ?? false) {
-            $query->where('price', '>=', $filters['min_price']);
-        }
-        if ($filters['max_price'] ?? false) {
-            $query->where('price', '<=', $filters['max_price']);
         }
 
         // Active status filter
@@ -117,9 +118,6 @@ class Product extends Model
         if ($filters['sort_by'] ?? false) {
             $direction = $filters['sort_direction'] ?? 'asc';
             switch ($filters['sort_by']) {
-                case 'price':
-                    $query->orderBy('price', $direction);
-                    break;
                 case 'name':
                     $query->orderBy('name_en', $direction);
                     break;

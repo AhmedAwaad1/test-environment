@@ -54,33 +54,38 @@ class ProductRequest extends FormRequest
             'images.*.is_main' => ['nullable', 'boolean'],
 
             // Simple product fields (when has_variants = false)
-            'price' => 'required|numeric|min:0',
-            'price_after_discount' => 'required|numeric|min:0',
+            // 'price' => 'required|numeric|min:0',
+            // 'price_after_discount' => 'required|numeric|min:0',
             'quantity' => 'required_if:has_variants,false|integer|min:0',
             'sku' => 'required_if:has_variants,false|string|unique:products,sku',
 
             // Options data (when has_variants = true)
-            'options' => 'required_if:has_variants,true|array',
-            'options.*.option_type_id' => 'required|exists:product_option_types,id',
-            'options.*.values' => 'required|array',
-            'options.*.values.*.value' => 'required|string|max:255',
+            'options' => 'nullable|array',
+            'options.*.option_type_id' => 'nullable|exists:product_option_types,id',
+            'options.*.values' => 'nullable|array',
+            'options.*.values.*.value' => 'nullable|string|max:255',
             'options.*.values.*.hex_code' => 'nullable|string|max:7',
             'options.*.values.*.order' => 'nullable|integer',
             'options.*.values.*.images' => 'nullable|array',
-            'options.*.values.*.images.*' => 'required|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'options.*.values.*.images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
 
-            // Variants data
-            'variants' => 'required_if:has_variants,true|array',
-            'variants.*.sku' => 'required|string|unique:product_variants,sku',
-            'variants.*.price' => 'required|numeric|min:0',
+            'variants' => 'nullable|array',
+            'variants.*.sku' => 'nullable|string|unique:product_variants,sku',
+            'variants.*.price' => 'nullable|numeric|min:0',
             'variants.*.price_after_discount' => 'nullable|numeric|min:0',
-            'variants.*.quantity' => 'required|integer|min:0',
+            'variants.*.quantity' => 'nullable|integer|min:0',
             'variants.*.barcode' => 'nullable|string|unique:product_variants,barcode',
             'variants.*.weight' => 'nullable|numeric|min:0',
-            'variants.*.is_active' => 'boolean',
+            'variants.*.is_active' => 'nullable|boolean',
             'variants.*.order' => 'nullable|integer|min:1',
-            'variants.*.option_values' => 'required|array',
-            'variants.*.option_values.*.value' => 'required|string|max:255',
+            'variants.*.option_values' => 'nullable|array',
+            'variants.*.option_values.*.value' => 'nullable|string|max:255',
+
+            // Prices
+            'prices' => ['nullable', 'array'],
+            'prices.*.currency_id' => ['required', 'exists:currencies,id'],
+            'prices.*.price' => ['required', 'numeric'],
+            'prices.*.price_after_discount' => ['nullable', 'numeric'],
         ];
     }
 
@@ -91,8 +96,8 @@ class ProductRequest extends FormRequest
             'name_ar' => ['nullable', 'string', 'max:255'],
             'description_en' => ['nullable', 'string'],
             'description_ar' => ['nullable', 'string'],
-            'price' => ['nullable', 'numeric', 'min:0'],
-            'price_after_discount' => ['nullable', 'numeric', 'min:0'],
+            // 'price' => ['nullable', 'numeric', 'min:0'],
+            // 'price_after_discount' => ['nullable', 'numeric', 'min:0'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
             'has_variants' => ['nullable', 'boolean'],
@@ -135,6 +140,13 @@ class ProductRequest extends FormRequest
             'variants.*.option_values' => ['required', 'array'],
             'variants.*.option_values.*.id' => ['required', 'exists:product_option_values,id'],
             'variants.*.option_values.*.value' => ['required', 'string'],
+
+            // Prices
+            'prices' => ['nullable', 'array'],
+            'prices.*.currency_id' => ['required', 'exists:currencies,id'],
+            'prices.*.price' => ['required', 'numeric'],
+            'prices.*.price_after_discount' => ['nullable', 'numeric'],
+
         ];
     }
 }
