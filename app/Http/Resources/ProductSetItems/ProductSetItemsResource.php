@@ -23,6 +23,7 @@ class ProductSetItemsResource extends JsonResource
                     'name_ar' => $this->product->name_ar,
                 ];
             }),
+            'product_id' => $this->product_id,
             'name_en' => $this->name_en,
             'name_ar' => $this->name_ar,
             'description_en' => $this->description_en,
@@ -37,4 +38,4 @@ class ProductSetItemsResource extends JsonResource
         ];
     }
 
-} 
+}

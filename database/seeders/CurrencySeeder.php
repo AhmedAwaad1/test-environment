@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Currency;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class CurrencySeeder extends Seeder
 {
@@ -13,6 +14,10 @@ class CurrencySeeder extends Seeder
      */
     public function run(): void
     {
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        DB::table('currencies')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
         $currencies = [
             ['name' => 'EGP'],
             ['name' => 'KWD'], // Kuwaiti Dinar

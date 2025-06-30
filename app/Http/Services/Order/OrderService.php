@@ -11,6 +11,7 @@ use App\Repositories\Cart\CartRepository;
 use App\Repositories\Order\OrderRepository;
 use App\Repositories\OrderItem\OrderItemRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 
 class OrderService
@@ -151,6 +152,12 @@ class OrderService
             }
 
             if ($validation !== true) {
+                Log::error("Stock validation failed", [
+                    'user_id' => auth()->id(),
+                    'product_or_variant' => $item->product_id ? 'product' : 'variant',
+                    'product_id' => $item->product_id ?? $item->product_variant_id,
+                    'reason' => $validation
+                ]);
                 return ['error' => $validation, 'product' => $item->product_id ? $item->product : $item->productVariant];
             }
 
