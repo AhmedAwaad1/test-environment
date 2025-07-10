@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Favorite;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Favorite\FavoriteRequest;
 use App\Http\Services\Favorite\FavoriteService;
+use Illuminate\Support\Facades\Request;
 
 class FavoriteController extends Controller
 {
@@ -33,5 +34,10 @@ class FavoriteController extends Controller
     public function destroy(FavoriteRequest $request)
     {
         return $this->favoriteService->deleteFavorite($request->id);
+    }
+
+    public function deleteAllFavorite()
+    {
+        return $this->favoriteService->deleteAllFavorite();
     }
 }
