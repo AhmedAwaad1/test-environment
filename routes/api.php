@@ -214,6 +214,8 @@ Route::prefix('admin/order')->middleware('role.admin')->group(function () {
 });
 
 Route::prefix('favorite')->namespace('Favorite')->group(function () {
+    // Delete all favorites
+    Route::delete('/all',[FavoriteController::class, 'deleteAllFavorite'])->name('favorite.delete_all');
     // Get all user favorites
     Route::get('/', [FavoriteController::class, 'index'])->name('favorite.index');
     // Get specific favorite
@@ -291,6 +293,7 @@ Route::prefix('product-price')->group(function () {
 });
 
 Route::get('/currencies', [CurrencyController::class, 'index']);
+
 
 // Subscribe to Newsletter Routes (So that we can send emails to subscribers)
 Route::prefix('subscribe')->namespace('Subscribe')->group(function () {

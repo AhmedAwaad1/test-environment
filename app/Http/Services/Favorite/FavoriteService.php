@@ -74,4 +74,25 @@ class FavoriteService
 
         return Response::successResponse(['is_success' => 1], 'favorite deleted successfully');
     }
+
+    public function deleteAllFavorite()
+    {
+        try {
+            $userId = auth()->id();
+            $favorites = $this->favoriteRepo->getAll()->where('user_id', $userId)->get();
+
+            if ($favorites->isEmpty()) {
+                return Response::successResponse([], 'No favorites found for deletion', 200);
+            }
+
+            foreach ($favorites as $favorite) {
+                $favorite->delete();
+            }
+
+            return Response::successResponse(['is_success' => 1], 'All favorites deleted successfully');
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'delete all favorites');
+        }
+    }
+
 }
