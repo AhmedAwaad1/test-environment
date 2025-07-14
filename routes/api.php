@@ -22,6 +22,7 @@ use App\Http\Controllers\ProductPrice\ProductPriceController;
 use App\Http\Controllers\ProductSetItems\ProductSetItemsController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\SubCategory\SubCategoryController;
+use App\Http\Controllers\Subscribe\SubscribeController;
 use App\Http\Controllers\UserProfile\UserProfileController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -52,6 +53,17 @@ Route::prefix('auth')->group(function () {
     Route::post('logout', [AuthController::class, 'logout'])->name('auth.logout')->middleware('auth:api');
     // Refresh Token
     Route::post('refresh-token', [AuthController::class, 'refresh'])->name('auth.refresh')->middleware('auth:api');
+
+    // 🔐 Forgot Password Flow
+    Route::post('send-reset-code', [AuthController::class, 'sendResetCodeToEmail'])->name('auth.send-reset-code')->withoutMiddleware('auth:api');
+    Route::post('verify-reset-code', [AuthController::class, 'verifyResetCode'])->name('auth.verify-reset-code')->withoutMiddleware('auth:api');
+    Route::post('reset-password', [AuthController::class, 'resetPasswordWithCode'])->name('auth.reset-password')->withoutMiddleware('auth:api');
+
+    // Verify Email
+    Route::post('/verify-email', [AuthController::class, 'verifyEmail'])->name('auth.verify_email')->withoutMiddleware('auth:api');
+    // Resend Verification Email
+    Route::post('/resend-verification-email', [AuthController::class, 'resendVerificationEmail'])
+         ->name('auth.resend_verification_email')->withoutMiddleware('auth:api');
 });
 
 Route::prefix('country')->namespace('Country')->group(function () {
@@ -116,31 +128,6 @@ Route::prefix('products')->group(function () {
     Route::put('/{id}', [ProductController::class, 'update']);
     Route::delete('/{id}', [ProductController::class, 'destroy']);
 
-    // Variants Management
-    Route::prefix('{productId}')->group(function () {
-        Route::get('variants', [ProductVariantController::class, 'index']);
-        Route::get('variant/by-options', [ProductVariantController::class, 'getByOptions']);
-        Route::get('options', [ProductOptionController::class, 'index']);
-        Route::post('options', [ProductOptionController::class, 'store']);
-    });
-
-    // Variant Operations
-    Route::prefix('variants')->group(function () {
-        Route::put('{variantId}', [ProductVariantController::class, 'update']);
-        Route::put('{variantId}/stock', [ProductVariantController::class, 'updateStock']);
-        Route::put('{variantId}/toggle-status', [ProductVariantController::class, 'toggleStatus']);
-        Route::delete('{variantId}', [ProductVariantController::class, 'destroy']);
-    });
-
-    // Options Operations
-    Route::prefix('options')->group(function () {
-        Route::put('{optionId}', [ProductOptionController::class, 'update']);
-        Route::delete('{optionId}', [ProductOptionController::class, 'destroy']);
-        Route::post('{optionId}/values', [ProductOptionController::class, 'addValue']);
-        Route::put('values/{valueId}', [ProductOptionController::class, 'updateValue']);
-        Route::delete('values/{valueId}', [ProductOptionController::class, 'deleteValue']);
-        Route::put('{optionId}/reorder', [ProductOptionController::class, 'reorderValues']);
-    });
 });
 
 Route::prefix('banner')->namespace('Banner')->group(function () {
@@ -312,5 +299,9 @@ Route::prefix('product-price')->group(function () {
 Route::get('/currencies', [CurrencyController::class, 'index']);
 
 
-
-
+// Subscribe to Newsletter Routes (So that we can send emails to subscribers)
+Route::prefix('subscribe')->namespace('Subscribe')->group(function () {
+    Route::get('/', [SubscribeController::class, 'index'])->name('subscribe.index');
+    Route::post('/', [SubscribeController::class, 'store'])->name('subscribe.store');
+    Route::post('/send-email', [SubscribeController::class, 'sendEmailToSubscribers'])->name('subscribe.send-email');
+});
