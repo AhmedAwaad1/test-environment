@@ -198,8 +198,12 @@ Route::prefix('promo-code')->namespace('PromoCode')->group(function () {
 Route::prefix('cart')->namespace('Cart')->group(function () {
     // Get cart by user id
     Route::get('/', [CartController::class, 'getUserCart'])->name('cart.show');
+
+    // Get cart by session id
+    Route::get('/guest', [CartController::class, 'getGuestCart'])->name('cart.guest.show');
+
     // Add to cart
-    Route::post('/add', [CartController::class, 'addtoCart'])->name('cart.add');
+    Route::post('/add',[CartController::class, 'addtoCart'])->name('cart.add');
     // Update cart item
     Route::put('/item/{id}', [CartController::class, 'updateCartItemQuantity'])->name('cart.update');
     // Delete cart item

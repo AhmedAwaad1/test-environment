@@ -26,10 +26,16 @@ class Product extends Model
         'is_active'    => 'boolean',
     ];
 
-    public function prices()
+    public function productPrices()
     {
         return $this->hasMany(ProductPrice::class);
     }
+
+    public function currentPrice()
+    {
+        return $this->hasOne(ProductPrice::class)->where('currency_id', config('app.default_currency_id'));
+    }
+
 
     public function productVariants()
     {
@@ -62,10 +68,6 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
-    public function productPrices()
-    {
-        return $this->hasMany(ProductPrice::class);
-    }
 
     public function scopeFilter($query, $filters)
     {

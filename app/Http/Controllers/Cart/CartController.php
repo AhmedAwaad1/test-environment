@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cart\ApplyCouponRequest;
 use App\Http\Requests\Cart\CartRequest;
 use App\Http\Services\Cart\CartService;
+use Illuminate\Support\Facades\Request;
 
 class CartController extends Controller
 {
     public $cartService;
     public function __construct(CartService $cartService)
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth:api')->except(['addtoCart']);
         $this->cartService = $cartService;
     }
 
@@ -30,6 +31,13 @@ class CartController extends Controller
     {
         return $this->cartService->getUserCart();
     }
+
+    public function getGuestCart(Request $request)
+    {
+        return $this->cartService->getGuestCart($request);
+    }
+
+
 
     public function deleteCartItem($id)
     {

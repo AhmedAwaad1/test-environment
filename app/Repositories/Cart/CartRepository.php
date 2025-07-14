@@ -24,10 +24,26 @@ class CartRepository
             ->first();
     }
 
+    public function findOrCreateBySessionId($sessionId)
+    {
+        $cart = Cart::where('session_id', $sessionId)->first();
+
+        if (!$cart) {
+            $cart = Cart::create([
+                'session_id' => $sessionId
+            ]);
+        }
+
+        return $cart;
+    }
+
     public function findBySessionId($sessionId)
     {
-        return Cart::where('session_id', $sessionId)->first();
+        return Cart::where('session_id', $sessionId)
+                   ->with('cartItems.product.images')
+                   ->first();
     }
+
 
     public function create(array $data)
     {
