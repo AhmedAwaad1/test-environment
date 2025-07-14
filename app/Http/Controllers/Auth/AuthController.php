@@ -44,4 +44,34 @@ class AuthController extends Controller
         return $this->authService->refreshToken($oldToken);
     }
 
+    public function sendResetCodeToEmail(Request $request)
+    {
+        return $this->authService->sendResetCodeToEmail($request);
+    }
+
+    public function verifyResetCode(Request $request)
+    {
+        return $this->authService->verifyResetCode($request);
+    }
+
+    public function resetPasswordWithCode(Request $request)
+    {
+        return $this->authService->resetPassword($request);
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'verification_code' => 'required|string'
+        ]);
+        return $this->authService->verifyEmail($request);
+    }
+
+    public function resendVerificationEmail(Request $request)
+    {
+        $request->validate(['email' => 'required|email']);
+
+        return $this->authService->resendVerificationEmail($request);
+    }
 }
