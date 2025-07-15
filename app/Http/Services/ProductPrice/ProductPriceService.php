@@ -106,4 +106,10 @@ class ProductPriceService
             return Response::handleException($e, 'Failed to delete product price');
         }
     }
+
+    public function getProductPriceByProductAndCurrency($productId, $currencyId)
+    {
+        return $this->productPriceRepo->getByProductAndCurrency($productId, $currencyId);
+    }
+
 } 

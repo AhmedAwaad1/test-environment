@@ -3,6 +3,8 @@
 namespace App\Http\Services\Cart;
 
 use App\Http\Resources\Cart\CartResource;
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
+use App\Http\Services\ProductPrice\ProductPriceService;
 use App\Models\Cart;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\CartItem\CartItemRepository;
@@ -16,7 +18,7 @@ use Illuminate\Support\Facades\Response;
 class CartService
 {
     protected $cartRepo, $cartItemRepo, $productVarRepo, $couponService,
-        $productRepo, $productValidator, $cartItemService;
+        $productRepo, $productValidator, $cartItemService, $geoCurrencyService, $productPriceService;
 
     public function __construct(
         CartRepository $cartRepo,
@@ -25,7 +27,10 @@ class CartService
         ProductVariantRepository $productVarRepo,
         ProductValidatorService $productValidator,
         CartItemService $cartItemService,
-        CouponService $couponService
+        CouponService $couponService,
+        GeoCurrencyService $geoCurrencyService,
+        ProductPriceService $productPriceService
+
     )
     {
         $this->cartRepo = $cartRepo;
@@ -35,6 +40,8 @@ class CartService
         $this->productValidator = $productValidator;
         $this->cartItemService = $cartItemService;
         $this->couponService = $couponService;
+        $this->geoCurrencyService = $geoCurrencyService;
+        $this->productPriceService = $productPriceService;
     }
 
     public function getUserCart()
@@ -57,34 +64,77 @@ class CartService
         }
     }
 
+    public function getGuestCart($request)
+    {
+        try {
+            if (!$request->has('session_id')) {
+                return Response::errorResponse('Session ID is required', [], 400);
+            }
+
+            $cart = $this->cartRepo->findBySessionId($request->session_id);
+
+            if (!$cart) {
+                return Response::successResponse([], 'Guest cart is empty', 200);
+            }
+
+            return Response::successResponse(new CartResource($cart), 'Guest cart retrieved successfully', 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return Response::handleModelNotFoundException($e, 'cart');
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'Failed to retrieve guest cart');
+        }
+    }
+
+
     public function addToCart(array $data)
     {
         try {
             DB::beginTransaction();
 
-            $userId = Auth::id();
+            if (Auth::check()) {
+                $userId = Auth::id();
 
-            $cart = $this->cartRepo->findOrCreateUserCart($userId);
+                $cart = $this->cartRepo->findOrCreateUserCart($userId);
+            } else {
+                if (empty($data['session_id'])) {
+                    return Response::errorResponse('Session ID is required for guest cart.', [], 400);
+                }
+
+                $cart = $this->cartRepo->findOrCreateBySessionId($data['session_id']);
+            }
 
             $itemData = $this->getCartItemData($data, $cart->id);
             if ($itemData['error']) {
                 return Response::errorResponse($itemData['error'], [], 400);
             }
 
+            $itemData = $this->getCartItemData($data, $cart->id);
+            if ($itemData['error']) {
+                return Response::errorResponse($itemData['error'], [], 400);
+            }
             $item = $itemData['item'];
             $existingItem = $itemData['existing'];
             $type = $itemData['type'];
 
             if ($existingItem) {
-                $this->cartItemService->updateQuantityAndPrice($existingItem, $item->price_after_discount ?? $item->price, $data['quantity']);
+                $currency = $this->geoCurrencyService->getCurrencyForRequest();
+                $productPrice = $this->productPriceService->getProductPriceByProductAndCurrency($item->id, $currency->id)
+                    ?? $this->productPriceService->getProductPriceByProductAndCurrency($item->id, $this->geoCurrencyService->getDefaultCurrency()->id);
+
+                if (!$productPrice) {
+                    return Response::errorResponse('No price available for this product', [], 400);
+                }
+
+                $price = $productPrice->price_after_discount ?? $productPrice->price;
+
+                $this->cartItemService->updateQuantityAndPrice($existingItem, $item, $data['quantity'], $type);
             } else {
                 $this->cartItemService->createNewCartItem($cart->id, $item, $data['quantity'], $type);
             }
 
-            // Update total cart price
-            $this->calculateTotalPrice($cart);
 
-            // Apply coupon discount
+
+            $this->calculateTotalPrice($cart);
             $this->couponService->checkAndApplyCouponIfExists($cart);
 
             DB::commit();
@@ -95,6 +145,7 @@ class CartService
             return Response::handleException($e, 'Error adding item to cart');
         }
     }
+
 
     public function updateCartItemQuantity($cartItemId, $data)
     {
@@ -175,11 +226,13 @@ class CartService
             $totalQty = $currentQty + $data['quantity'];
             $validation = $this->productValidator->validateVariant($item, $totalQty);
             $type = 'variant';
+            $price = $item->price ?? 0;
         } else {
             $item = $this->productRepo->find($data['product_id']);
             if ($item->has_variants) {
                 return ['error' => 'Product has variants and cannot be added to cart'];
             }
+
             $existing = $this->cartItemRepo->productExistsInCart($cartId, $item->id);
             $currentQty = $existing ? $existing->quantity : 0;
             $totalQty = $currentQty + $data['quantity'];
@@ -194,4 +247,5 @@ class CartService
         return ['item' => $item, 'existing' => $existing, 'type' => $type, 'error' => false];
     }
 
- }
+
+}

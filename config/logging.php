@@ -133,6 +133,13 @@ return [
             'level' => 'info',
             'days' => 14,
         ],
+
+        'product_price' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/product_price.log'),
+            'level' => 'debug',
+        ],
+
     ],
 
 ];

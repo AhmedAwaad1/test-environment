@@ -41,6 +41,7 @@ class CartRequest extends FormRequest
     private function storeRules(): array
     {
         return [
+            'session_id'         => ['required_without:product_variant_id', 'string'],
             'product_id'      => ['nullable', 'exists:products,id'],
             'product_variant_id' => ['nullable', 'exists:product_variants,id'],
             'quantity'        => ['required', 'integer', 'min:1'],

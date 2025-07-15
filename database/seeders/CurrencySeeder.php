@@ -9,9 +9,6 @@ use Illuminate\Support\Facades\DB;
 
 class CurrencySeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
@@ -19,35 +16,39 @@ class CurrencySeeder extends Seeder
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $currencies = [
-            ['name' => 'EGP'],
-            ['name' => 'KWD'], // Kuwaiti Dinar
-            ['name' => 'USD'],
-            ['name' => 'EUR'],
-            ['name' => 'GBP'],
-            ['name' => 'JPY'],
-            ['name' => 'CAD'],
-            ['name' => 'AUD'],
-            ['name' => 'CHF'],
-            ['name' => 'CNY'],
-            ['name' => 'INR'],
-            ['name' => 'BRL'],
-            ['name' => 'MXN'],
-            ['name' => 'ARS'],
-            ['name' => 'CLP'],
-            ['name' => 'COP'],
-            ['name' => 'PEN'],
-            ['name' => 'PYG'],
-            ['name' => 'UYU'],
-            ['name' => 'RUB'],
-            ['name' => 'SAR'], // Saudi Riyal
-            ['name' => 'AED'], // UAE Dirham
-            ['name' => 'BHD'], // Bahraini Dinar
-            ['name' => 'OMR'], // Omani Rial
-            ['name' => 'QAR'], // Qatari Rial
+            ['name' => 'EGP', 'country_code' => 'EG'],
+            ['name' => 'KWD', 'country_code' => 'KW', 'is_default' => true],
+            ['name' => 'USD', 'country_code' => 'US'],
+            ['name' => 'EUR', 'country_code' => 'EU'],
+            ['name' => 'GBP', 'country_code' => 'GB'],
+            ['name' => 'JPY', 'country_code' => 'JP'],
+            ['name' => 'CAD', 'country_code' => 'CA'],
+            ['name' => 'AUD', 'country_code' => 'AU'],
+            ['name' => 'CHF', 'country_code' => 'CH'],
+            ['name' => 'CNY', 'country_code' => 'CN'],
+            ['name' => 'INR', 'country_code' => 'IN'],
+            ['name' => 'BRL', 'country_code' => 'BR'],
+            ['name' => 'MXN', 'country_code' => 'MX'],
+            ['name' => 'ARS', 'country_code' => 'AR'],
+            ['name' => 'CLP', 'country_code' => 'CL'],
+            ['name' => 'COP', 'country_code' => 'CO'],
+            ['name' => 'PEN', 'country_code' => 'PE'],
+            ['name' => 'PYG', 'country_code' => 'PY'],
+            ['name' => 'UYU', 'country_code' => 'UY'],
+            ['name' => 'RUB', 'country_code' => 'RU'],
+            ['name' => 'SAR', 'country_code' => 'SA'],
+            ['name' => 'AED', 'country_code' => 'AE'],
+            ['name' => 'BHD', 'country_code' => 'BH'],
+            ['name' => 'OMR', 'country_code' => 'OM'],
+            ['name' => 'QAR', 'country_code' => 'QA'],
         ];
 
         foreach ($currencies as $currency) {
-            Currency::firstOrCreate($currency);
+            Currency::create([
+                'name' => $currency['name'],
+                'country_code' => $currency['country_code'],
+                'is_default' => $currency['is_default'] ?? false,
+            ]);
         }
     }
 }

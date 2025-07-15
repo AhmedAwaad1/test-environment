@@ -87,4 +87,13 @@ class ProductPriceRepository
             throw $e;
         }
     }
+
+    public function getByProductAndCurrency($productId, $currencyId)
+    {
+        return $this->model
+            ->where('product_id', $productId)
+            ->where('currency_id', $currencyId)
+            ->first();
+    }
+
 } 

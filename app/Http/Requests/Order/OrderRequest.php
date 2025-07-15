@@ -41,11 +41,29 @@ class OrderRequest extends FormRequest
 
     private function storeRules(): array
     {
-        return [
-            'address_id' => ['required', 'exists:addresses,id'],
-            'payment_method' => ['required', 'string', 'in:cod, paymob, stripe'],
+        $rules = [
+            'payment_method' => ['required', 'string', 'in:cod,paymob,stripe'],
         ];
+
+        if (!auth()->check()) {
+            $rules = array_merge($rules, [
+                'name'         => ['required', 'string', 'max:255'],
+                'phone'        => ['required', 'string', 'max:255'],
+                'email'        => ['nullable', 'email', 'max:255'],
+                'session_id'   => ['required', 'string'],
+
+                'address'      => ['required', 'string', 'max:255'],
+                'district_id'  => ['required', 'exists:districts,id'],
+                'city_id'      => ['required', 'exists:cities,id'],
+            ]);
+        } else {
+            $rules['address_id'] = ['required', 'exists:addresses,id'];
+        }
+
+        return $rules;
     }
+
+
 
     private function updateRules(): array
     {
