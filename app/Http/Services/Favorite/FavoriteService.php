@@ -55,6 +55,10 @@ class FavoriteService
 
             $favorite = $this->favoriteRepo->create($request);
 
+            if (!$favorite) {
+                return Response::errorResponse('favorite already exists', [], 409);
+            }
+
             return Response::successResponse(new FavoriteResource($favorite), 'favorite created successfully', 201);
 
         } catch (\Illuminate\Database\QueryException $e) {

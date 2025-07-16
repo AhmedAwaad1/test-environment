@@ -23,6 +23,11 @@ class FavoriteRepository
 
     public function create(array $data)
     {
+        if(Favorite::where('user_id', $data['user_id'])
+            ->where('product_id', $data['product_id'])
+            ->exists()) {
+            return null; // Favorite already exists
+        }
         return Favorite::create($data);
     }
 
