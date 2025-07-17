@@ -268,6 +268,7 @@ Route::prefix('review')->namespace('Review')->group(function () {
 
 Route::prefix('dashboard')->namespace('Dashboard')->group(function () {
     Route::get('/stats', [DashboardController::class, 'getStatistics']);
+    Route::get('/order-report', [DashboardController::class, 'getOrderStatistics'])->name('admin.orders.order_report');
 });
 
 Route::prefix('product-set-items')->group(function () {
