@@ -3,17 +3,16 @@
 namespace App\Http\Controllers\Cart;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Cart\ApplyCouponRequest;
 use App\Http\Requests\Cart\CartRequest;
 use App\Http\Services\Cart\CartService;
-use Illuminate\Support\Facades\Request;
-
+use Illuminate\Http\Request;
 class CartController extends Controller
 {
     public $cartService;
     public function __construct(CartService $cartService)
     {
-        $this->middleware('auth:api')->except(['addtoCart']);
+
+        $this->middleware('auth:api')->except(['addtoCart', 'getGuestCart']);
         $this->cartService = $cartService;
     }
 
