@@ -41,16 +41,18 @@ class CountryRequest extends FormRequest
     private function storeRules(): array
     {
         return [
-            'name_en' => ['required', 'string', 'max:255'],
-            'name_ar' => ['required', 'string', 'max:255'],
+            'name_en'        => ['required', 'string', 'max:255'],
+            'name_ar'        => ['required', 'string', 'max:255'],
+            'shipping_price' => ['required', 'numeric', 'min:0'],
         ];
     }
 
     private function updateRules(): array
     {
         return [
-            'name_en' => ['nullable', 'string', 'max:255'],
-            'name_ar' => ['nullable', 'string', 'max:255'],
+            'name_en'        => ['nullable', 'string', 'max:255'],
+            'name_ar'        => ['nullable', 'string', 'max:255'],
+            'shipping_price' => ['nullable', 'numeric', 'min:0']
         ];
     }
 }

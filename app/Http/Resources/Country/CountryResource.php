@@ -18,6 +18,7 @@ class CountryResource extends JsonResource
             "id" => $this->id,
             'name_en' => $this->name_en,
             'name_ar' => $this->name_ar,
+            'shipping_price' => $this->shipping_price,
         ];
     }
 }

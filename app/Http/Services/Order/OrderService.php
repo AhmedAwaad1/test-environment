@@ -119,7 +119,7 @@ class OrderService
         }
 
 
-        $shippingPrice = $userAddress->city->shipping_price ?? 0;
+        $shippingPrice = $userAddress->getShippingPrice();
 
         $request = array_merge($request, [
             'order_number'   => $orderNumber,
@@ -212,4 +212,18 @@ class OrderService
         }
         return true;
     }
+
+    public function getShippingPrice(): float
+    {
+        if ($this->city && $this->city->country && $this->city->country->shipping_price > 0) {
+            return $this->city->country->shipping_price;
+        }
+
+        if ($this->city && $this->city->shipping_price > 0) {
+            return $this->city->shipping_price;
+        }
+
+        return 0;
+    }
+
 }

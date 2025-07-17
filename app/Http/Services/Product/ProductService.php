@@ -6,6 +6,7 @@ use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Product\ProductResource;
 use App\Http\Resources\ProductOption\ProductOptionResource;
 use App\Http\Resources\ProductVariant\ProductVariantResource;
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Repositories\Product\ProductRepository;
 use App\Repositories\ProductOption\ProductOptionRepository;
 use App\Repositories\ProductOptionValue\ProductOptionValueRepository;
@@ -21,31 +22,62 @@ class ProductService
         protected ProductOptionRepository $productOptionRepo,
         protected ProductOptionValueRepository $productOptionValueRepo,
         protected ProductVariantRepository $productVariantRepo,
-        protected VariantOptionValue $variantOptionValue
+        protected VariantOptionValue $variantOptionValue,
+        protected GeoCurrencyService $geoCurrencyService
     ) {}
+
 
     public function getAllProducts($request)
     {
         try {
+            $showAllPrices = $request->boolean('show_all_prices');
+            $currency = $this->geoCurrencyService->getCurrencyForRequest();
             $products = $this->productRepo->getAll($request);
 
-            if ($request->per_page) {
-                $response = new PaginationResource($products, ProductResource::class);
-            } else {
-                $response = ProductResource::collection($products);
-            }
+            $products->load([
+                'images',
+                'productVariants',
+                'productOptions.values',
+                'category',
+                'subCategory',
+                'productPrices' => function ($query) use ($currency, $showAllPrices) {
+                    if (!$showAllPrices && $currency) {
+                        $query->where('currency_id', $currency->id);
+                    }
+                },
+            ]);
 
-            return Response::successResponse($response, 'Products retrieved successfully');
+            $resource = $request->per_page
+                ? new PaginationResource($products, ProductResource::class)
+                : ProductResource::collection($products);
+
+            return Response::successResponse(
+                $resource->additional([
+                    'currency' => $currency?->code,
+                    'show_all_prices' => $showAllPrices,
+                ]),
+                'Products retrieved successfully'
+            );
         } catch (\Exception $e) {
             return Response::handleException($e, 'Failed to retrieve products');
         }
     }
 
+
+
     public function findProduct($id)
     {
         try {
+            $currency = $this->geoCurrencyService->getCurrencyForRequest();
             $product = $this->productRepo->findWithVariants($id)
-                ->load(['productPrices.currency']);
+                ->load([
+                    'productPrices.currency',
+                    'productPrices' => function ($query) use ($currency) {
+                        if ($currency) {
+                            $query->where('currency_id', $currency->id);
+                        }
+                    },
+                ]);
 
             if (!$product) {
                 return Response::errorResponse('Product not found', [], 404);
