@@ -19,4 +19,9 @@ class DashboardController extends Controller
     {
         return $this->dashboardService->getStatistics();
     }
+
+    public function getOrderStatistics()
+    {
+        return $this->dashboardService->getOrderStatistics();
+    }
 }

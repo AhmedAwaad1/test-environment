@@ -23,6 +23,9 @@ class SubscribeRepository
 
     public function create(array $data)
     {
+        if(Subscribe::where('email', $data['email'])->exists()) {
+            return null;
+        }
         return Subscribe::create($data);
     }
 

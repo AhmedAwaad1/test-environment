@@ -37,6 +37,9 @@ class SubscribeService
         try {
             $subscribe = $this->subscribeRepo->create($request);
 
+            if (!$subscribe) {
+                return Response::errorResponse('Email already exists', 409);
+            }
             return Response::successResponse(new SubscribeResource($subscribe), 'subscribe created successfully', 201);
 
         } catch (\Illuminate\Database\QueryException $e) {

@@ -24,4 +24,10 @@ class DashboardService
             return Response::handleException($e, 'Failed to load dashboard statistics');
         }
     }
+
+    public function getOrderStatistics()
+    {
+        $orders = $this->dashboardRepo->getOrderStatistics();
+        return Response::successResponse($orders, 'Order statistics retrieved successfully');
+    }
 }
