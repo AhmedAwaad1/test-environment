@@ -157,7 +157,7 @@ class CartService
 
             DB::commit();
 
-            return Response::successResponse(new CartResource($updatedItem), 'Item quantity updated successfully', 200);
+            return Response::successResponse(new CartResource($updatedItem->cart), 'Item quantity updated successfully', 200);
         } catch (\Throwable $e) {
             DB::rollBack();
             return Response::handleException($e, 'Error updating item quantity');
