@@ -43,7 +43,14 @@ class CouponService
     {
         try {
             $user = Auth::user();
-            $cart = $this->cartRepo->findUserCart($user->id);
+
+            if ($user) {
+                $cart = $this->cartRepo->findUserCart($user->id);
+            } elseif (!empty($data['session_id'])) {
+                $cart = $this->cartRepo->findBySessionId($data['session_id']);
+            } else {
+                return Response::errorResponse('Cart not found', [], 404);
+            }
 
             if (!$cart) {
                 return Response::errorResponse('Cart not found', [], 404);
@@ -59,25 +66,27 @@ class CouponService
                 return Response::errorResponse('Coupon is not active', [], 400);
             }
 
-            // Check if user used this coupon before
-            // if ($user->usedCoupons()->where('coupon_id', $coupon->id)->exists()) {
-            //     return Response::errorResponse('You have already used this coupon', [], 400);
-            // }
-
             $this->applyCouponDiscount($cart, $coupon);
 
-            return Response::successResponse(new CartResource($cart), 'Coupon applied successfully');
+            return Response::successResponse(new CartResource($cart), 'تم تطبيق الكوبون بنجاح');
 
         } catch (\Exception $e) {
             return Response::handleException($e, 'apply coupon');
         }
     }
 
-    public function removeCoupon()
+    public function removeCoupon($sessionId = null)
     {
         try {
             $user = Auth::user();
-            $cart = $this->cartRepo->findUserCart($user->id);
+
+            if ($user) {
+                $cart = $this->cartRepo->findUserCart($user->id);
+            } elseif (!empty($sessionId)) {
+                $cart = $this->cartRepo->findBySessionId($sessionId);
+            } else {
+                return Response::errorResponse('Cart not found', [], 404);
+            }
 
             if (!$cart) {
                 return Response::errorResponse('Cart not found', [], 404);
@@ -88,7 +97,7 @@ class CouponService
             $cart->total_price_after_discount = null;
             $cart->save();
 
-            return Response::successResponse(new CartResource($cart), 'Coupon removed successfully');
+            return Response::successResponse(new CartResource($cart), 'تم إزالة الكوبون بنجاح');
 
         } catch (\Exception $e) {
             return Response::handleException($e, 'remove coupon');

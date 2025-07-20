@@ -24,6 +24,7 @@ use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\SubCategory\SubCategoryController;
 use App\Http\Controllers\Subscribe\SubscribeController;
 use App\Http\Controllers\UserProfile\UserProfileController;
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Product\ProductOptionController;
@@ -306,3 +307,16 @@ Route::prefix('subscribe')->namespace('Subscribe')->group(function () {
     Route::post('/', [SubscribeController::class, 'store'])->name('subscribe.store');
     Route::post('/send-email', [SubscribeController::class, 'sendEmailToSubscribers'])->name('subscribe.send-email');
 });
+
+
+Route::get('/test-ip', function () {
+    $geo = new GeoCurrencyService();
+    $ip = request()->ip();
+    $code = $geo->getCountryCodeFromIp($ip);
+    return response()->json([
+        'ip' => $ip,
+        'country_code' => $code
+    ]);
+});
+
+

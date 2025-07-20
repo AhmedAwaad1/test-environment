@@ -159,6 +159,7 @@ class CartItemService
         return $price * $quantity;
     }
 
+
     protected function calculateTotalPriceAfterDiscount(float $total, $coupon)
     {
         return $total - ($total * ($coupon->discount / 100));

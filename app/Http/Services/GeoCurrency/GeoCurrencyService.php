@@ -4,9 +4,12 @@ namespace App\Http\Services\GeoCurrency;
 
 use App\Models\Country;
 use App\Models\Currency;
+use GeoIp2\Database\Reader;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
+
+
 
 class GeoCurrencyService
 {
@@ -28,7 +31,7 @@ class GeoCurrencyService
         }
 
         $ip = request()->ip();
-        $countryCode = $this->getCountryCodeFromIp($ip);
+        $countryCode = $this->getCountryCodeFromIp();
 
         $country = Country::where('country_code', strtoupper($countryCode))->first();
         if ($country) {
@@ -55,10 +58,25 @@ class GeoCurrencyService
         return Currency::where('is_default', true)->first();
     }
 
-    protected function getCountryCodeFromIp($ip): ?string
+    public function getCountryCodeFromIp(): ?string
     {
-        return 'EG'; // فرض إنك من مصر
+        try {
+            $ip = request()->header('X-Forwarded-For') ?? request()->ip();
+
+            if ($ip === '127.0.0.1' || $ip === '::1') {
+                return 'EG';
+            }
+
+            $reader = new \GeoIp2\Database\Reader(storage_path('app/geoip/GeoLite2-Country.mmdb'));
+            $record = $reader->country($ip);
+            return $record->country->isoCode;
+        } catch (\Exception $e) {
+            \Log::error('GeoIP lookup failed', ['ip' => $ip ?? 'undefined', 'error' => $e->getMessage()]);
+            return null;
+        }
     }
+
+
 
 
     protected function storeCurrency(?int $currencyId, ?string $sessionId, bool $isGuest): void

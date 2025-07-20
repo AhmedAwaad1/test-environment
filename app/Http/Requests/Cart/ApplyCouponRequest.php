@@ -41,6 +41,7 @@ class ApplyCouponRequest extends FormRequest
     private function storeRules(): array
     {
         return [
+            'session_id' => 'nullable|string',
             'coupon_code'    => ['required', 'string', 'max:255', 'exists:promo_codes,code'],
         ];
     }
@@ -48,6 +49,7 @@ class ApplyCouponRequest extends FormRequest
     private function updateRules(): array
     {
         return [
+            'session_id' => 'nullable|string',
             'quantity'        => ['required', 'integer', 'min:1'],
         ];
     }
