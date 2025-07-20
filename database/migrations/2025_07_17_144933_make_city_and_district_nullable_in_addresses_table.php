@@ -12,8 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('addresses', function (Blueprint $table) {
-            $table->dropForeign(['city_id']);
-            $table->dropForeign(['district_id']);
+            if (Schema::hasColumn('addresses', 'city_id')) {
+                try {
+                    $table->dropForeign('addresses_city_id_foreign');
+                } catch (\Exception $e) {
+                }
+            }
+
+            if (Schema::hasColumn('addresses', 'district_id')) {
+                try {
+                    $table->dropForeign('addresses_district_id_foreign');
+                } catch (\Exception $e) {
+                }
+            }
 
             $table->unsignedBigInteger('city_id')->nullable()->change();
             $table->unsignedBigInteger('district_id')->nullable()->change();
