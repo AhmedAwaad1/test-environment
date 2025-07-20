@@ -13,7 +13,7 @@ class CartController extends Controller
     public function __construct(CartService $cartService)
     {
 
-        $this->middleware('auth:api')->except(['addtoCart', 'getGuestCart', 'deleteCartItem']);
+        $this->middleware('auth:api')->except(['addtoCart', 'getGuestCart', 'deleteCartItem', 'updateCartItemQuantity']);
         $this->cartService = $cartService;
     }
 

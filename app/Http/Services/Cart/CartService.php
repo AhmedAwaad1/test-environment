@@ -108,10 +108,6 @@ class CartService
                 return Response::errorResponse($itemData['error'], [], 400);
             }
 
-            $itemData = $this->getCartItemData($data, $cart->id);
-            if ($itemData['error']) {
-                return Response::errorResponse($itemData['error'], [], 400);
-            }
             $item = $itemData['item'];
             $existingItem = $itemData['existing'];
             $type = $itemData['type'];
@@ -153,7 +149,6 @@ class CartService
             DB::beginTransaction();
 
             $updatedItem = $this->cartItemService->updateCartItemQuantity($cartItemId, $data);
-
             // Update total cart price
             $this->calculateTotalPrice($updatedItem->cart);
 

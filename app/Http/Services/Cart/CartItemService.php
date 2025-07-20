@@ -113,15 +113,22 @@ class CartItemService
     public function updateCartItemQuantity($cartItemId, $data)
     {
         $cartItem = $this->cartItemRepo->findById($cartItemId);
-
         if (!$cartItem) {
             return Response::errorResponse('Cart item not found', [], 404);
+        }
+        if (Auth::check()) {
+            if ($cartItem->cart->user_id !== Auth::id()) {
+                return Response::errorResponse('Unauthorized access to cart item', [], 403);
+            }
+        } else {
+            if (empty($data['session_id']) || $cartItem->cart->session_id !== $data['session_id']) {
+                return Response::errorResponse('Unauthorized guest access to cart item', [], 403);
+            }
         }
 
         $cartItem->quantity = $data['quantity'];
         $cartItem->total_price = $this->calculateItemPrice($cartItem->price, $data['quantity']);
         $cartItem->save();
-
         return $cartItem;
     }
 

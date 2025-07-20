@@ -50,6 +50,7 @@ class CartRequest extends FormRequest
     private function updateRules(): array
     {
         return [
+            'session_id'         => ['nullable', 'string'],
             'quantity'        => ['required', 'integer', 'min:1'],
         ];
     }
