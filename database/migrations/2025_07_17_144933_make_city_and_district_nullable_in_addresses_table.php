@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,26 +12,31 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Drop existing foreign keys using raw SQL (more reliable)
+        try {
+            DB::statement('ALTER TABLE addresses DROP FOREIGN KEY addresses_city_id_foreign');
+        } catch (\Throwable $e) {
+            // Key may not exist; safe to ignore
+        }
+
+        try {
+            DB::statement('ALTER TABLE addresses DROP FOREIGN KEY addresses_district_id_foreign');
+        } catch (\Throwable $e) {
+            // Key may not exist; safe to ignore
+        }
+
+        // Modify columns to be nullable and recreate foreign keys with nullOnDelete
         Schema::table('addresses', function (Blueprint $table) {
-            if (Schema::hasColumn('addresses', 'city_id')) {
-                try {
-                    $table->dropForeign('addresses_city_id_foreign');
-                } catch (\Exception $e) {
-                }
-            }
-
-            if (Schema::hasColumn('addresses', 'district_id')) {
-                try {
-                    $table->dropForeign('addresses_district_id_foreign');
-                } catch (\Exception $e) {
-                }
-            }
-
             $table->unsignedBigInteger('city_id')->nullable()->change();
             $table->unsignedBigInteger('district_id')->nullable()->change();
 
-            $table->foreign('city_id')->references('id')->on('cities')->nullOnDelete();
-            $table->foreign('district_id')->references('id')->on('districts')->nullOnDelete();
+            $table->foreign('city_id')
+                  ->references('id')->on('cities')
+                  ->nullOnDelete();
+
+            $table->foreign('district_id')
+                  ->references('id')->on('districts')
+                  ->nullOnDelete();
         });
     }
 
