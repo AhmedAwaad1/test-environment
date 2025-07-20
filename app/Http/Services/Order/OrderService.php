@@ -112,8 +112,8 @@ class OrderService
                 'user_id'     => $user->id,
                 'phone'       => $user->phone,
                 'address'     => $request['address'],
-                'city_id'     => $request['city_id'],
-                'district_id' => $request['district_id'],
+                'city_id'     => $request['city_id'] ?? null,
+                'district_id' => $request['district_id'] ?? null,
                 'is_default'  => $request['is_default'] ?? false,
             ]);
         }
@@ -159,6 +159,8 @@ class OrderService
             }
 
             DB::commit();
+            $cart->delete();
+
 
             $responseData = new OrderResource($order->load('orderItems'));
 
@@ -211,19 +213,6 @@ class OrderService
 
         }
         return true;
-    }
-
-    public function getShippingPrice(): float
-    {
-        if ($this->city && $this->city->country && $this->city->country->shipping_price > 0) {
-            return $this->city->country->shipping_price;
-        }
-
-        if ($this->city && $this->city->shipping_price > 0) {
-            return $this->city->shipping_price;
-        }
-
-        return 0;
     }
 
 }

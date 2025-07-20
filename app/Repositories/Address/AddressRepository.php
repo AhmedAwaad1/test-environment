@@ -44,11 +44,11 @@ class AddressRepository
 
     public function updateDefaultAddress($userId, $addressId)
     {
-        // Set all addresses of the user to not default
         $address = Address::where('user_id', $userId)
             ->where('id', '!=', $addressId)
             ->update(['is_default' => false]);
 
         return $address;
     }
+
 }

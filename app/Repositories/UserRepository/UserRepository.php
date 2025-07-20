@@ -23,7 +23,6 @@ class UserRepository
 
             $user = User::create([
                 'username' => $data['name'],
-                'name'     => $data['name'],
                 'phone'    => $phone,
                 'email'    => $email,
                 'password' => bcrypt('12345678'),

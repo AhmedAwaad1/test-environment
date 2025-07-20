@@ -39,4 +39,22 @@ class Address extends Model
         }
         return $query;
     }
+
+    public function getShippingPrice(): float
+    {
+        if ($this->city && $this->city->country && $this->city->country->shipping_price > 0) {
+            return $this->city->country->shipping_price;
+        }
+
+        if ($this->city && $this->city->shipping_price > 0) {
+            return $this->city->shipping_price;
+        }
+
+        if ($this->district && $this->district->shipping_price > 0) {
+            return $this->district->shipping_price;
+        }
+
+        return 0;
+    }
+
 }

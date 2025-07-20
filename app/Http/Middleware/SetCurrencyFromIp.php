@@ -20,11 +20,11 @@ class SetCurrencyFromIp
     {
         if (!$request->session()->has('currency_id')) {
             $currency = $this->geoCurrencyService->getCurrencyForRequest();
-
             if ($currency) {
                 session(['currency_id' => $currency->id]);
             }
         }
+
 
         return $next($request);
     }

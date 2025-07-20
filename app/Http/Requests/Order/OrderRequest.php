@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Order;
 
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
+use App\Models\Country;
 use Illuminate\Foundation\Http\FormRequest;
 
 class OrderRequest extends FormRequest
@@ -21,6 +23,7 @@ class OrderRequest extends FormRequest
      */
     public function rules(): array
     {
+
         return match ($this->method()) {
             'GET' => $this->indexRules(),
             'POST' => $this->storeRules(),
@@ -46,6 +49,14 @@ class OrderRequest extends FormRequest
         ];
 
         if (!auth()->check()) {
+
+            $geoService = new GeoCurrencyService();
+            $geoService->getCurrencyForRequest();
+
+            $countryId = session('country_id');
+            $country = \App\Models\Country::find($countryId);
+            $hasCountryShipping = $country && $country->shipping_price > 0;
+
             $rules = array_merge($rules, [
                 'name'         => ['required', 'string', 'max:255'],
                 'phone'        => ['required', 'string', 'max:255'],
@@ -53,8 +64,8 @@ class OrderRequest extends FormRequest
                 'session_id'   => ['required', 'string'],
 
                 'address'      => ['required', 'string', 'max:255'],
-                'district_id'  => ['required', 'exists:districts,id'],
-                'city_id'      => ['required', 'exists:cities,id'],
+                'city_id'      => $hasCountryShipping ? ['nullable', 'exists:cities,id'] : ['required', 'exists:cities,id'],
+                'district_id'  => $hasCountryShipping ? ['nullable', 'exists:districts,id'] : ['required', 'exists:districts,id'],
             ]);
         } else {
             $rules['address_id'] = ['required', 'exists:addresses,id'];
@@ -62,6 +73,7 @@ class OrderRequest extends FormRequest
 
         return $rules;
     }
+
 
 
 

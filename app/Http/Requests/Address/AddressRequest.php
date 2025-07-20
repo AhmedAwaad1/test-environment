@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Address;
 
+use App\Models\Country;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AddressRequest extends FormRequest
@@ -21,6 +22,7 @@ class AddressRequest extends FormRequest
      */
     public function rules(): array
     {
+
         return match ($this->method()) {
             'GET' => $this->indexRules(),
             'POST' => $this->storeRules(),
@@ -40,14 +42,20 @@ class AddressRequest extends FormRequest
 
     private function storeRules(): array
     {
+        $countryId = session('country_id');
+        $country = Country::find($countryId);
+
+        $hasCountryShipping = $country && $country->shipping_price > 0;
+
         return [
             'phone' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:255'],
-            'district_id' => ['required', 'exists:districts,id'],
-            'city_id' => ['required', 'exists:cities,id'],
+            'city_id' => $hasCountryShipping ? ['nullable', 'exists:cities,id'] : ['required', 'exists:cities,id'],
+            'district_id' => $hasCountryShipping ? ['nullable', 'exists:districts,id'] : ['required', 'exists:districts,id'],
             'is_default' => ['nullable', 'boolean'],
         ];
     }
+
 
     private function updateRules(): array
     {
