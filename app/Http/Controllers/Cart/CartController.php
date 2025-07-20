@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Cart\CartRequest;
 use App\Http\Services\Cart\CartService;
 use Illuminate\Http\Request;
+
 class CartController extends Controller
 {
     public $cartService;
     public function __construct(CartService $cartService)
     {
 
-        $this->middleware('auth:api')->except(['addtoCart', 'getGuestCart']);
+        $this->middleware('auth:api')->except(['addtoCart', 'getGuestCart', 'deleteCartItem']);
         $this->cartService = $cartService;
     }
 
@@ -38,9 +39,12 @@ class CartController extends Controller
 
 
 
-    public function deleteCartItem($id)
+    public function deleteCartItem(Request $request, $id)
     {
-        return $this->cartService->deleteCartItem($id);
+        $sessionId = $request->input('session_id');
+
+        return $this->cartService->deleteCartItem($id, $sessionId);
     }
+
 
 }

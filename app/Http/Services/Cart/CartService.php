@@ -169,12 +169,21 @@ class CartService
         }
     }
 
-    public function deleteCartItem($cartItemId)
+    public function deleteCartItem($cartItemId, $sessionId = null)
     {
         try {
             DB::beginTransaction();
 
-            $cart = $this->cartRepo->findUserCart(Auth::id());
+            if (Auth::check()) {
+                $userId = Auth::id();
+                $cart = $this->cartRepo->findUserCart($userId);
+            } else {
+                if (empty($sessionId)) {
+                    return Response::errorResponse('Session ID is required for guest cart.', [], 400);
+                }
+
+                $cart = $this->cartRepo->findBySessionId($sessionId);
+            }
 
             if (!$cart) {
                 return Response::errorResponse('Cart not found', [], 404);
@@ -185,10 +194,8 @@ class CartService
             if (!$deletedItem) {
                 return Response::errorResponse('Item not found', [], 404);
             }
-            // Update total cart price
-            $this->calculateTotalPrice($cart);
 
-            // Apply coupon discount
+            $this->calculateTotalPrice($cart);
             $this->couponService->checkAndApplyCouponIfExists($cart);
 
             $cart->refresh();
@@ -201,6 +208,8 @@ class CartService
             return Response::handleException($e, 'Error deleting item');
         }
     }
+
+
 
     public function calculateItemPrice($unitPrice, $quantity)
     {
