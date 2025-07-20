@@ -4,17 +4,23 @@ namespace App\Http\Services\Country;
 
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Country\CountryResource;
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Repositories\Country\CountryRepository;
 use Illuminate\Support\Facades\Response;
 
 class CountryService
 {
-    protected $countryRepo;
+    protected CountryRepository $countryRepo;
+    protected GeoCurrencyService $geoCurrencyService;
 
-    public function __construct(CountryRepository $countryRepo)
-    {
+    public function __construct(
+        CountryRepository $countryRepo,
+        GeoCurrencyService $geoCurrencyService
+    ) {
         $this->countryRepo = $countryRepo;
+        $this->geoCurrencyService = $geoCurrencyService;
     }
+
 
 
     public function getAllCountries($request)
@@ -92,5 +98,30 @@ class CountryService
         $this->countryRepo->delete($id);
 
         return Response::successResponse(['is_success' => 1], 'country deleted successfully');
+    }
+
+    public function getCountryByIp()
+    {
+        try {
+            $code = $this->geoCurrencyService->getCountryCodeFromIp();
+
+            if (!$code) {
+                return Response::errorResponse('Unable to detect country from IP', [], 404);
+            }
+
+            $country = $this->countryRepo->findByCountryCode($code);
+
+            if (!$country) {
+                return Response::errorResponse("Country not found for code: $code", [], 404);
+            }
+
+            return Response::successResponse(
+                new CountryResource($country),
+                'Country retrieved successfully'
+            );
+
+        } catch (\Exception $e) {
+            return Response::handleException($e, 'Failed to retrieve country by IP');
+        }
     }
 }

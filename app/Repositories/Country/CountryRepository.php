@@ -39,4 +39,10 @@ class CountryRepository
         }
         return $country;
     }
+
+    public function findByCountryCode(string $code)
+    {
+        return Country::where('country_code', strtoupper($code))->first();
+    }
+
 }

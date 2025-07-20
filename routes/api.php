@@ -70,6 +70,8 @@ Route::prefix('auth')->group(function () {
 Route::prefix('country')->namespace('Country')->group(function () {
     // Get all countries
     Route::get('/', [CountryController::class, 'index'])->name('country.index');
+    // Get country by IP
+    Route::get('/geo', [CountryController::class, 'getCountriesByIp'])->name('country.geo');
     // Get specific country
     Route::get('/{id}', [CountryController::class, 'show'])->name('country.show');
     // Create country

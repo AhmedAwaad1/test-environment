@@ -5,13 +5,20 @@ namespace App\Http\Controllers\Country;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Country\CountryRequest;
 use App\Http\Services\Country\CountryService;
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
 
 class CountryController extends Controller
 {
-    public $countryService;
-    public function __construct(CountryService $countryService)
+    protected GeoCurrencyService $geoCurrencyService;
+    protected CountryService $countryService;
+    public function __construct(
+        GeoCurrencyService $geoCurrencyService,
+        CountryService $countryService
+    )
     {
         $this->countryService = $countryService;
+        $this->geoCurrencyService = $geoCurrencyService;
+
     }
 
     public function index(CountryRequest $request)
@@ -37,5 +44,10 @@ class CountryController extends Controller
     public function destroy(CountryRequest $request)
     {
         return $this->countryService->deleteCountry($request->id);
+    }
+
+    public function getCountriesByIp(CountryRequest $request)
+    {
+        return $this->countryService->getCountryByIp();
     }
 }
