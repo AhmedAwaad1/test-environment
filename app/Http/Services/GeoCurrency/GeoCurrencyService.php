@@ -29,7 +29,7 @@ class GeoCurrencyService
                 return Currency::find(session('currency_id'));
             }
         }
-        
+
 
         $ip = request()->ip();
         $countryCode = $this->getCountryCodeFromIp();
