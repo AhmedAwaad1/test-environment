@@ -140,6 +140,13 @@ return [
             'level' => 'debug',
         ],
 
+        'geoip' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/geoip.log'),
+            'level' => 'info',
+        ],
+
+
     ],
 
 ];

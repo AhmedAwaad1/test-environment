@@ -54,6 +54,7 @@ class ProductPriceService
     {
         try {
             $productPrice = $this->productPriceRepo->create($data);
+            $productPrice->load(['currency', 'product']);
 
             return Response::successResponse(
                 new ProductPriceResource($productPrice),

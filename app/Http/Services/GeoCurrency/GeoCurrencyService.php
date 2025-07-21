@@ -61,20 +61,42 @@ class GeoCurrencyService
     public function getCountryCodeFromIp(): ?string
     {
         try {
-            $ip = request()->header('X-Forwarded-For') ?? request()->ip();
+            $ip = request()->header('X-Forwarded-For');
+
+            if ($ip && strpos($ip, ',') !== false) {
+                $ip = trim(explode(',', $ip)[0]);
+            }
+
+            if (!$ip || $ip === '127.0.0.1' || $ip === '::1') {
+                $ip = request()->ip();
+            }
 
             if ($ip === '127.0.0.1' || $ip === '::1') {
+                \Log::channel('geoip')->info('Local IP Detected', ['ip' => $ip, 'country' => 'EG']);
                 return 'EG';
             }
 
             $reader = new \GeoIp2\Database\Reader(storage_path('app/geoip/GeoLite2-Country.mmdb'));
             $record = $reader->country($ip);
-            return $record->country->isoCode;
+
+            $countryCode = $record->country->isoCode;
+
+            \Log::channel('geoip')->info('IP Country Resolved', [
+                'ip' => $ip,
+                'country' => $countryCode,
+            ]);
+
+            return $countryCode;
+
         } catch (\Exception $e) {
-            \Log::error('GeoIP lookup failed', ['ip' => $ip ?? 'undefined', 'error' => $e->getMessage()]);
+            \Log::channel('geoip')->error('GeoIP lookup failed', [
+                'ip' => $ip ?? 'undefined',
+                'error' => $e->getMessage()
+            ]);
             return null;
         }
     }
+
 
 
 
