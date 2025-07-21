@@ -5,6 +5,7 @@ namespace App\Http\Controllers\City;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\City\CityRequest;
 use App\Http\Services\City\CityService;
+use Illuminate\Http\Request;
 
 class CityController extends Controller
 {
@@ -12,6 +13,11 @@ class CityController extends Controller
     public function __construct(CityService $cityService)
     {
         $this->cityService = $cityService;
+    }
+
+    public function getAllCitiesByIp(Request $request)
+    {
+        return  $this->cityService->getAllCitiesByIp($request);
     }
 
     public function index(CityRequest $request)

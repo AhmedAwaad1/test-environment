@@ -83,6 +83,8 @@ Route::prefix('country')->namespace('Country')->group(function () {
 });
 
 Route::prefix('city')->namespace('City')->group(function () {
+    // Get all cities by IP
+    Route::get('/geo-cities', [CityController::class, 'getAllCitiesByIp'])->name('city.geo-cities');
     // Get all cities
     Route::get('/', [CityController::class, 'index'])->name('city.index');
     // Get specific city

@@ -4,16 +4,22 @@ namespace App\Http\Services\City;
 
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\City\CityResource;
+use App\Http\Services\Country\CountryService;
 use App\Repositories\City\CityRepository;
 use Illuminate\Support\Facades\Response;
 
 class CityService
 {
-    protected $cityRepo;
+    protected CityRepository $cityRepo;
+    protected CountryService $countryService;
 
-    public function __construct(CityRepository $cityRepo)
+    public function __construct(
+        CityRepository $cityRepo,
+        CountryService $countryService
+    )
     {
         $this->cityRepo = $cityRepo;
+        $this->countryService = $countryService;
     }
 
 
@@ -91,4 +97,28 @@ class CityService
 
         return Response::successResponse(['is_success' => 1], 'city deleted successfully');
     }
+
+
+    public function getAllCitiesByIp($request)
+    {
+        $filters = $request->all();
+
+        if (empty($filters['country_id'])) {
+            $country = $this->countryService->getCountryObjectByIp();
+            if ($country) {
+                $filters['country_id'] = $country->id;
+            }
+        }
+
+        $query = $this->cityRepo->getAll($filters);
+
+        if ($request->per_page) {
+            $cities = new PaginationResource($query->paginate($request->per_page), CityResource::class);
+        } else {
+            $cities = CityResource::collection($query->get());
+        }
+
+        return Response::successResponse($cities, 'تم جلب المدن بنجاح');
+    }
+
 }

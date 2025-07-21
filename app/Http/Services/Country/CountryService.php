@@ -100,7 +100,7 @@ class CountryService
         return Response::successResponse(['is_success' => 1], 'country deleted successfully');
     }
 
-    public function getCountryByIp()
+    public function detectCountryByIp()
     {
         try {
             $code = $this->geoCurrencyService->getCountryCodeFromIp();
@@ -118,10 +118,24 @@ class CountryService
             return Response::successResponse(
                 new CountryResource($country),
                 'Country retrieved successfully'
+
             );
 
         } catch (\Exception $e) {
             return Response::handleException($e, 'Failed to retrieve country by IP');
         }
     }
+
+
+    public function getCountryObjectByIp()
+    {
+        $code = $this->geoCurrencyService->getCountryCodeFromIp();
+
+        if (!$code) {
+            return null;
+        }
+
+        return $this->countryRepo->findByCountryCode($code);
+    }
+
 }

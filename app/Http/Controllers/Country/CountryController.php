@@ -48,6 +48,6 @@ class CountryController extends Controller
 
     public function getCountriesByIp(CountryRequest $request)
     {
-        return $this->countryService->getCountryByIp();
+        return $this->countryService->detectCountryByIp();
     }
 }
