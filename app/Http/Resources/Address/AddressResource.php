@@ -22,9 +22,30 @@ class AddressResource extends JsonResource
             'address' => $this->address,
             'phone' => $this->phone,
             'is_default' => $this->is_default,
+            'shipping_price' => $this->getShippingPrice(),
             'user' => new AuthResource($this->whenLoaded('user')),
             'city' => new CountryResource($this->whenLoaded('city')),
             'district' => new DistrictResource($this->whenLoaded('district')),
         ];
     }
+
+
+    protected function getShippingPrice()
+    {
+        if ($this->district && $this->district->city && $this->district->city->shipping_price !== null) {
+            return (float) $this->district->city->shipping_price;
+        }
+
+        if ($this->city && $this->city->shipping_price !== null) {
+            return (float) $this->city->shipping_price;
+        }
+
+        if ($this->city && $this->city->country && $this->city->country->shipping_price !== null) {
+            return (float) $this->city->country->shipping_price;
+        }
+
+        // fallback
+        return null;
+    }
+
 }

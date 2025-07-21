@@ -8,15 +8,18 @@ class AddressRepository
 {
     public function getAll($request)
     {
-        return Address::with('city', 'district', 'user')->filter($request);
+        return Address::with(['city', 'district', 'user'])
+                      ->filter($request);
     }
 
     public function find($id, $userId)
     {
-        return Address::where('user_id', $userId)
-            ->with('city', 'district', 'user')
-            ->find($id);
+        return Address::with('city', 'district', 'user')
+                      ->where('user_id', $userId)
+                      ->where('id', $id)
+                      ->first();
     }
+
 
     public function create(array $data)
     {
@@ -45,8 +48,8 @@ class AddressRepository
     public function updateDefaultAddress($userId, $addressId)
     {
         $address = Address::where('user_id', $userId)
-            ->where('id', '!=', $addressId)
-            ->update(['is_default' => false]);
+                          ->where('id', '!=', $addressId)
+                          ->update(['is_default' => false]);
 
         return $address;
     }
