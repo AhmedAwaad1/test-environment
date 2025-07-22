@@ -42,8 +42,8 @@ class Address extends Model
 
     public function getShippingPrice(): ?float
     {
-        if ($this->district && $this->district->city && $this->district->city->shipping_price !== null) {
-            return (float) $this->district->city->shipping_price;
+        if ($this->district && $this->district->shipping_price !== null) {
+            return (float) $this->district->shipping_price;
         }
 
         if ($this->city && $this->city->shipping_price !== null) {
