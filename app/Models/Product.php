@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+
 
 class Product extends Model
 {
@@ -68,6 +71,12 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function lowestPrice()
+    {
+        return $this->hasOne(ProductPrice::class)->orderByRaw('COALESCE(price_after_discount, price) ASC');
+    }
+
+
 
     public function scopeFilter($query, $filters)
     {
@@ -115,6 +124,39 @@ class Product extends Model
                 });
             }
         }
+
+//        $prices = DB::table('product_prices')
+//                    ->select('product_id', DB::raw('MIN(COALESCE(price_after_discount, price)) as final_price'))
+//                    ->groupBy('product_id')
+//                    ->get();
+//
+//        dd($prices);
+
+
+        if (isset($filters['min_price']) || isset($filters['max_price'])) {
+            $currencyId = optional(app(GeoCurrencyService::class)->getCurrencyForRequest())->id;
+
+            if ($currencyId) {
+                $query->whereIn('id', function ($subquery) use ($filters, $currencyId) {
+                    $subquery->select('product_id')
+                             ->from('product_prices')
+                             ->where('currency_id', $currencyId)
+                             ->groupBy('product_id');
+
+                    if (isset($filters['min_price']) && isset($filters['max_price'])) {
+                        $subquery->havingRaw('MIN(COALESCE(price_after_discount, price)) BETWEEN ? AND ?', [
+                            $filters['min_price'],
+                            $filters['max_price'],
+                        ]);
+                    } elseif (isset($filters['min_price'])) {
+                        $subquery->havingRaw('MIN(COALESCE(price_after_discount, price)) >= ?', [$filters['min_price']]);
+                    } elseif (isset($filters['max_price'])) {
+                        $subquery->havingRaw('MIN(COALESCE(price_after_discount, price)) <= ?', [$filters['max_price']]);
+                    }
+                });
+            }
+        }
+
 
         // Sort options
         if ($filters['sort_by'] ?? false) {
