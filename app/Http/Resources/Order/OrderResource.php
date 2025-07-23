@@ -32,6 +32,7 @@ class OrderResource extends JsonResource
             'user' => new AuthResource($this->whenLoaded('user')),
             'address' => new AddressResource($this->whenLoaded('address')),
             'order_items' => OrderItemResource::collection($this->whenLoaded('orderItems')),
+            'created_at' => $this->created_at,
         ];
     }
 }
