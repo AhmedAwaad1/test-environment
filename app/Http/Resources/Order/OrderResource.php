@@ -7,6 +7,7 @@ use App\Http\Resources\Auth\AuthResource;
 use App\Http\Resources\City\CityResource;
 use App\Http\Resources\Country\CountryResource;
 use App\Http\Resources\OrderItem\OrderItemResource;
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -19,12 +20,15 @@ class OrderResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $currency = app(GeoCurrencyService::class)->getCurrencyForRequest();
+
         return [
             "id" => $this->id,
             'order_number' => $this->order_number,
             'subtotal' => $this->subtotal,
             'shipping_price' => $this->shipping_price,
             'total_price' => $this->total_price,
+            'currency' =>$currency->name,
             'payment_method' => $this->payment_method,
             'status' => $this->status,
             'tracking_number' => $this->tracking_number,
