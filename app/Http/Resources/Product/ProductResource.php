@@ -29,6 +29,8 @@ class ProductResource extends JsonResource
                     'price' => $price->price,
                     'price_after_discount' => $price->price_after_discount,
                     'currency' => $price->currency->name,
+                    'is_default' => $price->currency->is_default
+
                 ];
             });
         } else {

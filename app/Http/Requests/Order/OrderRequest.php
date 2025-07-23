@@ -80,7 +80,7 @@ class OrderRequest extends FormRequest
     private function updateRules(): array
     {
         return [
-            'status' => ['required', 'string', 'in:pending,processing,completed,canceled'],
+            'status' => ['required', 'string', 'in:pending,processing,shipped,cancelled,delivered'],
         ];
     }
 }
