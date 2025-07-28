@@ -23,6 +23,7 @@ return new class extends Migration
             $table->decimal('subtotal', 10, 2);
             $table->decimal('shipping_price', 10, 2);
             $table->decimal('total_price', 10, 2);
+            $table->string('coupon_code')->nullable();
             $table->enum('payment_method', ['stripe', 'paypal', 'cod']);
             $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
             $table->string('tracking_number')->nullable();

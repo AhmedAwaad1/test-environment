@@ -50,8 +50,8 @@ class AddressRequest extends FormRequest
         return [
             'phone' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:255'],
-            'city_id' => $hasCountryShipping ? ['nullable', 'exists:cities,id'] : ['required', 'exists:cities,id'],
-            'district_id' => $hasCountryShipping ? ['nullable', 'exists:districts,id'] : ['required', 'exists:districts,id'],
+            'city_id' => ['nullable', 'exists:cities,id'],
+            'district_id' => ['nullable', 'exists:districts,id'],
             'is_default' => ['nullable', 'boolean'],
         ];
     }

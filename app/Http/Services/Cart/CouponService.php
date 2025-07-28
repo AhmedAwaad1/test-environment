@@ -6,6 +6,7 @@ use App\Http\Resources\Cart\CartResource;
 use App\Models\Cart;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\UserCoupon;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Product\ProductRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
@@ -61,7 +62,16 @@ class CouponService
             if (!$coupon) {
                 return Response::errorResponse('Coupon not found', [], 404);
             }
-
+            //checking if user_copuons already exists
+            if($user){
+                $exists = UserCoupon::where('user_id', $user->id)
+                    ->where('promo_code_id', $coupon->id)
+                    ->exists();
+                if ($exists) {
+                    return Response::errorResponse('Coupon already used', [], 400);
+                }
+            }
+            
             if (!$coupon->is_active) {
                 return Response::errorResponse('Coupon is not active', [], 400);
             }

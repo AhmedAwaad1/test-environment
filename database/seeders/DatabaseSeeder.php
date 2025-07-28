@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AdminSeeder::class,
             ProductOptionTypeSeeder::class,
+            CountryCodeSeeder::class,
             CitySeeder::class,
             SizeSeeder::class,
             ColorSeeder::class,
@@ -22,7 +23,6 @@ class DatabaseSeeder extends Seeder
             SubCategorySeeder::class,
             ProductSeeder::class,
             CurrencySeeder::class,
-            CountryCodeSeeder::class
         ]);
     }
 }

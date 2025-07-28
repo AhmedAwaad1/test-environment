@@ -20,6 +20,7 @@ class Order extends Model
         'status',
         'tracking_number',
         'notes',
+        'coupon_code',
     ];
 
     public function user()

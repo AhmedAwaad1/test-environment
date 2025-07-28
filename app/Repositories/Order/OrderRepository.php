@@ -21,6 +21,7 @@ class OrderRepository
     public function createOrder(array $data, $cart)
     {
         $totalPrice = $cart->total_price_after_discount ?? $cart->total_price;
+
         return Order::create([
             'user_id'       => $data['user_id'],
             'address_id'    => $data['address_id'],
@@ -30,6 +31,7 @@ class OrderRepository
             'total_price'   => $totalPrice + $data['shipping_price'],
             'payment_method'=> $data['payment_method'],
             'status'        => $data['payment_method'] == 'cod' ? 'processing' : 'pending',
+            'coupon_code'   => $cart->coupon_code,
         ]);
     }
 
