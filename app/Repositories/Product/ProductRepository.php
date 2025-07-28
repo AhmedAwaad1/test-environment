@@ -156,11 +156,11 @@ class ProductRepository
     public function updateProductPrices(Product $product, array $prices): void
     {
         // Delete old prices
-        $product->prices()->delete();
+        $product->productPrices()->delete();
 
         // Recreate new ones
         foreach ($prices as $priceData) {
-            $product->prices()->create([
+            $product->productPrices()->create([
                 'currency_id' => $priceData['currency_id'],
                 'price' => $priceData['price'],
                 'price_after_discount' => $priceData['price_after_discount'] ?? null,
@@ -171,7 +171,7 @@ class ProductRepository
     public function createProductPrices(Product $product, array $prices): void
     {
         foreach ($prices as $priceData) {
-            $product->prices()->create([
+            $product->productPrices()->create([
                 'currency_id' => $priceData['currency_id'],
                 'price' => $priceData['price'],
                 'price_after_discount' => $priceData['price_after_discount'] ?? null,

@@ -119,7 +119,7 @@ class ProductService
 
             DB::commit();
             return Response::successResponse(
-                new ProductResource($product->load('productVariants', 'productOptions.values')),
+                new ProductResource($product->load('productVariants', 'productOptions.values', 'productPrices.currency')),
                 'Product created successfully',
                 201
             );

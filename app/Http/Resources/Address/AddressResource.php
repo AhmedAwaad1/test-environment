@@ -32,20 +32,20 @@ class AddressResource extends JsonResource
 
     protected function getShippingPrice()
     {
-        if ($this->district && $this->district->city && $this->district->city->shipping_price !== null) {
-            return (float) $this->district->city->shipping_price;
+        if ($this->district && $this->district->shipping_price > 0) {
+            return (float) $this->district->shipping_price;
         }
 
-        if ($this->city && $this->city->shipping_price !== null) {
+        if ($this->city && $this->city->shipping_price > 0) {
             return (float) $this->city->shipping_price;
         }
 
-        if ($this->city && $this->city->country && $this->city->country->shipping_price !== null) {
+        if ($this->city && $this->city->country && $this->city->country->shipping_price > 0) {
             return (float) $this->city->country->shipping_price;
         }
 
-        // fallback
-        return null;
+        return 0;
     }
+
 
 }
