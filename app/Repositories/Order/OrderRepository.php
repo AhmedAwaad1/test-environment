@@ -20,7 +20,11 @@ class OrderRepository
 
     public function createOrder(array $data, $cart)
     {
-        $totalPrice = $cart->total_price_after_discount ?? $cart->total_price;
+        if($cart->total_price_after_discount > 0) {
+            $totalPrice = $cart->total_price_after_discount;
+        }else{
+            $totalPrice = $cart->total_price;
+        }
 
         return Order::create([
             'user_id'       => $data['user_id'],
