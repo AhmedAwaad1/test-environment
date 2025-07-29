@@ -36,9 +36,11 @@ class ProductResource extends JsonResource
         } else {
             $priceEntry = $this->productPrices->first();
             $priceData = [
-                'price' => $priceEntry?->price ?? 0,
-                'price_after_discount' => $priceEntry?->price_after_discount ?? $priceEntry?->price ?? 0,
-                'currency' =>$currency->name,
+                [
+                    'price' => $priceEntry?->price ?? 0,
+                    'price_after_discount' => $priceEntry?->price_after_discount ?? $priceEntry?->price ?? 0,
+                    'currency' => $currency->name,
+                ]
             ];
         }
 
