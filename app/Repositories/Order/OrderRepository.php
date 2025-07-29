@@ -8,14 +8,14 @@ class OrderRepository
 {
     public function getAllUserOrder($request)
     {
-        return Order::with('orderItems')
+        return Order::with('orderItems', 'address')
             ->where('user_id', $request['user_id'])
             ->orderBy('created_at', 'desc');
     }
 
     public function findOrderById($id)
     {
-        return Order::with('orderItems')->find($id);
+        return Order::with('orderItems', 'user', 'address')->find($id);
     }
 
     public function createOrder(array $data, $cart)

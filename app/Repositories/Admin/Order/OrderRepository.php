@@ -8,14 +8,14 @@ class OrderRepository
 {
     public function getAllOrdersForAdmin($request)
     {
-        $query = Order::query()->filter($request->all());
+        $query = Order::with('orderItems', 'user', 'address')->filter($request->all());
 
         return $query->latest();
     }
 
     public function findOrderById($id)
     {
-        return Order::find($id);
+        return Order::with('orderItems', 'user', 'address')->get($id);
     }
 
     public function updateOrderById($id, $data)
