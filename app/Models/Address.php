@@ -15,6 +15,7 @@ class Address extends Model
         'city_id',
         'district_id',
         'is_default',
+        'session_id',
     ];
 
     public function city()

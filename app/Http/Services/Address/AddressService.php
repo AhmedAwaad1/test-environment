@@ -60,18 +60,26 @@ class AddressService
     {
         try {
             DB::beginTransaction();
+
             $user = Auth::user();
-            $request['user_id'] = $user->id;
+
+            if ($user) {
+                $request['user_id'] = $user->id;
+            } elseif (isset($request['session_id'])) {
+                $request['session_id'] = $request['session_id'];
+            } else {
+                return Response::errorResponse('User not authenticated and session ID missing', 422);
+            }
 
             $address = $this->addressRepo->create($request);
 
-            if($request['is_default'] == 1){
+            if (isset($request['is_default']) && $request['is_default'] == 1 && $user) {
                 $this->addressRepo->updateDefaultAddress($user->id, $address->id);
             }
 
             DB::commit();
 
-            return Response::successResponse(new AddressResource($address), 'address created successfully', 201);
+            return Response::successResponse(new AddressResource($address), 'Address created successfully', 201);
 
         } catch (\Illuminate\Database\QueryException $e) {
             DB::rollBack();
@@ -81,6 +89,7 @@ class AddressService
             return Response::handleException($e, 'create address');
         }
     }
+
 
     public function updateAddress($id, array $data)
     {

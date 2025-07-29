@@ -41,10 +41,11 @@ class OrderRepository
 
     public function delete($id)
     {
-        $order = $this->find($id);
+        $order = Order::find($id);
         if ($order) {
             $order->delete();
         }
         return $order;
     }
+
 }

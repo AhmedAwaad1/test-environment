@@ -49,26 +49,48 @@ class OrderRequest extends FormRequest
         ];
 
         if (!auth()->check()) {
-
             $geoService = new GeoCurrencyService();
             $geoService->getCurrencyForRequest();
 
             $countryId = session('country_id');
             $country = \App\Models\Country::find($countryId);
-            $hasCountryShipping = $country && $country->shipping_price > 0;
+
+            $requiresCity = false;
+            $requiresDistrict = false;
+
+            if ($country) {
+                if ($country->cities && $country->cities->count() > 0) {
+                    $requiresCity = true;
+
+                    foreach ($country->cities as $city) {
+                        if ($city->districts && $city->districts->count() > 0) {
+                            $requiresDistrict = true;
+                            break;
+                        }
+                    }
+                }
+            }
 
             $rules = array_merge($rules, [
-                'name'         => ['required', 'string', 'max:255'],
-                'phone'        => ['required', 'string', 'max:255'],
-                'email'        => ['nullable', 'email', 'max:255'],
-                'session_id'   => ['required', 'string'],
-
-                'address'      => ['required', 'string', 'max:255'],
-                'city_id'      => $hasCountryShipping ? ['nullable', 'exists:cities,id'] : ['required', 'exists:cities,id'],
-                'district_id'  => $hasCountryShipping ? ['nullable', 'exists:districts,id'] : ['required', 'exists:districts,id'],
+                'name'       => ['required', 'string', 'max:255'],
+                'phone'      => ['required', 'string', 'max:255'],
+                'email'      => ['nullable', 'email', 'max:255'],
+                'session_id' => ['required', 'string'],
+                'address'    => ['required', 'string', 'max:255'],
+                'city_id'    => $requiresCity ? ['required', 'exists:cities,id'] : ['nullable', 'exists:cities,id'],
+                'district_id'=> $requiresDistrict ? ['required', 'exists:districts,id'] : ['nullable', 'exists:districts,id'],
             ]);
         } else {
-            $rules['address_id'] = ['required', 'exists:addresses,id'];
+            $rules['address_id'] = ['nullable', 'exists:addresses,id'];
+
+            if (!$this->input('address_id')) {
+                $rules = array_merge($rules, [
+                    'address'     => ['required', 'string', 'max:255'],
+                    'phone'       => ['required', 'string', 'max:255'],
+                    'city_id'     => ['nullable', 'exists:cities,id'],
+                    'district_id' => ['nullable', 'exists:districts,id'],
+                ]);
+            }
         }
 
         return $rules;
