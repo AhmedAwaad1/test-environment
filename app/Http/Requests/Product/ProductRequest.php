@@ -104,7 +104,7 @@ class ProductRequest extends FormRequest
 
             // Images
             'images' => ['nullable', 'array'],
-            'images.*.path' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'images.*.path' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg'],
             'images.*.is_main' => ['nullable', 'boolean'],
             'deleted_images' => ['nullable', 'array'],
             'deleted_images.*' => ['exists:product_images,id'],
@@ -146,7 +146,6 @@ class ProductRequest extends FormRequest
             'prices.*.currency_id' => ['required', 'exists:currencies,id'],
             'prices.*.price' => ['required', 'numeric'],
             'prices.*.price_after_discount' => ['nullable', 'numeric'],
-
         ];
     }
 }
