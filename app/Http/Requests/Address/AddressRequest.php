@@ -53,6 +53,7 @@ class AddressRequest extends FormRequest
             'city_id' => ['nullable', 'exists:cities,id'],
             'district_id' => ['nullable', 'exists:districts,id'],
             'is_default' => ['nullable', 'boolean'],
+            'session_id' => ['nullable', 'string', 'max:255'],
         ];
     }
 
@@ -65,6 +66,7 @@ class AddressRequest extends FormRequest
             'district_id' => ['nullable', 'exists:districts,id'],
             'city_id' => ['nullable', 'exists:cities,id'],
             'is_default' => ['nullable', 'boolean'],
+            'session_id' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

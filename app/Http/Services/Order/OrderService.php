@@ -102,21 +102,34 @@ class OrderService
         $orderNumber = $this->generateOrderNumber();
 
         if (!$isGuest) {
-            $userAddress = $this->addressRepo->find($request['address_id'], $user->id);
+            if (!empty($request['address_id'])) {
+                $userAddress = $this->addressRepo->find($request['address_id'], $user->id);
 
-            if (!$userAddress) {
-                return Response::errorResponse('address not found', [], 404);
+                if (!$userAddress) {
+                    return Response::errorResponse('address not found', [], 404);
+                }
+            } else {
+                $userAddress = $this->addressRepo->create([
+                    'user_id'     => $user->id,
+                    'phone'       => $request['phone'],
+                    'address'     => $request['address'],
+                    'city_id'     => $request['city_id'] ?? null,
+                    'district_id' => $request['district_id'] ?? null,
+                    'is_default'  => $request['is_default'] ?? false,
+                ]);
             }
         } else {
             $userAddress = $this->addressRepo->create([
                 'user_id'     => $user->id,
-                'phone'       => $user->phone,
+                'phone'       => $request['phone'],
                 'address'     => $request['address'],
                 'city_id'     => $request['city_id'] ?? null,
                 'district_id' => $request['district_id'] ?? null,
                 'is_default'  => $request['is_default'] ?? false,
             ]);
         }
+
+
 
 
         $shippingPrice = $userAddress->getShippingPrice();
