@@ -50,7 +50,7 @@ class ProductRequest extends FormRequest
             'has_variants' => 'boolean',
 
             'images' => ['nullable', 'array'],
-            'images.*.path' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'images.*.path' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg'],
             'images.*.is_main' => ['nullable', 'boolean'],
 
             // Simple product fields (when has_variants = false)
@@ -67,7 +67,7 @@ class ProductRequest extends FormRequest
             'options.*.values.*.hex_code' => 'nullable|string|max:7',
             'options.*.values.*.order' => 'nullable|integer',
             'options.*.values.*.images' => 'nullable|array',
-            'options.*.values.*.images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'options.*.values.*.images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg',
 
             'variants' => 'nullable|array',
             'variants.*.sku' => 'nullable|string|unique:product_variants,sku',
