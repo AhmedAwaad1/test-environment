@@ -67,7 +67,7 @@ class ProductRequest extends FormRequest
             'options.*.values.*.hex_code' => 'nullable|string|max:7',
             'options.*.values.*.order' => 'nullable|integer',
             'options.*.values.*.images' => 'nullable|array',
-            'options.*.values.*.images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'options.*.values.*.images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg',
 
             'variants' => 'nullable|array',
             'variants.*.sku' => 'nullable|string|unique:product_variants,sku',
@@ -104,7 +104,7 @@ class ProductRequest extends FormRequest
 
             // Images
             'images' => ['nullable', 'array'],
-            'images.*.path' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'images.*.path' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,svg'],
             'images.*.is_main' => ['nullable', 'boolean'],
             'deleted_images' => ['nullable', 'array'],
             'deleted_images.*' => ['exists:product_images,id'],
@@ -141,7 +141,6 @@ class ProductRequest extends FormRequest
             'prices.*.currency_id' => ['required', 'exists:currencies,id'],
             'prices.*.price' => ['required', 'numeric'],
             'prices.*.price_after_discount' => ['nullable', 'numeric'],
-
         ];
     }
 }
