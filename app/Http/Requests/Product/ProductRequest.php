@@ -50,7 +50,7 @@ class ProductRequest extends FormRequest
             'has_variants' => 'boolean',
 
             'images' => ['nullable', 'array'],
-            'images.*.path' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg', 'max:2048'],
+            'images.*.path' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg'],
             'images.*.is_main' => ['nullable', 'boolean'],
 
             // Simple product fields (when has_variants = false)
