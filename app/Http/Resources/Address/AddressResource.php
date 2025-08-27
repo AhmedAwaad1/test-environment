@@ -24,6 +24,7 @@ class AddressResource extends JsonResource
             'is_default' => $this->is_default,
             'shipping_price' => $this->getShippingPrice(),
             'user' => new AuthResource($this->whenLoaded('user')),
+            'country' => optional($this->city?->country)->name_en,
             'city' => new CountryResource($this->whenLoaded('city')),
             'district' => new DistrictResource($this->whenLoaded('district')),
         ];

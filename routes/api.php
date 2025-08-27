@@ -305,7 +305,7 @@ Route::prefix('product-price')->group(function () {
 Route::get('/currencies', [CurrencyController::class, 'index']);
 
 
-// Subscribe to Newsletter Routes (So that we can send emails to subscribers)
+// Product Options
 Route::prefix('subscribe')->namespace('Subscribe')->group(function () {
     Route::get('/', [SubscribeController::class, 'index'])->name('subscribe.index');
     Route::post('/', [SubscribeController::class, 'store'])->name('subscribe.store');

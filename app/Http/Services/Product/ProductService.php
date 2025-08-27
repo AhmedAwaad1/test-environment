@@ -182,6 +182,11 @@ class ProductService
             if( isset($data['deleted_images'])) {
                 $product->images()->whereIn('id', $data['deleted_images'])->delete();
             }
+
+            if (isset($data['main_image_id'])) {
+                $product->images()->update(['is_main' => false]);
+                $product->images()->where('id', $data['main_image_id'])->update(['is_main' => true]);
+            }
             
             $this->handleProductVariantsUpdate($product, $data);
 
