@@ -177,7 +177,7 @@ class AuthService
             return Response::errorResponse('User not found.', [], 404);
         }
 
-        if ($user->is_verified) {
+        if ($user->email_verified_at !== null) {
             return Response::errorResponse('Email is already verified.', [], 400);
         }
 
