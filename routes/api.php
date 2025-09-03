@@ -23,6 +23,7 @@ use App\Http\Controllers\ProductSetItems\ProductSetItemsController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
 use App\Http\Controllers\SubCategory\SubCategoryController;
 use App\Http\Controllers\Subscribe\SubscribeController;
+use App\Http\Controllers\Testimonial\TestimonialController; // Add this line
 use App\Http\Controllers\UserProfile\UserProfileController;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Http\Request;
@@ -321,6 +322,18 @@ Route::get('/test-ip', function () {
         'ip' => $ip,
         'country_code' => $code
     ]);
+});
+
+// Testimonial Routes
+Route::prefix('testimonial')->namespace('Testimonial')->group(function () {
+    // Get all Testimonials
+    Route::get('/', [TestimonialController::class, 'all'])->name('testimonial.all');
+    // Get a specific Testimonial
+    Route::get('/{id}', [TestimonialController::class, 'show'])->name('testimonial.get');
+    // Create a new Testimonial
+    Route::post('/', [TestimonialController::class, 'create'])->name('testimonial.create')->middleware('auth:api');
+    // Delete a Testimonial
+    Route::delete('/{id}', [TestimonialController::class, 'delete'])->name('testimonial.delete');
 });
 
 
