@@ -50,7 +50,7 @@ class ProductSetItemsRequest extends FormRequest
             'how_to_use_ar' => 'nullable|string',
             'features_en' => 'nullable|json',
             'features_ar' => 'nullable|json',
-            'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:5048',
         ];
     }
 
@@ -66,7 +66,7 @@ class ProductSetItemsRequest extends FormRequest
             'how_to_use_ar' => 'nullable|string',
             'features_en' => 'nullable|json',
             'features_ar' => 'nullable|json',
-            'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:5048',
         ];
     }
 } 
