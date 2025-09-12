@@ -18,19 +18,20 @@ use Illuminate\Support\Facades\Response;
 class ProductService
 {
     public function __construct(
-        protected ProductRepository $productRepo,
-        protected ProductOptionRepository $productOptionRepo,
+        protected ProductRepository            $productRepo,
+        protected ProductOptionRepository      $productOptionRepo,
         protected ProductOptionValueRepository $productOptionValueRepo,
-        protected ProductVariantRepository $productVariantRepo,
-        protected VariantOptionValue $variantOptionValue,
-        protected GeoCurrencyService $geoCurrencyService
-    ) {}
+        protected ProductVariantRepository     $productVariantRepo,
+        protected VariantOptionValue           $variantOptionValue,
+        protected GeoCurrencyService           $geoCurrencyService
+    )
+    {
+    }
 
 
     public function getAllProducts($request)
     {
         try {
-            $showAllPrices = $request->boolean('show_all_prices');
             $currency = $this->geoCurrencyService->getCurrencyForRequest();
             $products = $this->productRepo->getAll($request);
 
@@ -40,11 +41,7 @@ class ProductService
                 'productOptions.values',
                 'category',
                 'subCategory',
-                'productPrices' => function ($query) use ($currency, $showAllPrices) {
-                    if (!$showAllPrices && $currency) {
-                        $query->where('currency_id', $currency->id);
-                    }
-                },
+                'productPrices',
             ]);
 
             $resource = $request->per_page
@@ -54,7 +51,6 @@ class ProductService
             return Response::successResponse(
                 $resource->additional([
                     'currency' => $currency?->code,
-                    'show_all_prices' => $showAllPrices,
                 ]),
                 'Products retrieved successfully'
             );
@@ -64,30 +60,35 @@ class ProductService
     }
 
 
-
     public function findProduct($id)
     {
         try {
             $currency = $this->geoCurrencyService->getCurrencyForRequest();
-            $product = $this->productRepo->findWithVariants($id)
-                ->load([
-                    'productPrices.currency',
-                    'productPrices' => function ($query) use ($currency) {
-                        if ($currency) {
-                            $query->where('currency_id', $currency->id);
-                        }
-                    },
-                ]);
+            $product  = $this->productRepo->findWithVariants($id)
+                                          ->load([
+                                              'productPrices.currency',
+                                              'images',
+                                              'productVariants',
+                                              'productOptions.values',
+                                              'category',
+                                              'subCategory',
+                                          ]);
 
             if (!$product) {
                 return Response::errorResponse('Product not found', [], 404);
             }
 
-            return Response::successResponse(new ProductResource($product), 'Product found successfully');
+            return Response::successResponse(
+                (new ProductResource($product))->additional([
+                    'currency' => $currency?->code,
+                ]),
+                'Product found successfully'
+            );
         } catch (\Exception $e) {
             return Response::handleException($e, 'Failed to retrieve product');
         }
     }
+
 
     public function createProduct(array $data)
     {
@@ -135,19 +136,19 @@ class ProductService
         foreach ($variants as $variant) {
             $createdVariant = $this->productVariantRepo->create([
                 'product_id' => $productId,
-                'sku' => $variant['sku'],
-                'quantity' => $variant['quantity'],
-                'barcode' => $variant['barcode'] ?? null,
-                'weight' => $variant['weight'] ?? null,
-                'is_active' => $variant['is_active'] ?? true,
-                'order' => $variant['order'] ?? 1,
+                'sku'        => $variant['sku'],
+                'quantity'   => $variant['quantity'],
+                'barcode'    => $variant['barcode'] ?? null,
+                'weight'     => $variant['weight'] ?? null,
+                'is_active'  => $variant['is_active'] ?? true,
+                'order'      => $variant['order'] ?? 1,
             ]);
 
             foreach ($variant['option_values'] as $value) {
                 foreach ($optionValueMap as $optionType => $valuesMap) {
                     if (isset($valuesMap[strtolower($value['value'])])) {
                         $this->variantOptionValue->create([
-                            'product_variant_id' => $createdVariant->id,
+                            'product_variant_id'      => $createdVariant->id,
                             'product_option_value_id' => $valuesMap[strtolower($value['value'])],
                         ]);
                         break;
@@ -179,7 +180,7 @@ class ProductService
                 $this->handleProductImages($product, $data['images']);
             }
 
-            if( isset($data['deleted_images'])) {
+            if (isset($data['deleted_images'])) {
                 $product->images()->whereIn('id', $data['deleted_images'])->delete();
             }
 
@@ -187,7 +188,7 @@ class ProductService
                 $product->images()->update(['is_main' => false]);
                 $product->images()->where('id', $data['main_image_id'])->update(['is_main' => true]);
             }
-            
+
             $this->handleProductVariantsUpdate($product, $data);
 
             // Fetch the complete product with all relationships
@@ -233,12 +234,12 @@ class ProductService
             if (isset($variantData['id'])) {
                 // Update existing variant
                 $variant = $this->productVariantRepo->update($variantData['id'], [
-                    'quantity' => $variantData['quantity'],
-                    'sku' => $variantData['sku'],
-                    'barcode' => $variantData['barcode'] ?? null,
-                    'weight' => $variantData['weight'] ?? null,
+                    'quantity'  => $variantData['quantity'],
+                    'sku'       => $variantData['sku'],
+                    'barcode'   => $variantData['barcode'] ?? null,
+                    'weight'    => $variantData['weight'] ?? null,
                     'is_active' => $variantData['is_active'] ?? true,
-                    'order' => $variantData['order'] ?? 1,
+                    'order'     => $variantData['order'] ?? 1,
                 ]);
 
                 // Update variant option values
@@ -247,12 +248,12 @@ class ProductService
                 // Create new variant
                 $variant = $this->productVariantRepo->create([
                     'product_id' => $productId,
-                    'quantity' => $variantData['quantity'],
-                    'sku' => $variantData['sku'],
-                    'barcode' => $variantData['barcode'] ?? null,
-                    'weight' => $variantData['weight'] ?? null,
-                    'is_active' => $variantData['is_active'] ?? true,
-                    'order' => $variantData['order'] ?? 1,
+                    'quantity'   => $variantData['quantity'],
+                    'sku'        => $variantData['sku'],
+                    'barcode'    => $variantData['barcode'] ?? null,
+                    'weight'     => $variantData['weight'] ?? null,
+                    'is_active'  => $variantData['is_active'] ?? true,
+                    'order'      => $variantData['order'] ?? 1,
                 ]);
 
                 // Create variant option values
@@ -260,7 +261,7 @@ class ProductService
                     foreach ($optionValueMap as $optionType => $valuesMap) {
                         if (isset($valuesMap[strtolower($value['value'])])) {
                             $this->variantOptionValue->create([
-                                'product_variant_id' => $variant->id,
+                                'product_variant_id'      => $variant->id,
                                 'product_option_value_id' => $valuesMap[strtolower($value['value'])],
                             ]);
                             break;
@@ -280,14 +281,14 @@ class ProductService
                 // Update existing option
                 $productOption = $this->productOptionRepo->update($option['id'], [
                     'product_option_type_id' => $option['option_type_id'],
-                    'order' => $option['order'] ?? 1,
+                    'order'                  => $option['order'] ?? 1,
                 ]);
             } else {
                 // Create new option
                 $productOption = $this->productOptionRepo->create([
-                    'product_id' => $productId,
+                    'product_id'             => $productId,
                     'product_option_type_id' => $option['option_type_id'],
-                    'order' => $option['order'] ?? 1,
+                    'order'                  => $option['order'] ?? 1,
                 ]);
             }
 
@@ -297,17 +298,17 @@ class ProductService
                 if (isset($value['id'])) {
                     // Update existing value
                     $optionValue = $this->productOptionValueRepo->update($value['id'], [
-                        'value' => $value['value'],
+                        'value'    => $value['value'],
                         'hex_code' => $value['hex_code'] ?? null,
-                        'order' => $value['order'] ?? 1,
+                        'order'    => $value['order'] ?? 1,
                     ]);
                 } else {
                     // Create new value
                     $optionValue = $this->productOptionValueRepo->create([
                         'product_option_id' => $productOption->id,
-                        'value' => $value['value'],
-                        'hex_code' => $value['hex_code'] ?? null,
-                        'order' => $value['order'] ?? 1,
+                        'value'             => $value['value'],
+                        'hex_code'          => $value['hex_code'] ?? null,
+                        'order'             => $value['order'] ?? 1,
                     ]);
                 }
 
@@ -322,7 +323,7 @@ class ProductService
                 }
 
                 if (!empty($productOption->optionType) && is_string($productOption->optionType->name)) {
-                    $optionTypeName = strtolower($productOption->optionType->name);
+                    $optionTypeName                                    = strtolower($productOption->optionType->name);
                     $map[$optionTypeName][strtolower($value['value'])] = $optionValue->id;
                 }
             }
@@ -358,7 +359,7 @@ class ProductService
 
             $this->variantOptionValue->updateOrCreate(
                 [
-                    'product_variant_id' => $variant->id,
+                    'product_variant_id'      => $variant->id,
                     'product_option_value_id' => $value['id']
                 ],
                 []
@@ -418,7 +419,7 @@ class ProductService
     private function handleProductImages($product, $images)
     {
         foreach ($images as $image) {
-            $path = $image['path'];
+            $path   = $image['path'];
             $isMain = isset($image['is_main']) ? filter_var($image['is_main'], FILTER_VALIDATE_BOOLEAN) : false;
 
             if ($isMain) {
@@ -427,7 +428,7 @@ class ProductService
             }
 
             $product->images()->create([
-                'image' => $path,
+                'image'   => $path,
                 'is_main' => $isMain,
             ]);
         }
@@ -439,9 +440,9 @@ class ProductService
 
         foreach ($options as $option) {
             $createdOption = $this->productOptionRepo->create([
-                'product_id' => $productId,
+                'product_id'             => $productId,
                 'product_option_type_id' => $option['option_type_id'],
-                'order' => $option['order'] ?? 1,
+                'order'                  => $option['order'] ?? 1,
             ]);
 
             $createdOption->load('optionType');
@@ -449,9 +450,9 @@ class ProductService
             foreach ($option['values'] as $index => $value) {
                 $createdValue = $this->productOptionValueRepo->create([
                     'product_option_id' => $createdOption->id,
-                    'value' => $value['value'],
-                    'hex_code' => $value['hex_code'] ?? null,
-                    'order' => $value['order'] ?? ($index + 1),
+                    'value'             => $value['value'],
+                    'hex_code'          => $value['hex_code'] ?? null,
+                    'order'             => $value['order'] ?? ($index + 1),
                 ]);
 
                 // Handle images for the option value if they exist
@@ -465,7 +466,7 @@ class ProductService
                 }
 
                 if (!empty($createdOption->optionType) && is_string($createdOption->optionType->name)) {
-                    $optionTypeName = strtolower($createdOption->optionType->name);
+                    $optionTypeName                                    = strtolower($createdOption->optionType->name);
                     $map[$optionTypeName][strtolower($value['value'])] = $createdValue->id;
                 }
             }

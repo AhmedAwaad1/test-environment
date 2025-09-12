@@ -18,32 +18,24 @@ class ProductResource extends JsonResource
     public function toArray($request)
     {
         $currency = app(GeoCurrencyService::class)->getCurrencyForRequest();
-        $showAllPrices = $request->boolean('show_all_prices');
-
-        $priceData = [];
-
-        if ($showAllPrices) {
-            $priceData = $this->productPrices->map(function ($price) {
-                return [
-                    'id' => $price->id,
-                    'price' => $price->price,
-                    'price_after_discount' => $price->price_after_discount,
-                    'currency' => $price->currency->name,
-                    'is_default' => $price->currency->is_default
-
-                ];
-            });
-        } else {
-            $priceEntry = $this->productPrices->first();
-            $priceData = [
-                [
-                    'price' => $priceEntry?->price ?? 0,
-                    'price_after_discount' => $priceEntry?->price_after_discount ?? $priceEntry?->price ?? 0,
-                    'currency_id' => $priceEntry?->currency_id ?? $currency->id,
-                    'currency' => $currency->name,
-                ]
+        $priceData = $this->productPrices->map(function ($price) {
+            return [
+                'id' => $price->id,
+                'price' => $price->price,
+                'price_after_discount' => $price->price_after_discount,
+                'currency' => $price->currency->name,
+                'is_default' => $price->currency->is_default,
             ];
-        }
+        });
+
+        // رجع السعر حسب العملة اللي جايه من الـ GeoCurrencyService
+        $priceEntry = $this->productPrices->firstWhere('currency_id', $currency->id) ?? $this->productPrices->first();
+        $defaultPrice = [
+            'price' => $priceEntry?->price ?? 0,
+            'price_after_discount' => $priceEntry?->price_after_discount ?? $priceEntry?->price ?? 0,
+            'currency_id' => $currency->id,
+            'currency' => $currency->name,
+        ];
 
         $data = [
             'id' => $this->id,
@@ -60,6 +52,7 @@ class ProductResource extends JsonResource
             'sub_category_id' => $this->sub_category_id,
             'avg_rating' => round($this->reviews()->avg('rating'), 1),
             'prices' => $priceData,
+            'default_price' => $defaultPrice,
 
             // باقي العلاقات
             'category' => new CategoryResource($this->whenLoaded('category')),
