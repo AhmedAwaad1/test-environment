@@ -23,6 +23,7 @@ class ProductResource extends JsonResource
                 'id' => $price->id,
                 'price' => $price->price,
                 'price_after_discount' => $price->price_after_discount,
+                'currency_id' => $price->currency_id,
                 'currency' => $price->currency->name,
                 'is_default' => $price->currency->is_default,
             ];
