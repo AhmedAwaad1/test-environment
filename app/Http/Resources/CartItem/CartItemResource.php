@@ -24,7 +24,6 @@ class CartItemResource extends JsonResource
     {
         $unitRaw    = (float)($this->unit_price ?? 0);
         $after      = $this->unit_price_after_discount;
-        // treat 0.00 as "no discount"
         $unitAfter  = ($after !== null && (float)$after > 0) ? (float)$after : null;
         $perUnit    = $unitAfter ?? $unitRaw;
         $qty        = (int)($this->quantity ?? 0);

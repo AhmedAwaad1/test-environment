@@ -90,6 +90,10 @@ class CartService
     public function addToCart(array $data)
     {
         try {
+
+            if (!request()->hasHeader('X-Forwarded-For') || request()->boolean('reset_currency')) {
+                app(GeoCurrencyService::class)->resetForRequest($data['session_id'] ?? null);
+            }
             DB::beginTransaction();
 
             if (Auth::check()) {

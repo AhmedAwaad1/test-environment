@@ -117,4 +117,13 @@ class GeoCurrencyService
     {
         return auth()->check();
     }
+
+    public function resetForRequest(?string $sessionId = null): void
+    {
+        session()->forget(['currency_id', 'country_id']);
+        if ($sessionId) {
+            Cache::forget("currency_id_{$sessionId}");
+            Cache::forget("country_id_{$sessionId}");
+        }
+    }
 }
