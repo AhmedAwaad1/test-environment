@@ -17,6 +17,11 @@ class Cart extends Model
         'total_price_after_discount',
         'currency_id'
     ];
+    protected $casts = [
+        'total_price' => 'decimal:2',
+        'total_price_after_discount' => 'decimal:2',
+    ];
+
 
     public function cartItems()
     {
