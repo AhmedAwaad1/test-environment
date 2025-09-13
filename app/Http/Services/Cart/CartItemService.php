@@ -24,13 +24,17 @@ class CartItemService
         protected ProductPriceService $productPriceService,
     ) {}
 
-    public function createNewCartItem(int $cartId, $item, int $quantity, string $type, ?int $cartCurrencyId = null)
-    {
-        $productId = $item->id;
+    public function createNewCartItem(
+        int $cartId,
+            $item,
+        int $quantity,
+        string $type,
+        ?int $cartCurrencyId = null
+    ) {
+        $productId  = $item->id;
 
-        // لو لسه مش قافل عملة الكارت، خليك زي ما أنت دلوقتي:
+        // اعتمد على عملة الكارت لو موجودة، وإلا الافتراضي
         $currencyId = $cartCurrencyId
-            ?? optional($this->geoCurrencyService->getCurrencyForRequest())->id
             ?? $this->geoCurrencyService->getDefaultCurrency()->id;
 
         $productPrice = $this->productPriceService
@@ -40,37 +44,36 @@ class CartItemService
             throw new \Exception("No price available for this product in the cart currency.");
         }
 
-        $unitRaw = (float) $productPrice->price;
+        $unitRaw   = (float) $productPrice->price;
 
-        // أهم سطرين: اعتبر 0 = مفيش خصم
+        // 0 يعني مفيش خصم
         $unitAfter = $productPrice->price_after_discount;
         $unitAfter = ($unitAfter !== null && (float)$unitAfter > 0) ? (float)$unitAfter : null;
 
-        $perUnit = $unitAfter ?? $unitRaw;
+        $perUnit   = $unitAfter ?? $unitRaw;
 
         $existingSamePrice = $this->cartItemRepo
             ->findByCartProductAndPrice($cartId, $productId, $productPrice->id);
 
         if ($existingSamePrice) {
-            $existingSamePrice->quantity += $quantity;
-            $existingSamePrice->total_price = round($perUnit * $existingSamePrice->quantity, 2);
+            $existingSamePrice->quantity    += max(1, $quantity);
+            $existingSamePrice->total_price  = round($perUnit * $existingSamePrice->quantity, 2);
             $existingSamePrice->save();
             return $existingSamePrice;
         }
 
         return $this->cartItemRepo->create([
-            'cart_id'                   => $cartId,
-            'product_id'                => $productId,
-            'product_variant_id'        => null,
-            'quantity'                  => $quantity,
-            'product_price_id'          => $productPrice->id,
-            'currency_id'               => $currencyId,
-            'unit_price'                => $unitRaw,
-            'unit_price_after_discount' => $unitAfter,  // هتكون null لو مفيش خصم
-            'total_price'               => round($perUnit * $quantity, 2),
+            'cart_id'                    => $cartId,
+            'product_id'                 => $productId,
+            'product_variant_id'         => null,
+            'quantity'                   => max(1, $quantity),
+            'product_price_id'           => $productPrice->id,
+            'currency_id'                => $currencyId,
+            'unit_price'                 => $unitRaw,
+            'unit_price_after_discount'  => $unitAfter, // null لو مفيش خصم
+            'total_price'                => round($perUnit * max(1, $quantity), 2),
         ]);
     }
-
 
     public function updateQuantityAndPrice(CartItem $cartItem, $addedQty)
     {

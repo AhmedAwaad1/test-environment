@@ -93,6 +93,7 @@ class CartService
         try {
             DB::beginTransaction();
 
+            // 1) هات أو اعمل الكارت
             if (Auth::check()) {
                 $userId = Auth::id();
                 $cart   = $this->cartRepo->findOrCreateUserCart($userId);
@@ -104,35 +105,39 @@ class CartService
                 $cart = $this->cartRepo->findOrCreateBySessionId($data['session_id']);
             }
 
-            $xForwardedFor = request()->header('X-Forwarded-For');
+            // 2) قفل عملة الكارت
+            $xForwardedFor   = trim((string) request()->header('X-Forwarded-For', ''));
+            $geo             = app(GeoCurrencyService::class);
+            $defaultCurrency = $geo->getDefaultCurrency();
 
-            if (!$cart->currency_id) {
-                if (empty($xForwardedFor)) {
-                    session()->forget(['currency_id', 'country_id']);
-                    if (!empty($data['session_id'])) {
-                        Cache::forget("currency_id_{$data['session_id']}");
-                        Cache::forget("country_id_{$data['session_id']}");
-                    }
-                }
-
-                $geo      = app(GeoCurrencyService::class);
-                $currency = !empty($xForwardedFor)
-                    ? ($geo->getCurrencyForRequest() ?? $geo->getDefaultCurrency())
-                    : $geo->getDefaultCurrency();
-
-                if (!$currency) {
-                    $currency = $geo->getDefaultCurrency();
-                }
-
-                $cart->currency_id = $currency->id;
-                $cart->save();
-
-                session(['currency_id' => $currency->id]);
+            if ($xForwardedFor === '') {
+                // مفيش IP: نظّف أي كاش قديم ونفرض الافتراضي لو الكارت فاضي أو العملة مش متعيّنة
+                session()->forget(['currency_id', 'country_id']);
                 if (!empty($data['session_id'])) {
-                    Cache::put("currency_id_{$data['session_id']}", $currency->id, now()->addDays(30));
+                    Cache::forget("currency_id_{$data['session_id']}");
+                    Cache::forget("country_id_{$data['session_id']}");
+                }
+
+                if ($cart->cartItems()->count() === 0 || !$cart->currency_id) {
+                    $cart->currency_id = $defaultCurrency->id;
+                    $cart->save();
+                }
+            } else {
+                // فيه IP: لو العملة مش متعيّنة اقفلها من الـ IP
+                if (!$cart->currency_id) {
+                    $detected = $geo->getCurrencyForRequest() ?? $defaultCurrency;
+                    $cart->currency_id = $detected->id;
+                    $cart->save();
                 }
             }
 
+            // خزّن العملة المقفولة في session/cache
+            session(['currency_id' => $cart->currency_id]);
+            if (!empty($data['session_id'])) {
+                Cache::put("currency_id_{$data['session_id']}", $cart->currency_id, now()->addDays(30));
+            }
+
+            // 3) تحقّق المنتج/الفاريانت
             $itemData = $this->getCartItemData($data, $cart->id);
             if ($itemData['error']) {
                 DB::rollBack();
@@ -143,8 +148,16 @@ class CartService
             $type     = $itemData['type'];
             $quantity = max(1, (int)($data['quantity'] ?? 1));
 
-            $this->cartItemService->createNewCartItem($cart->id, $item, $quantity, $type);
+            // 4) أضِف الـ item بالتسعير حسب "عملة الكارت"
+            $this->cartItemService->createNewCartItem(
+                $cart->id,
+                $item,
+                $quantity,
+                $type,
+                $cart->currency_id // << مهم
+            );
 
+            // 5) احسب التوتال وخصومات
             $this->calculateTotalPrice($cart);
             $this->couponService->checkAndApplyCouponIfExists($cart);
 
