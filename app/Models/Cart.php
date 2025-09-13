@@ -15,6 +15,7 @@ class Cart extends Model
         'discount_amount',
         'total_price',
         'total_price_after_discount',
+        'currency_id'
     ];
 
     public function cartItems()
@@ -24,5 +25,10 @@ class Cart extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(\App\Models\Currency::class);
     }
 }

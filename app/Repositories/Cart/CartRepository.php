@@ -11,7 +11,7 @@ class CartRepository
         $cart = null;
         $cart = Cart::where('user_id', $userId)->first();
 
-        if(!$cart){
+        if (!$cart) {
             $cart = Cart::create(['user_id' => $userId]);
         }
         return $cart;
@@ -20,8 +20,14 @@ class CartRepository
     public function findUserCart($userId)
     {
         return Cart::where('user_id', $userId)
-            ->with('cartItems.product.images', 'cartItems.productVariant.product', 'cartItems.productVariant.optionValues.images')
-            ->first();
+                   ->with([
+                       'cartItems.product.images',
+                       'cartItems.currency',
+                       'cartItems.productVariant.product',
+                       'cartItems.productPrice',
+                       'cartItems.productVariant.optionValues.images',
+                   ])
+                   ->first();
     }
 
     public function findOrCreateBySessionId($sessionId)
@@ -40,10 +46,12 @@ class CartRepository
     public function findBySessionId($sessionId)
     {
         return Cart::where('session_id', $sessionId)
-                   ->with('cartItems.product.images')
+                   ->with([
+                       'cartItems.product.images',
+                       'cartItems.currency',
+                   ])
                    ->first();
     }
-
 
     public function create(array $data)
     {

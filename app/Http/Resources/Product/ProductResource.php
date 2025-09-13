@@ -12,12 +12,13 @@ use App\Http\Resources\Currency\CurrencyResource;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+
 class ProductResource extends JsonResource
 {
-
     public function toArray($request)
     {
         $currency = app(GeoCurrencyService::class)->getCurrencyForRequest();
+
         $priceData = $this->productPrices->map(function ($price) {
             return [
                 'id' => $price->id,
@@ -27,15 +28,19 @@ class ProductResource extends JsonResource
                 'currency' => $price->currency->name,
                 'is_default' => $price->currency->is_default,
             ];
+
+
         });
 
-        // رجع السعر حسب العملة اللي جايه من الـ GeoCurrencyService
-        $priceEntry = $this->productPrices->firstWhere('currency_id', $currency->id) ?? $this->productPrices->first();
+
+        $priceEntry = $this->productPrices->firstWhere('currency_id', $currency?->id)
+            ?? $this->productPrices->firstWhere('currency.is_default', true);
+
         $defaultPrice = [
             'price' => $priceEntry?->price ?? 0,
             'price_after_discount' => $priceEntry?->price_after_discount ?? $priceEntry?->price ?? 0,
-            'currency_id' => $currency->id,
-            'currency' => $currency->name,
+            'currency_id' => $priceEntry?->currency_id,
+            'currency' => $priceEntry?->currency->name,
         ];
 
         $data = [
@@ -52,14 +57,14 @@ class ProductResource extends JsonResource
             'category_id' => $this->category_id,
             'sub_category_id' => $this->sub_category_id,
             'avg_rating' => round($this->reviews()->avg('rating'), 1),
+
             'prices' => $priceData,
             'default_price' => $defaultPrice,
 
-            // باقي العلاقات
             'category' => new CategoryResource($this->whenLoaded('category')),
             'sub_category' => new SubCategoryResource($this->whenLoaded('subCategory')),
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
-            'main_image' => $this->whenLoaded('images', function() {
+            'main_image' => $this->whenLoaded('images', function () {
                 return new ProductImageResource(
                     $this->images->firstWhere('is_main', true) ?? $this->images->first()
                 );
@@ -67,7 +72,7 @@ class ProductResource extends JsonResource
         ];
 
         if ($this->has_variants) {
-            $variants = $this->whenLoaded('productVariants', function() {
+            $variants = $this->whenLoaded('productVariants', function () {
                 return $this->productVariants->where('is_active', true);
             });
 
@@ -75,9 +80,9 @@ class ProductResource extends JsonResource
                 'quantity' => $this->quantity ?? null,
                 'options' => ProductOptionResource::collection($this->whenLoaded('productOptions')),
                 'variants' => ProductVariantResource::collection($variants),
-                'available_options' => $this->whenLoaded('productOptions', function() {
-                    return $this->productOptions->map(function($option) {
-                        $values = $option->values->map(function($value) {
+                'available_options' => $this->whenLoaded('productOptions', function () {
+                    return $this->productOptions->map(function ($option) {
+                        $values = $option->values->map(function ($value) {
                             return [
                                 'id' => $value->id,
                                 'value' => $value->value,
@@ -104,8 +109,15 @@ class ProductResource extends JsonResource
                 'total_quantity' => $this->quantity,
             ]);
         }
+
+//        $data['debug_geo'] = [
+//            'header_ip' => $request->header('X-Forwarded-For'),
+//            'resolved_ip' => $request->ip(),
+//            'country' => app(GeoCurrencyService::class)->getCountryCodeFromIp(),
+//            'currency' => optional(app(GeoCurrencyService::class)->getCurrencyForRequest())->name,
+//        ];
+
         return $data;
     }
-
 }
 

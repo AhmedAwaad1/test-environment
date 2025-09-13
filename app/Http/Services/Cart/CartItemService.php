@@ -4,6 +4,7 @@ namespace App\Http\Services\Cart;
 
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Http\Services\ProductPrice\ProductPriceService;
+use App\Models\Cart;
 use App\Models\CartItem;
 use App\Repositories\CartItem\CartItemRepository;
 use Illuminate\Support\Facades\Response;
@@ -27,110 +28,96 @@ class CartItemService
     {
         $productId = $item->id;
 
-        $currency = $this->geoCurrencyService->getCurrencyForRequest();
-        \Log::channel('product_price')->info('Detected currency from IP/session', [
-            'currency_id' => $currency->id,
-            'currency_code' => $currency->name,
-        ]);
+        $cart = Cart::select('id', 'currency_id')->findOrFail($cartId);
 
-        $productPrice = $this->productPriceService->getProductPriceByProductAndCurrency($productId, $currency->id);
-        \Log::channel('product_price')->info('Price fetched with detected currency', [
-            'found' => (bool)$productPrice,
-            'product_id' => $productId,
-            'currency_id' => $currency->id,
-        ]);
+        if (!$cart->currency_id) {
+            $detected   = $this->geoCurrencyService->getCurrencyForRequest();
+            $defaultCur = $this->geoCurrencyService->getDefaultCurrency();
+            $lockedId   = $detected?->id ?? $defaultCur->id;
 
-        if (!$productPrice) {
-            $defaultCurrency = $this->geoCurrencyService->getDefaultCurrency();
-            \Log::channel('product_price')->warning('Fallback to default currency', [
-                'default_currency_id' => $defaultCurrency->id,
-                'default_currency_code' => $defaultCurrency->name,
+            $cart->currency_id = $lockedId;
+            $cart->save();
+
+            \Log::channel('product_price')->info('Locked cart currency', [
+                'cart_id'     => $cart->id,
+                'currency_id' => $lockedId,
             ]);
-
-            $productPrice = $this->productPriceService->getProductPriceByProductAndCurrency($productId, $defaultCurrency->id);
-
-            \Log::channel('product_price')->info('Price fetched with default currency', [
-                'found' => (bool)$productPrice,
-                'product_id' => $productId,
-                'currency_id' => $defaultCurrency->id,
-            ]);
-
-            if (!$productPrice) {
-                \Log::channel('product_price')->error('No price available for product in any currency', [
-                    'product_id' => $productId,
-                ]);
-
-                throw new \Exception("No price available for this product.");
-            }
         }
 
-        $price = $productPrice->price_after_discount ?? $productPrice->price;
+        $currencyId = (int) $cart->currency_id;
 
-        \Log::channel('product_price')->info('Final price selected for cart item', [
-            'price' => $price,
-            'product_price_id' => $productPrice->id,
-            'product_id' => $productId,
-            'currency_id' => $productPrice->currency_id,
-        ]);
+        $productPrice = $this->productPriceService->getProductPriceByProductAndCurrency($productId, $currencyId);
 
+        if (!$productPrice) {
+            \Log::channel('product_price')->warning('Missing product price in cart currency', [
+                'product_id'  => $productId,
+                'currency_id' => $currencyId,
+                'cart_id'     => $cart->id,
+            ]);
+
+            throw new \Exception("No price available for this product in the cart currency.");
+        }
+
+        $unitRaw   = (float) $productPrice->price;
+        $unitAfter = $productPrice->price_after_discount !== null ? (float) $productPrice->price_after_discount : null;
+        $perUnit   = $unitAfter ?? $unitRaw;
+
+        $existingSamePrice = $this->cartItemRepo
+            ->findByCartProductAndPrice($cartId, $productId, $productPrice->id);
+
+        if ($existingSamePrice) {
+            $existingSamePrice->quantity    += (int) $quantity;
+            $existingSamePrice->total_price  = round($perUnit * $existingSamePrice->quantity, 2);
+            $existingSamePrice->save();
+
+            return $existingSamePrice;
+        }
 
         return $this->cartItemRepo->create([
-            'cart_id'            => $cartId,
-            'product_id'         => $type === 'product' ? $item->id : null,
-            'product_variant_id' => $type === 'variant' ? $item->id : null,
-            'quantity'           => $quantity,
-            'price'              => $price,
-            'total_price'        => $this->calculateItemPrice($price, $quantity),
+            'cart_id'                   => $cartId,
+            'product_id'                => $productId,
+            'product_variant_id'        => null,
+            'quantity'                  => (int) $quantity,
+            'product_price_id'          => $productPrice->id,
+            'currency_id'               => $currencyId, // عملة الكارت
+            'unit_price'                => $unitRaw,
+            'unit_price_after_discount' => $unitAfter,
+            'total_price'               => round($perUnit * (int) $quantity, 2),
         ]);
     }
 
 
-
-
-    public function updateQuantityAndPrice(CartItem $cartItem, $item, $addedQty, $type)
+    public function updateQuantityAndPrice(CartItem $cartItem, $addedQty)
     {
-        $productId = $item->id;
+        $added = max(1, (int)$addedQty);
 
-        $currency = $this->geoCurrencyService->getCurrencyForRequest();
-        $productPrice = $this->productPriceService->getProductPriceByProductAndCurrency($productId, $currency->id)
-            ?? $this->productPriceService->getProductPriceByProductAndCurrency($productId, $this->geoCurrencyService->getDefaultCurrency()->id);
-
-        if (!$productPrice) {
-            throw new \Exception("No price available for this product.");
-        }
-
-        $price = $productPrice->price_after_discount ?? $productPrice->price;
-
-        $cartItem->quantity += $addedQty;
-        $cartItem->price = $price;
-        $cartItem->total_price = $price * $cartItem->quantity;
+        $perUnit = $cartItem->unit_price_after_discount ?? $cartItem->unit_price;
+        $cartItem->quantity    += $added;
+        $cartItem->total_price  = round($perUnit * $cartItem->quantity, 2);
         $cartItem->save();
 
         return $cartItem;
     }
 
 
-    public function updateCartItemQuantity($cartItemId, $data)
+
+    public function updateCartItemQuantity($cartItemId, array $data)
     {
-        $cartItem = $this->cartItemRepo->findById($cartItemId);
-        if (!$cartItem) {
-            return Response::errorResponse('Cart item not found', [], 404);
-        }
-        if (Auth::check()) {
-            if ($cartItem->cart->user_id !== Auth::id()) {
-                return Response::errorResponse('Unauthorized access to cart item', [], 403);
-            }
-        } else {
-            if (empty($data['session_id']) || $cartItem->cart->session_id !== $data['session_id']) {
-                return Response::errorResponse('Unauthorized guest access to cart item', [], 403);
-            }
+        $item = $this->cartItemRepo->findById((int)$cartItemId);
+        if (!$item) {
+            throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Cart item not found');
         }
 
-        $cartItem->quantity = $data['quantity'];
-        $cartItem->total_price = $this->calculateItemPrice($cartItem->price, $data['quantity']);
-        $cartItem->save();
-        return $cartItem;
+        $newQty  = max(1, (int)($data['quantity'] ?? 1));
+        $perUnit = $item->unit_price_after_discount ?? $item->unit_price;
+
+        $item->quantity    = $newQty;
+        $item->total_price = round($perUnit * $newQty, 2);
+        $item->save();
+
+        return $item;
     }
+
 
     public function deleteCartItem($cartItemId, $cartId)
     {

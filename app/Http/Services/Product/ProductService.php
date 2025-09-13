@@ -12,6 +12,7 @@ use App\Repositories\ProductOption\ProductOptionRepository;
 use App\Repositories\ProductOptionValue\ProductOptionValueRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
 use App\Models\VariantOptionValue;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
@@ -32,17 +33,14 @@ class ProductService
     public function getAllProducts($request)
     {
         try {
+            session()->forget('currency_id');
+
+            if ($sid = $request->get('session_id')) {
+                Cache::forget("currency_id_{$sid}");
+            }
+
             $currency = $this->geoCurrencyService->getCurrencyForRequest();
             $products = $this->productRepo->getAll($request);
-
-            $products->load([
-                'images',
-                'productVariants',
-                'productOptions.values',
-                'category',
-                'subCategory',
-                'productPrices',
-            ]);
 
             $resource = $request->per_page
                 ? new PaginationResource($products, ProductResource::class)
@@ -50,7 +48,8 @@ class ProductService
 
             return Response::successResponse(
                 $resource->additional([
-                    'currency' => $currency?->code,
+                    'currency' => $currency?->name,
+                    'currency_id' => $currency?->id,
                 ]),
                 'Products retrieved successfully'
             );
@@ -64,15 +63,7 @@ class ProductService
     {
         try {
             $currency = $this->geoCurrencyService->getCurrencyForRequest();
-            $product  = $this->productRepo->findWithVariants($id)
-                                          ->load([
-                                              'productPrices.currency',
-                                              'images',
-                                              'productVariants',
-                                              'productOptions.values',
-                                              'category',
-                                              'subCategory',
-                                          ]);
+            $product  = $this->productRepo->findWithVariants($id);
 
             if (!$product) {
                 return Response::errorResponse('Product not found', [], 404);
@@ -80,7 +71,8 @@ class ProductService
 
             return Response::successResponse(
                 (new ProductResource($product))->additional([
-                    'currency' => $currency?->code,
+                    'currency' => $currency?->name,
+                    'currency_id' => $currency?->id,
                 ]),
                 'Product found successfully'
             );

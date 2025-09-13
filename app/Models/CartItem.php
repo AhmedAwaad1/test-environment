@@ -8,19 +8,25 @@ use Illuminate\Database\Eloquent\Model;
 class CartItem extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'cart_id',
         'product_variant_id',
         'product_id',
         'quantity',
-        'price',
+        'product_price_id',
+        'currency_id',
+        'unit_price',
+        'unit_price_after_discount',
         'total_price',
     ];
+
 
     public function cart()
     {
         return $this->belongsTo(Cart::class);
     }
+
     public function productVariant()
     {
         return $this->belongsTo(ProductVariant::class);
@@ -29,5 +35,14 @@ class CartItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
+    }
+    public function productPrice()
+    {
+        return $this->belongsTo(ProductPrice::class);
     }
 }

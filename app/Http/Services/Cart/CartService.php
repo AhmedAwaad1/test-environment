@@ -15,38 +15,39 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
+
 class CartService
 {
     protected $cartRepo, $cartItemRepo, $productVarRepo, $couponService,
         $productRepo, $productValidator, $cartItemService, $geoCurrencyService, $productPriceService;
 
     public function __construct(
-        CartRepository $cartRepo,
-        CartItemRepository $cartItemRepo,
-        ProductRepository $productRepo,
+        CartRepository           $cartRepo,
+        CartItemRepository       $cartItemRepo,
+        ProductRepository        $productRepo,
         ProductVariantRepository $productVarRepo,
-        ProductValidatorService $productValidator,
-        CartItemService $cartItemService,
-        CouponService $couponService,
-        GeoCurrencyService $geoCurrencyService,
-        ProductPriceService $productPriceService
+        ProductValidatorService  $productValidator,
+        CartItemService          $cartItemService,
+        CouponService            $couponService,
+        GeoCurrencyService       $geoCurrencyService,
+        ProductPriceService      $productPriceService
 
     )
     {
-        $this->cartRepo = $cartRepo;
-        $this->cartItemRepo = $cartItemRepo;
-        $this->productVarRepo = $productVarRepo;
-        $this->productRepo = $productRepo;
-        $this->productValidator = $productValidator;
-        $this->cartItemService = $cartItemService;
-        $this->couponService = $couponService;
-        $this->geoCurrencyService = $geoCurrencyService;
+        $this->cartRepo            = $cartRepo;
+        $this->cartItemRepo        = $cartItemRepo;
+        $this->productVarRepo      = $productVarRepo;
+        $this->productRepo         = $productRepo;
+        $this->productValidator    = $productValidator;
+        $this->cartItemService     = $cartItemService;
+        $this->couponService       = $couponService;
+        $this->geoCurrencyService  = $geoCurrencyService;
         $this->productPriceService = $productPriceService;
     }
 
     public function getUserCart()
     {
-        try{
+        try {
             $user = Auth::user();
 
             $cart = $this->cartRepo->findUserCart($user->id);
@@ -109,25 +110,9 @@ class CartService
             }
 
             $item = $itemData['item'];
-            $existingItem = $itemData['existing'];
             $type = $itemData['type'];
 
-            if ($existingItem) {
-                $currency = $this->geoCurrencyService->getCurrencyForRequest();
-                $productPrice = $this->productPriceService->getProductPriceByProductAndCurrency($item->id, $currency->id)
-                    ?? $this->productPriceService->getProductPriceByProductAndCurrency($item->id, $this->geoCurrencyService->getDefaultCurrency()->id);
-
-                if (!$productPrice) {
-                    return Response::errorResponse('No price available for this product', [], 400);
-                }
-
-                $price = $productPrice->price_after_discount ?? $productPrice->price;
-
-                $this->cartItemService->updateQuantityAndPrice($existingItem, $item, $data['quantity'], $type);
-            } else {
-                $this->cartItemService->createNewCartItem($cart->id, $item, $data['quantity'], $type);
-            }
-
+            $this->cartItemService->createNewCartItem($cart->id, $item, $data['quantity'], $type);
 
 
             $this->calculateTotalPrice($cart);
@@ -135,6 +120,7 @@ class CartService
 
             DB::commit();
 
+            $cart->refresh()->load(['cartItems.product.images', 'cartItems.currency']);
             return Response::successResponse(new CartResource($cart), 'Item added to cart', 201);
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -171,7 +157,7 @@ class CartService
 
             if (Auth::check()) {
                 $userId = Auth::id();
-                $cart = $this->cartRepo->findUserCart($userId);
+                $cart   = $this->cartRepo->findUserCart($userId);
             } else {
                 if (empty($sessionId)) {
                     return Response::errorResponse('Session ID is required for guest cart.', [], 400);
@@ -205,7 +191,6 @@ class CartService
     }
 
 
-
     public function calculateItemPrice($unitPrice, $quantity)
     {
         return $unitPrice * $quantity;
@@ -224,24 +209,24 @@ class CartService
     private function getCartItemData(array $data, $cartId): array
     {
         if (!empty($data['product_variant_id'])) {
-            $item = $this->productVarRepo->find($data['product_variant_id']);
-            $existing = $this->cartItemRepo->variantExistsInCart($cartId, $item->id);
+            $item       = $this->productVarRepo->find($data['product_variant_id']);
+            $existing   = $this->cartItemRepo->variantExistsInCart($cartId, $item->id);
             $currentQty = $existing ? $existing->quantity : 0;
-            $totalQty = $currentQty + $data['quantity'];
+            $totalQty   = $currentQty + $data['quantity'];
             $validation = $this->productValidator->validateVariant($item, $totalQty);
-            $type = 'variant';
-            $price = $item->price ?? 0;
+            $type       = 'variant';
+            $price      = $item->price ?? 0;
         } else {
             $item = $this->productRepo->find($data['product_id']);
             if ($item->has_variants) {
                 return ['error' => 'Product has variants and cannot be added to cart'];
             }
 
-            $existing = $this->cartItemRepo->productExistsInCart($cartId, $item->id);
+            $existing   = $this->cartItemRepo->productExistsInCart($cartId, $item->id);
             $currentQty = $existing ? $existing->quantity : 0;
-            $totalQty = $currentQty + $data['quantity'];
+            $totalQty   = $currentQty + $data['quantity'];
             $validation = $this->productValidator->validateProduct($item, $totalQty);
-            $type = 'product';
+            $type       = 'product';
         }
 
         if ($validation !== true) {
