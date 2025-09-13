@@ -8,46 +8,59 @@ use App\Http\Resources\ProductVariant\ProductVariantResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+
+
 class CartItemResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
+     * Format money values to 2 decimals as string.
      */
+    private function money($v): string
+    {
+        return number_format((float)($v ?? 0), 2, '.', '');
+    }
 
     public function toArray($request): array
     {
-        $perUnit = $this->unit_price_after_discount ?? $this->unit_price;
-
-        $mainImage = optional($this->product->images->firstWhere('is_main', true) ?? $this->product->images->first())->image;
+        $unitRaw    = (float)($this->unit_price ?? 0);
+        $after      = $this->unit_price_after_discount;
+        // treat 0.00 as "no discount"
+        $unitAfter  = ($after !== null && (float)$after > 0) ? (float)$after : null;
+        $perUnit    = $unitAfter ?? $unitRaw;
+        $qty        = (int)($this->quantity ?? 0);
 
         return [
-            'id'                       => $this->id,
-            'product_id'               => $this->product_id,
-            'quantity'                 => (int) $this->quantity,
+            'id'                         => $this->id,
+            'product_id'                 => $this->product_id,
+            'quantity'                   => $qty,
 
-            'unit_price'               => (float) $this->unit_price,
-            'unit_price_after_discount'=> $this->unit_price_after_discount !== null ? (float) $this->unit_price_after_discount : null,
-            'unit_price_applied'       => (float) $perUnit,
-            'total_price'              => (float) $this->total_price,
+            'unit_price'                 => $this->money($unitRaw),
+            'unit_price_after_discount'  => $unitAfter !== null ? $this->money($unitAfter) : null,
+            'unit_price_applied'         => $this->money($perUnit),
+            'total_price'                => $this->money($perUnit * $qty),
 
-            'product_price_id'         => $this->product_price_id,
+            'product_price_id'           => $this->product_price_id,
             'currency' => [
                 'id'   => $this->currency?->id,
                 'name' => $this->currency?->name,
             ],
 
-            'product' => $this->whenLoaded('product', function () use ($mainImage) {
+            'product' => $this->whenLoaded('product', function () {
+                $mainImage = optional(
+                    $this->product->images->firstWhere('is_main', true)
+                    ?? $this->product->images->first()
+                )->image;
+
                 return [
-                    'id'          => $this->product->id,
-                    'name_en'     => $this->product->name_en,
-                    'name_ar'     => $this->product->name_ar,
-                    'sku'         => $this->product->sku,
-                    'main_image'  => $mainImage,
+                    'id'         => $this->product->id,
+                    'name_en'    => $this->product->name_en,
+                    'name_ar'    => $this->product->name_ar,
+                    'sku'        => $this->product->sku,
+                    'main_image' => $mainImage,
                 ];
             }),
         ];
     }
+
 }
 
