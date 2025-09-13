@@ -20,27 +20,30 @@ class ProductResource extends JsonResource
         $currency = app(GeoCurrencyService::class)->getCurrencyForRequest();
 
         $priceData = $this->productPrices->map(function ($price) {
+            $after = $price->price_after_discount;
+            $effective = (!is_null($after) && (float)$after > 0) ? $after : $price->price;
+
             return [
                 'id' => $price->id,
                 'price' => $price->price,
-                'price_after_discount' => $price->price_after_discount,
+                'price_after_discount' => $effective, // fallback
                 'currency_id' => $price->currency_id,
-                'currency' => $price->currency->name,
-                'is_default' => $price->currency->is_default,
+                'currency' => $price->currency?->name,
+                'is_default' => $price->currency?->is_default,
             ];
-
-
         });
-
 
         $priceEntry = $this->productPrices->firstWhere('currency_id', $currency?->id)
             ?? $this->productPrices->firstWhere('currency.is_default', true);
 
+        $after = $priceEntry?->price_after_discount;
+        $effective = (!is_null($after) && (float)$after > 0) ? $after : $priceEntry?->price;
+
         $defaultPrice = [
             'price' => $priceEntry?->price ?? 0,
-            'price_after_discount' => $priceEntry?->price_after_discount ?? $priceEntry?->price ?? 0,
+            'price_after_discount' => $effective, // fallback
             'currency_id' => $priceEntry?->currency_id,
-            'currency' => $priceEntry?->currency->name,
+            'currency' => $priceEntry?->currency?->name,
         ];
 
         $data = [
@@ -109,13 +112,6 @@ class ProductResource extends JsonResource
                 'total_quantity' => $this->quantity,
             ]);
         }
-
-//        $data['debug_geo'] = [
-//            'header_ip' => $request->header('X-Forwarded-For'),
-//            'resolved_ip' => $request->ip(),
-//            'country' => app(GeoCurrencyService::class)->getCountryCodeFromIp(),
-//            'currency' => optional(app(GeoCurrencyService::class)->getCurrencyForRequest())->name,
-//        ];
 
         return $data;
     }
