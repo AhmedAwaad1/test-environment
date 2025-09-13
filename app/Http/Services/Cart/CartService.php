@@ -12,6 +12,7 @@ use App\Repositories\Product\ProductRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
@@ -90,47 +91,78 @@ class CartService
     public function addToCart(array $data)
     {
         try {
-
-            if (!request()->hasHeader('X-Forwarded-For') || request()->boolean('reset_currency')) {
-                app(GeoCurrencyService::class)->resetForRequest($data['session_id'] ?? null);
-            }
             DB::beginTransaction();
 
             if (Auth::check()) {
                 $userId = Auth::id();
-
-                $cart = $this->cartRepo->findOrCreateUserCart($userId);
+                $cart   = $this->cartRepo->findOrCreateUserCart($userId);
             } else {
                 if (empty($data['session_id'])) {
+                    DB::rollBack();
                     return Response::errorResponse('Session ID is required for guest cart.', [], 400);
                 }
-
                 $cart = $this->cartRepo->findOrCreateBySessionId($data['session_id']);
+            }
+
+            $xForwardedFor = request()->header('X-Forwarded-For');
+
+            if (!$cart->currency_id) {
+                if (empty($xForwardedFor)) {
+                    session()->forget(['currency_id', 'country_id']);
+                    if (!empty($data['session_id'])) {
+                        Cache::forget("currency_id_{$data['session_id']}");
+                        Cache::forget("country_id_{$data['session_id']}");
+                    }
+                }
+
+                $geo      = app(GeoCurrencyService::class);
+                $currency = !empty($xForwardedFor)
+                    ? ($geo->getCurrencyForRequest() ?? $geo->getDefaultCurrency())
+                    : $geo->getDefaultCurrency();
+
+                if (!$currency) {
+                    $currency = $geo->getDefaultCurrency();
+                }
+
+                $cart->currency_id = $currency->id;
+                $cart->save();
+
+                session(['currency_id' => $currency->id]);
+                if (!empty($data['session_id'])) {
+                    Cache::put("currency_id_{$data['session_id']}", $currency->id, now()->addDays(30));
+                }
             }
 
             $itemData = $this->getCartItemData($data, $cart->id);
             if ($itemData['error']) {
+                DB::rollBack();
                 return Response::errorResponse($itemData['error'], [], 400);
             }
 
-            $item = $itemData['item'];
-            $type = $itemData['type'];
+            $item     = $itemData['item'];
+            $type     = $itemData['type'];
+            $quantity = max(1, (int)($data['quantity'] ?? 1));
 
-            $this->cartItemService->createNewCartItem($cart->id, $item, $data['quantity'], $type);
-
+            $this->cartItemService->createNewCartItem($cart->id, $item, $quantity, $type);
 
             $this->calculateTotalPrice($cart);
             $this->couponService->checkAndApplyCouponIfExists($cart);
 
             DB::commit();
 
-            $cart->refresh()->load(['cartItems.product.images', 'cartItems.currency']);
+            $cart->refresh()->load([
+                'cartItems.product.images',
+                'cartItems.currency',
+            ]);
+
             return Response::successResponse(new CartResource($cart), 'Item added to cart', 201);
+
         } catch (\Throwable $e) {
             DB::rollBack();
             return Response::handleException($e, 'Error adding item to cart');
         }
     }
+
 
 
     public function updateCartItemQuantity($cartItemId, $data)
