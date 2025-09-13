@@ -87,13 +87,12 @@ class CartService
         }
     }
 
-
     public function addToCart(array $data)
     {
         try {
             DB::beginTransaction();
 
-            // 1) هات أو اعمل الكارت
+            // 1) Get or create cart
             if (Auth::check()) {
                 $userId = Auth::id();
                 $cart   = $this->cartRepo->findOrCreateUserCart($userId);
@@ -105,25 +104,25 @@ class CartService
                 $cart = $this->cartRepo->findOrCreateBySessionId($data['session_id']);
             }
 
-            // 2) قفل عملة الكارت
+            // 2) Lock cart currency
             $xForwardedFor   = trim((string) request()->header('X-Forwarded-For', ''));
             $geo             = app(GeoCurrencyService::class);
             $defaultCurrency = $geo->getDefaultCurrency();
 
             if ($xForwardedFor === '') {
-                // مفيش IP: نظّف أي كاش قديم ونفرض الافتراضي لو الكارت فاضي أو العملة مش متعيّنة
+                // No IP: Clear cache and ALWAYS force default currency
                 session()->forget(['currency_id', 'country_id']);
                 if (!empty($data['session_id'])) {
                     Cache::forget("currency_id_{$data['session_id']}");
                     Cache::forget("country_id_{$data['session_id']}");
                 }
 
-                if ($cart->cartItems()->count() === 0 || !$cart->currency_id) {
-                    $cart->currency_id = $defaultCurrency->id;
-                    $cart->save();
-                }
+                // KEY FIX: Always set to default when no IP header
+                $cart->currency_id = $defaultCurrency->id;
+                $cart->save();
+
             } else {
-                // فيه IP: لو العملة مش متعيّنة اقفلها من الـ IP
+                // Has IP: If currency not set, detect from IP
                 if (!$cart->currency_id) {
                     $detected = $geo->getCurrencyForRequest() ?? $defaultCurrency;
                     $cart->currency_id = $detected->id;
@@ -131,13 +130,13 @@ class CartService
                 }
             }
 
-            // خزّن العملة المقفولة في session/cache
+            // Store locked currency in session/cache
             session(['currency_id' => $cart->currency_id]);
             if (!empty($data['session_id'])) {
                 Cache::put("currency_id_{$data['session_id']}", $cart->currency_id, now()->addDays(30));
             }
 
-            // 3) تحقّق المنتج/الفاريانت
+            // 3) Validate product/variant
             $itemData = $this->getCartItemData($data, $cart->id);
             if ($itemData['error']) {
                 DB::rollBack();
@@ -148,16 +147,16 @@ class CartService
             $type     = $itemData['type'];
             $quantity = max(1, (int)($data['quantity'] ?? 1));
 
-            // 4) أضِف الـ item بالتسعير حسب "عملة الكارت"
+            // 4) Add item with cart's currency
             $this->cartItemService->createNewCartItem(
                 $cart->id,
                 $item,
                 $quantity,
                 $type,
-                $cart->currency_id // << مهم
+                $cart->currency_id
             );
 
-            // 5) احسب التوتال وخصومات
+            // 5) Calculate total and apply coupons
             $this->calculateTotalPrice($cart);
             $this->couponService->checkAndApplyCouponIfExists($cart);
 
@@ -175,8 +174,6 @@ class CartService
             return Response::handleException($e, 'Error adding item to cart');
         }
     }
-
-
 
     public function updateCartItemQuantity($cartItemId, $data)
     {
