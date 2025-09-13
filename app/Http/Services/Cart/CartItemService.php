@@ -24,52 +24,37 @@ class CartItemService
         protected ProductPriceService $productPriceService,
     ) {}
 
-    public function createNewCartItem($cartId, $item, $quantity, $type)
+    public function createNewCartItem(int $cartId, $item, int $quantity, string $type, ?int $cartCurrencyId = null)
     {
         $productId = $item->id;
 
-        $cart = Cart::select('id', 'currency_id')->findOrFail($cartId);
+        // لو لسه مش قافل عملة الكارت، خليك زي ما أنت دلوقتي:
+        $currencyId = $cartCurrencyId
+            ?? optional($this->geoCurrencyService->getCurrencyForRequest())->id
+            ?? $this->geoCurrencyService->getDefaultCurrency()->id;
 
-        if (!$cart->currency_id) {
-            $detected   = $this->geoCurrencyService->getCurrencyForRequest();
-            $defaultCur = $this->geoCurrencyService->getDefaultCurrency();
-            $lockedId   = $detected?->id ?? $defaultCur->id;
-
-            $cart->currency_id = $lockedId;
-            $cart->save();
-
-            \Log::channel('product_price')->info('Locked cart currency', [
-                'cart_id'     => $cart->id,
-                'currency_id' => $lockedId,
-            ]);
-        }
-
-        $currencyId = (int) $cart->currency_id;
-
-        $productPrice = $this->productPriceService->getProductPriceByProductAndCurrency($productId, $currencyId);
+        $productPrice = $this->productPriceService
+            ->getProductPriceByProductAndCurrency($productId, $currencyId);
 
         if (!$productPrice) {
-            \Log::channel('product_price')->warning('Missing product price in cart currency', [
-                'product_id'  => $productId,
-                'currency_id' => $currencyId,
-                'cart_id'     => $cart->id,
-            ]);
-
             throw new \Exception("No price available for this product in the cart currency.");
         }
 
-        $unitRaw   = (float) $productPrice->price;
-        $unitAfter = $productPrice->price_after_discount !== null ? (float) $productPrice->price_after_discount : null;
-        $perUnit   = $unitAfter ?? $unitRaw;
+        $unitRaw = (float) $productPrice->price;
+
+        // أهم سطرين: اعتبر 0 = مفيش خصم
+        $unitAfter = $productPrice->price_after_discount;
+        $unitAfter = ($unitAfter !== null && (float)$unitAfter > 0) ? (float)$unitAfter : null;
+
+        $perUnit = $unitAfter ?? $unitRaw;
 
         $existingSamePrice = $this->cartItemRepo
             ->findByCartProductAndPrice($cartId, $productId, $productPrice->id);
 
         if ($existingSamePrice) {
-            $existingSamePrice->quantity    += (int) $quantity;
-            $existingSamePrice->total_price  = round($perUnit * $existingSamePrice->quantity, 2);
+            $existingSamePrice->quantity += $quantity;
+            $existingSamePrice->total_price = round($perUnit * $existingSamePrice->quantity, 2);
             $existingSamePrice->save();
-
             return $existingSamePrice;
         }
 
@@ -77,12 +62,12 @@ class CartItemService
             'cart_id'                   => $cartId,
             'product_id'                => $productId,
             'product_variant_id'        => null,
-            'quantity'                  => (int) $quantity,
+            'quantity'                  => $quantity,
             'product_price_id'          => $productPrice->id,
-            'currency_id'               => $currencyId, // عملة الكارت
+            'currency_id'               => $currencyId,
             'unit_price'                => $unitRaw,
-            'unit_price_after_discount' => $unitAfter,
-            'total_price'               => round($perUnit * (int) $quantity, 2),
+            'unit_price_after_discount' => $unitAfter,  // هتكون null لو مفيش خصم
+            'total_price'               => round($perUnit * $quantity, 2),
         ]);
     }
 
@@ -108,8 +93,12 @@ class CartItemService
             throw new \Illuminate\Database\Eloquent\ModelNotFoundException('Cart item not found');
         }
 
-        $newQty  = max(1, (int)($data['quantity'] ?? 1));
-        $perUnit = $item->unit_price_after_discount ?? $item->unit_price;
+        $newQty = max(1, (int)($data['quantity'] ?? 1));
+
+        // برضه هنا: 0 = مفيش خصم
+        $perUnit = ($item->unit_price_after_discount !== null && (float)$item->unit_price_after_discount > 0)
+            ? (float)$item->unit_price_after_discount
+            : (float)$item->unit_price;
 
         $item->quantity    = $newQty;
         $item->total_price = round($perUnit * $newQty, 2);

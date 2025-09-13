@@ -15,6 +15,10 @@ class ProductPrice extends Model
         'price',
         'price_after_discount',
     ];
+    protected $casts = [
+        'price'                => 'decimal:2',
+        'price_after_discount' => 'decimal:2',
+    ];
 
     public function product()
     {
