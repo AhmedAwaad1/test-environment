@@ -6,6 +6,7 @@ use App\Http\Resources\Cart\CartResource;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Http\Services\ProductPrice\ProductPriceService;
 use App\Models\Cart;
+use App\Models\User;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\CartItem\CartItemRepository;
 use App\Repositories\Product\ProductRepository;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
+use Tymon\JWTAuth\Facades\JWTAuth;
 
 
 class CartService
@@ -90,12 +92,12 @@ class CartService
     public function addToCart(array $data)
     {
         try {
-            DB::beginTransaction();
 
-            // 1) Get or create cart
-            if (Auth::check()) {
-                $userId = Auth::id();
-                $cart   = $this->cartRepo->findOrCreateUserCart($userId);
+            DB::beginTransaction();
+            $user = $this->resolveUserFromRequest();
+
+            if ($user) {
+                $cart = $this->cartRepo->findOrCreateUserCart($user->id);
             } else {
                 if (empty($data['session_id'])) {
                     DB::rollBack();
@@ -104,39 +106,33 @@ class CartService
                 $cart = $this->cartRepo->findOrCreateBySessionId($data['session_id']);
             }
 
-            // 2) Lock cart currency
-            $xForwardedFor   = trim((string) request()->header('X-Forwarded-For', ''));
+            $xForwardedFor   = trim((string)request()->header('X-Forwarded-For', ''));
             $geo             = app(GeoCurrencyService::class);
             $defaultCurrency = $geo->getDefaultCurrency();
 
             if ($xForwardedFor === '') {
-                // No IP: Clear cache and ALWAYS force default currency
                 session()->forget(['currency_id', 'country_id']);
                 if (!empty($data['session_id'])) {
                     Cache::forget("currency_id_{$data['session_id']}");
                     Cache::forget("country_id_{$data['session_id']}");
                 }
 
-                // KEY FIX: Always set to default when no IP header
                 $cart->currency_id = $defaultCurrency->id;
                 $cart->save();
 
             } else {
-                // Has IP: If currency not set, detect from IP
                 if (!$cart->currency_id) {
-                    $detected = $geo->getCurrencyForRequest() ?? $defaultCurrency;
+                    $detected          = $geo->getCurrencyForRequest() ?? $defaultCurrency;
                     $cart->currency_id = $detected->id;
                     $cart->save();
                 }
             }
 
-            // Store locked currency in session/cache
             session(['currency_id' => $cart->currency_id]);
             if (!empty($data['session_id'])) {
                 Cache::put("currency_id_{$data['session_id']}", $cart->currency_id, now()->addDays(30));
             }
 
-            // 3) Validate product/variant
             $itemData = $this->getCartItemData($data, $cart->id);
             if ($itemData['error']) {
                 DB::rollBack();
@@ -147,7 +143,6 @@ class CartService
             $type     = $itemData['type'];
             $quantity = max(1, (int)($data['quantity'] ?? 1));
 
-            // 4) Add item with cart's currency
             $this->cartItemService->createNewCartItem(
                 $cart->id,
                 $item,
@@ -156,7 +151,6 @@ class CartService
                 $cart->currency_id
             );
 
-            // 5) Calculate total and apply coupons
             $this->calculateTotalPrice($cart);
             $this->couponService->checkAndApplyCouponIfExists($cart);
 
@@ -280,6 +274,26 @@ class CartService
         }
 
         return ['item' => $item, 'existing' => $existing, 'type' => $type, 'error' => false];
+    }
+
+    private function resolveUserFromRequest(): ?User
+    {
+        // لو فيه يوزر محمّل بالفعل
+        if (auth()->check()) {
+            return auth()->user();
+        }
+
+        // لو فيه Bearer token في الهيدر
+        $token = request()->bearerToken();
+        if (!$token) {
+            return null;
+        }
+
+        try {
+            return JWTAuth::setToken($token)->authenticate(); // بيرجّع User أو null
+        } catch (\Throwable $e) {
+            return null; // أي مشكلة في التوكن => نعامل الطلب كضيف
+        }
     }
 
 

@@ -18,19 +18,22 @@ class OrderItemResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array
+    public function toArray($request): array
     {
         return [
-            "id" => $this->id,
-            'order_id' => $this->order_id,
-            'product_variant_id' => $this->product_variant_id,
+            'id'           => $this->id,
+            'product_id'   => $this->product_id,
             'product_name' => $this->product_name,
-            'quantity' => $this->quantity,
-            'price' => $this->price,
-            'total' => $this->total,
-            'product_variant' => new ProductVariantResource($this->whenLoaded('product')),
-            'order' => new OrderResource($this->whenLoaded('order')),
-        ];
 
+            'product_price_id' => $this->product_price_id,
+
+            'unit_price'                => (string)number_format((float)$this->unit_price, 2, '.', ''),
+            'unit_price_after_discount' => $this->unit_price_after_discount !== null
+                ? (string)number_format((float)$this->unit_price_after_discount, 2, '.', '')
+                : null,
+
+            'quantity'    => (int)$this->quantity,
+            'total_price' => (string)number_format((float)$this->total_price, 2, '.', ''),
+        ];
     }
 }

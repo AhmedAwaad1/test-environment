@@ -8,13 +8,13 @@ class AddressRepository
 {
     public function getAll($request)
     {
-        return Address::with(['city.country', 'district', 'user'])
+        return Address::with(['country', 'city.country', 'district', 'user'])
                       ->filter($request);
     }
 
     public function find($id, $userId)
     {
-        return Address::with('city.country', 'district', 'user')
+        return Address::with(['country', 'city.country', 'district', 'user'])
                       ->where('user_id', $userId)
                       ->where('id', $id)
                       ->first();

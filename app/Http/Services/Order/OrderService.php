@@ -5,7 +5,9 @@ namespace App\Http\Services\Order;
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Order\OrderResource;
 use App\Http\Services\Cart\ProductValidatorService;
+use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Http\Services\Payment\PaymentFactoryService;
+use App\Models\Country;
 use App\Repositories\Address\AddressRepository;
 use App\Repositories\Cart\CartRepository;
 use App\Repositories\Order\OrderRepository;
@@ -37,7 +39,7 @@ class OrderService
         $this->addressRepo      = $addressRepo;
         $this->orderItemRepo    = $orderItemRepo;
         $this->productValidator = $productValidatorService;
-        $this->userRepo = $userRepo;
+        $this->userRepo         = $userRepo;
 
     }
 
@@ -99,12 +101,32 @@ class OrderService
 
         $cart = $this->cartRepo->findUserCart($user->id);
 
+        if (!$cart || $cart->cartItems->isEmpty()) {
+            return Response::errorResponse('cart is empty', [], 404);
+        }
+
         $orderNumber = $this->generateOrderNumber();
+
+
+        $allowedGulf = ['SA','AE','KW','QA','OM','BH'];
+
+        $country = null;
+        if (session()->has('country_id')) {
+            $country = Country::find(session('country_id'));
+        }
+        if (!$country) {
+            $code = app(GeoCurrencyService::class)->getCountryCodeFromIp();
+            if ($code) {
+                $country = Country::where('country_code', strtoupper($code))->first();
+            }
+        }
+        if (!$country || !in_array(strtoupper((string)$country->country_code), $allowedGulf, true)) {
+            $country = Country::where('country_code', 'KW')->first();
+        }
 
         if (!$isGuest) {
             if (!empty($request['address_id'])) {
                 $userAddress = $this->addressRepo->find($request['address_id'], $user->id);
-
                 if (!$userAddress) {
                     return Response::errorResponse('address not found', [], 404);
                 }
@@ -115,6 +137,7 @@ class OrderService
                     'address'     => $request['address'],
                     'city_id'     => $request['city_id'] ?? null,
                     'district_id' => $request['district_id'] ?? null,
+                    'country_id'  => $country?->id, // 👈 snapshot
                     'is_default'  => $request['is_default'] ?? false,
                 ]);
             }
@@ -125,14 +148,15 @@ class OrderService
                 'address'     => $request['address'],
                 'city_id'     => $request['city_id'] ?? null,
                 'district_id' => $request['district_id'] ?? null,
+                'country_id'  => $country?->id, // 👈 snapshot
                 'is_default'  => $request['is_default'] ?? false,
             ]);
         }
 
-
-
-
-        $shippingPrice = $userAddress->getShippingPrice();
+        $shippingPrice = (float) ($userAddress->getShippingPrice() ?? 0);
+        if ($shippingPrice <= 0) {
+            $shippingPrice = (float) ($country->shipping_price ?? 0);
+        }
 
         $request = array_merge($request, [
             'order_number'   => $orderNumber,
@@ -141,15 +165,14 @@ class OrderService
             'address_id'     => $userAddress->id,
         ]);
 
-
-        if (!$cart || $cart->cartItems->isEmpty()) {
-            return Response::errorResponse('cart is empty', [], 404);
-        }
-
         DB::beginTransaction();
 
         try {
             $productValidation = $this->validateProductsAndStock($cart->cartItems);
+            if (is_array($productValidation) && isset($productValidation['error'])) {
+                DB::rollBack();
+                return Response::errorResponse($productValidation['error'], [], 422);
+            }
 
             $order      = $this->orderRepo->createOrder($request, $cart);
             $orderItems = $this->orderItemRepo->createOrderItems($order->id, $cart->cartItems);
@@ -165,17 +188,17 @@ class OrderService
 
             foreach ($cart->cartItems as $item) {
                 if ($item->product_id) {
-                    $item->product->decrement('quantity', $item->quantity);
-                } else {
-                    $item->productVariant->decrement('quantity', $item->quantity);
+                    $item->product?->decrement('quantity', (int)$item->quantity);
                 }
             }
 
             DB::commit();
+
             $cart->delete();
 
-
-            $responseData = new OrderResource($order->load('orderItems'));
+            $responseData = new OrderResource(
+                $order->load(['orderItems', 'currency', 'address.country', 'address.city', 'address.district'])
+            );
 
             if (isset($token)) {
                 $responseData = [

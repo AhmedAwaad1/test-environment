@@ -64,6 +64,8 @@ class CartResource extends JsonResource
             'discount_amount'            => $this->money($discountAmount),
             'total_price'                => $this->money($totalPrice),
             'total_price_after_discount' => $this->money($totalAfterDisc),
+            'grand_total' => $this->money($totalAfterDisc + $shippingPrice),
+
 
             'shipping' => [
                 'country_id'      => $country?->id,
@@ -73,7 +75,6 @@ class CartResource extends JsonResource
                 'price'           => $this->money($shippingPrice),
             ],
 
-            'grand_total' => $this->money($totalAfterDisc + $shippingPrice),
 
             'cart_items' => CartItemResource::collection($this->whenLoaded('cartItems')),
             'user'       => new AuthResource($this->whenLoaded('user')),

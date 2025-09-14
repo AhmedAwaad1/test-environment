@@ -14,20 +14,36 @@ class OrderItem extends Model
         'product_id',
         'product_variant_id',
         'product_name',
-        'price',
+        'product_price_id',
+        'unit_price',
+        'unit_price_after_discount',
         'quantity',
-        'total',
+        'total_price',
     ];
+
+    protected $casts = [
+        'unit_price'                => 'decimal:2',
+        'unit_price_after_discount' => 'decimal:2',
+        'total_price'               => 'decimal:2',
+    ];
+
     public function order()
     {
         return $this->belongsTo(Order::class);
     }
+
     public function product()
     {
         return $this->belongsTo(Product::class);
     }
+
     public function productVariant()
     {
         return $this->belongsTo(ProductVariant::class);
+    }
+
+    public function productPrice()
+    {
+        return $this->belongsTo(\App\Models\ProductPrice::class);
     }
 }

@@ -8,34 +8,50 @@ class OrderRepository
 {
     public function getAllUserOrder($request)
     {
-        return Order::with('orderItems', 'address')
-            ->where('user_id', $request['user_id'])
-            ->orderBy('created_at', 'desc');
+        return Order::with([
+            'orderItems',
+            'address.country',
+            'address.city',
+            'address.district',
+            'currency',
+        ])
+                    ->where('user_id', $request['user_id'])
+                    ->orderBy('created_at', 'desc');
     }
+
 
     public function findOrderById($id)
     {
-        return Order::with('orderItems', 'user', 'address')->find($id);
+        return Order::with([
+            'orderItems',
+            'user',
+            'address.country',
+            'address.city',
+            'address.district',
+            'currency',
+        ])
+                    ->find($id);
     }
 
     public function createOrder(array $data, $cart)
     {
-        if($cart->total_price_after_discount > 0) {
-            $totalPrice = $cart->total_price_after_discount;
-        }else{
-            $totalPrice = $cart->total_price;
-        }
+        $subtotal       = (float)($cart->total_price ?? 0);
+        $discountAmount = (float)($cart->discount_amount ?? 0);
+        $shipping       = (float)($data['shipping_price'] ?? 0);
+        $total          = max(0, $subtotal - $discountAmount + $shipping);
 
         return Order::create([
-            'user_id'       => $data['user_id'],
-            'address_id'    => $data['address_id'],
-            'order_number'  => $data['order_number'],
-            'subtotal'      => $totalPrice,
-            'shipping_price'=> $data['shipping_price'],
-            'total_price'   => $totalPrice + $data['shipping_price'],
-            'payment_method'=> $data['payment_method'],
-            'status'        => $data['payment_method'] == 'cod' ? 'processing' : 'pending',
-            'coupon_code'   => $cart->coupon_code,
+            'user_id'         => $data['user_id'],
+            'address_id'      => $data['address_id'],
+            'order_number'    => $data['order_number'],
+            'subtotal'        => $subtotal,
+            'discount_amount' => $discountAmount,
+            'shipping_price'  => $shipping,
+            'total_price'     => $total,
+            'payment_method'  => $data['payment_method'],
+            'status'          => $data['payment_method'] === 'cod' ? 'processing' : 'pending',
+            'coupon_code'     => $cart->coupon_code,
+            'currency_id'     => $cart->currency_id,
         ]);
     }
 

@@ -14,6 +14,7 @@ class Order extends Model
         'address_id',
         'order_number',
         'subtotal',
+        'discount_amount',
         'shipping_price',
         'total_price',
         'payment_method',
@@ -21,6 +22,15 @@ class Order extends Model
         'tracking_number',
         'notes',
         'coupon_code',
+        'currency_id',
+    ];
+
+
+    protected $casts = [
+        'subtotal'        => 'decimal:2',
+        'discount_amount' => 'decimal:2',
+        'shipping_price'  => 'decimal:2',
+        'total_price'     => 'decimal:2',
     ];
 
     public function user()
@@ -34,6 +44,11 @@ class Order extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class);
     }
 
     public function scopeFilter($query, array $filters)

@@ -8,28 +8,38 @@ use Illuminate\Database\Eloquent\Model;
 class Address extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'address',
         'phone',
         'user_id',
+        'country_id',
         'city_id',
         'district_id',
         'is_default',
         'session_id',
     ];
 
+    public function country()
+    {
+        return $this->belongsTo(Country::class);
+    }
+
     public function city()
     {
         return $this->belongsTo(City::class);
     }
+
     public function district()
     {
         return $this->belongsTo(District::class);
     }
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
+
     public function scopeFilter($query, $request)
     {
         if ($request->has('user_id')) {
@@ -44,15 +54,15 @@ class Address extends Model
     public function getShippingPrice(): ?float
     {
         if ($this->district && $this->district->shipping_price > 0) {
-            return (float) $this->district->shipping_price;
+            return (float)$this->district->shipping_price;
         }
 
         if ($this->city && $this->city->shipping_price > 0) {
-            return (float) $this->city->shipping_price;
+            return (float)$this->city->shipping_price;
         }
 
         if ($this->city && $this->city->country && $this->city->country->shipping_price > 0) {
-            return (float) $this->city->country->shipping_price;
+            return (float)$this->city->country->shipping_price;
         }
 
         return 0;
