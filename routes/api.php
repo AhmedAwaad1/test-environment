@@ -16,14 +16,18 @@ use App\Http\Controllers\Dashboard\DashboardController;
 use App\Http\Controllers\District\DistrictController;
 use App\Http\Controllers\Favorite\FavoriteController;
 use App\Http\Controllers\Order\OrderController;
+use App\Http\Controllers\Payment\TapMockController;
 use App\Http\Controllers\Product\ProductController;
 use App\Http\Controllers\Product\ProductVariantController;
 use App\Http\Controllers\ProductPrice\ProductPriceController;
 use App\Http\Controllers\ProductSetItems\ProductSetItemsController;
 use App\Http\Controllers\PromoCode\PromoCodeController;
+use App\Http\Controllers\QuizController;
 use App\Http\Controllers\SubCategory\SubCategoryController;
 use App\Http\Controllers\Subscribe\SubscribeController;
-use App\Http\Controllers\Testimonial\TestimonialController; // Add this line
+use App\Http\Controllers\Testimonial\TestimonialController;
+
+// Add this line
 use App\Http\Controllers\UserProfile\UserProfileController;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Http\Request;
@@ -163,16 +167,16 @@ Route::prefix('district')->namespace('District')->group(function () {
 });
 
 Route::prefix('address')->namespace('Addres')->group(function () {
-        // Get all user addresses
-        Route::get('/', [AddressController::class, 'index'])->name('address.index');
-        // Get specific address
-        Route::get('/{id}', [AddressController::class, 'show'])->name('address.show');
-        // Create new address
-        Route::post('/', [AddressController::class, 'store'])->name('address.store');
-        // Update address
-        Route::put('/{id}', [AddressController::class, 'update'])->name('address.update');
-        // Delete address
-        Route::delete('/{id}', [AddressController::class, 'destroy'])->name('address.destroy');
+    // Get all user addresses
+    Route::get('/', [AddressController::class, 'index'])->name('address.index');
+    // Get specific address
+    Route::get('/{id}', [AddressController::class, 'show'])->name('address.show');
+    // Create new address
+    Route::post('/', [AddressController::class, 'store'])->name('address.store');
+    // Update address
+    Route::put('/{id}', [AddressController::class, 'update'])->name('address.update');
+    // Delete address
+    Route::delete('/{id}', [AddressController::class, 'destroy'])->name('address.destroy');
 });
 
 Route::prefix('promo-code')->namespace('PromoCode')->group(function () {
@@ -196,7 +200,7 @@ Route::prefix('cart')->namespace('Cart')->group(function () {
     Route::get('/guest', [CartController::class, 'getGuestCart'])->name('cart.guest.show');
 
     // Add to cart
-    Route::post('/add',[CartController::class, 'addtoCart'])->name('cart.add');
+    Route::post('/add', [CartController::class, 'addtoCart'])->name('cart.add');
     // Update cart item
     Route::put('/item/{id}', [CartController::class, 'updateCartItemQuantity'])->name('cart.update');
     // Delete cart item
@@ -225,7 +229,7 @@ Route::prefix('admin/order')->middleware('role.admin')->group(function () {
 
 Route::prefix('favorite')->namespace('Favorite')->group(function () {
     // Delete all favorites
-    Route::delete('/all',[FavoriteController::class, 'deleteAllFavorite'])->name('favorite.delete_all');
+    Route::delete('/all', [FavoriteController::class, 'deleteAllFavorite'])->name('favorite.delete_all');
     // Get all user favorites
     Route::get('/', [FavoriteController::class, 'index'])->name('favorite.index');
     // Get specific favorite
@@ -315,11 +319,11 @@ Route::prefix('subscribe')->namespace('Subscribe')->group(function () {
 
 
 Route::get('/test-ip', function () {
-    $geo = new GeoCurrencyService();
-    $ip = request()->ip();
+    $geo  = new GeoCurrencyService();
+    $ip   = request()->ip();
     $code = $geo->getCountryCodeFromIp($ip);
     return response()->json([
-        'ip' => $ip,
+        'ip'           => $ip,
         'country_code' => $code
     ]);
 });
@@ -336,4 +340,14 @@ Route::prefix('testimonial')->namespace('Testimonial')->group(function () {
     Route::delete('/{id}', [TestimonialController::class, 'delete'])->name('testimonial.delete');
 });
 
+
+Route::get('/payments/tap/mock/complete', [TapMockController::class, 'complete']);
+
+// Quiz Routes
+Route::prefix('quiz')->group(function () {
+    // Get  quizz
+    Route::get('/{id}', [QuizController::class, 'show']);
+    // Submit quiz answers
+    Route::post('/submit', [QuizController::class, 'submit']);
+});
 
