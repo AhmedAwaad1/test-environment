@@ -53,7 +53,12 @@ class SubCategoryService
     {
         try {
             if (empty($request['slug']) && $request['name_en']) {
-                $request['slug'] = str_replace(' ', '-', $request['name_en']);
+                $slug = str_replace(' ', '-', $request['name_en']);
+                $count = 0;
+                while ($this->subCategoryRepo->findBySlug($slug . ($count > 0 ? '-' . sprintf('%03d', $count) : ''))) {
+                    $count++;
+                }
+                $request['slug'] = $slug . ($count > 0 ? '-' . sprintf('%03d', $count) : '');
             }
 
             $subCategory = $this->subCategoryRepo->create($request);
@@ -71,7 +76,12 @@ class SubCategoryService
     {
         try {
             if ((!isset($data['slug']) || empty($data['slug'])) && isset($data['name_en'])) {
-                $data['slug'] = str_replace(' ', '-', $data['name_en']);
+                $slug = str_replace(' ', '-', $data['name_en']);
+                $count = 0;
+                while ($this->subCategoryRepo->findBySlug($slug . ($count > 0 ? '-' . sprintf('%03d', $count) : ''))) {
+                    $count++;
+                }
+                $data['slug'] = $slug . ($count > 0 ? '-' . sprintf('%03d', $count) : '');
             }
 
             $subCategory = $this->subCategoryRepo->update($id, $data);

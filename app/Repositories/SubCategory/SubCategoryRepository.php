@@ -39,4 +39,9 @@ class SubCategoryRepository
         }
         return $subCategory;
     }
+
+    public function findBySlug($slug)
+    {
+        return SubCategory::where('slug', $slug)->first();
+    }
 }
