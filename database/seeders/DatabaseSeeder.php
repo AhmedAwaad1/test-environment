@@ -12,17 +12,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            AdminSeeder::class,
-            ProductOptionTypeSeeder::class,
-            CountryCodeSeeder::class,
-            CitySeeder::class,
-            SizeSeeder::class,
-            ColorSeeder::class,
-            CategorySeeder::class,
-            SubCategorySeeder::class,
-            ProductSeeder::class,
-            CurrencySeeder::class,
-        ]);
+        $this->call(QuizSeeder::class);
     }
 }

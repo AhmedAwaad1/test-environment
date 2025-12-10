@@ -11,8 +11,8 @@ class PaymentFactoryService
     public function make(string $method): ? PaymentHandlerInterface
     {
         switch ($method) {
-            case 'stripe':
-                return new StripePaymentHandler();
+            case 'card':
+                return new CardPaymentHandler();
             case 'cod':
                 return new CodPaymentHandler();
             default:

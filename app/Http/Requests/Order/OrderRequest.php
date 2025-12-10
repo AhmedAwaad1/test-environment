@@ -45,7 +45,7 @@ class OrderRequest extends FormRequest
     private function storeRules(): array
     {
         $rules = [
-            'payment_method' => ['required', 'string', 'in:cod,paymob,stripe'],
+            'payment_method' => ['required', 'string', 'in:cod,card'],
         ];
 
         if (!auth()->check()) {

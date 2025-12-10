@@ -48,7 +48,8 @@ class OrderRepository
             'discount_amount' => $discountAmount,
             'shipping_price'  => $shipping,
             'total_price'     => $total,
-            'payment_method'  => $data['payment_method'],
+            'payment_method'  => $data['payment_method'],         // card | cod
+            'payment_status'  => 'pending',                       // 👈 جديد
             'status'          => $data['payment_method'] === 'cod' ? 'processing' : 'pending',
             'coupon_code'     => $cart->coupon_code,
             'currency_id'     => $cart->currency_id,

@@ -32,8 +32,11 @@ use App\Http\Controllers\UserProfile\UserProfileController;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Payment\TapRedirectController;
+use App\Http\Controllers\Payment\TapWebhookController;
 use App\Http\Controllers\Product\ProductOptionController;
 use App\Http\Controllers\Review\ReviewController;
+use App\Http\Controllers\HomeworkController;
 
 /*
 |--------------------------------------------------------------------------
@@ -343,11 +346,20 @@ Route::prefix('testimonial')->namespace('Testimonial')->group(function () {
 
 Route::get('/payments/tap/mock/complete', [TapMockController::class, 'complete']);
 
+// Tap Payments Webhook and Redirect Routes
+Route::post('/payments/tap/webhook', [TapWebhookController::class, 'handleWebhook']);
+Route::get('/payments/tap/redirect', [TapRedirectController::class, 'handleRedirect']);
+
 // Quiz Routes
 Route::prefix('quiz')->group(function () {
     // Get  quizz
     Route::get('/{id}', [QuizController::class, 'show']);
     // Submit quiz answers
     Route::post('/submit', [QuizController::class, 'submit']);
+});
+
+
+Route::prefix('homework')->group(function () {
+    Route::delete('/{id}', [HomeworkController::class, 'destroy'])->whereNumber('id');
 });
 

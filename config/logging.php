@@ -3,6 +3,7 @@
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Handler\SyslogUdpHandler;
+use Monolog\Formatter\LineFormatter;
 use Monolog\Processor\PsrLogMessageProcessor;
 
 return [
@@ -144,6 +145,20 @@ return [
             'driver' => 'single',
             'path' => storage_path('logs/geoip.log'),
             'level' => 'info',
+        ],
+
+        'tap_payments' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/tap_payments.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+            'days' => 14,
+            'formatter' => LineFormatter::class,
+            'formatter_with' => [
+                'format' => "[TAP] %datetime% %channel%.%level_name%: %message% %context% %extra%\n",
+                'dateFormat' => "Y-m-d H:i:s",
+                'allowInlineLineBreaks' => true,
+                'ignoreEmptyContextAndExtra' => true,
+            ],
         ],
 
 

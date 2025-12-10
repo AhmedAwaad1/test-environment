@@ -107,7 +107,6 @@ class OrderService
 
         $orderNumber = $this->generateOrderNumber();
 
-
         $allowedGulf = ['SA','AE','KW','QA','OM','BH'];
 
         $country = null;
@@ -137,7 +136,7 @@ class OrderService
                     'address'     => $request['address'],
                     'city_id'     => $request['city_id'] ?? null,
                     'district_id' => $request['district_id'] ?? null,
-                    'country_id'  => $country?->id, // 👈 snapshot
+                    'country_id'  => $country?->id,
                     'is_default'  => $request['is_default'] ?? false,
                 ]);
             }
@@ -148,7 +147,7 @@ class OrderService
                 'address'     => $request['address'],
                 'city_id'     => $request['city_id'] ?? null,
                 'district_id' => $request['district_id'] ?? null,
-                'country_id'  => $country?->id, // 👈 snapshot
+                'country_id'  => $country?->id,
                 'is_default'  => $request['is_default'] ?? false,
             ]);
         }
@@ -174,18 +173,51 @@ class OrderService
                 return Response::errorResponse($productValidation['error'], [], 422);
             }
 
-            $order      = $this->orderRepo->createOrder($request, $cart);
-            $orderItems = $this->orderItemRepo->createOrderItems($order->id, $cart->cartItems);
+            $order = $this->orderRepo->createOrder($request, $cart);
+
+            $this->orderItemRepo->createOrderItems($order->id, $cart->cartItems);
 
             $paymentMethod  = $request['payment_method'];
             $paymentHandler = $this->paymentFactory->make($paymentMethod);
-            $paymentResult  = $paymentHandler->pay($order);
 
-            if (!$paymentResult['success']) {
+            if (!$paymentHandler) {
                 DB::rollBack();
-                return Response::errorResponse($paymentResult['message'], [], 400);
+                return Response::errorResponse('unsupported payment method', [], 400);
             }
 
+            $paymentResult  = $paymentHandler->pay($order);
+
+            if (!($paymentResult['success'] ?? false)) {
+                DB::rollBack();
+                return Response::errorResponse($paymentResult['message'] ?? 'payment failed', [], 400);
+            }
+
+            // لو Redirect: منخصمش ستوك ولا نمسح الكارت، ونرجّع redirect_url
+            if ($paymentResult['is_redirect'] ?? false) {
+                
+                // 👇 CRITICAL ADJUSTMENT: Store the Charge ID before committing 
+                $order->update([
+                    'tap_charge_id' => $paymentResult['tap_charge_id'] ?? null,
+                ]);
+                
+                DB::commit();
+
+                $responseData = new OrderResource(
+                    $order->load(['orderItems', 'currency', 'address.country', 'address.city', 'address.district'])
+                );
+
+                $payload = [
+                    'order'        => $responseData,
+                    'redirect_url' => $paymentResult['redirect_url'] ?? null,
+                ];
+                if (isset($token)) {
+                    $payload['token'] = $token;
+                }
+
+                return Response::successResponse($payload, 'redirect to payment', 201);
+            }
+
+            // لو الدفع ناجح فورًا (CAPTURED): نكمّل زي المعتاد
             foreach ($cart->cartItems as $item) {
                 if ($item->product_id) {
                     $item->product?->decrement('quantity', (int)$item->quantity);

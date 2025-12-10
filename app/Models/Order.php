@@ -22,7 +22,9 @@ class Order extends Model
         'tracking_number',
         'notes',
         'coupon_code',
-        'currency_id',
+    'currency_id',
+    'tap_charge_id', // <<< ADD THIS FIELD
+        'payment_status'
     ];
 
 
