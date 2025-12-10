@@ -13,7 +13,6 @@ class AddressController extends Controller
     {
         $this->middleware('auth:api');
         $this->addressService = $addressService;
-//        "test";
     }
 
     public function index(AddressRequest $request)
