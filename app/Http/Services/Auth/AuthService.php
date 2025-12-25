@@ -6,6 +6,7 @@ use App\Jobs\SendVerificationEmail;
 use App\Jobs\SendWelcomeEmail;
 use App\Mail\PasswordResetCodeMail;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -23,10 +24,11 @@ class AuthService
 
             $request->merge([
                 'password' => bcrypt($request->password),
+                'email_verified_at' => Carbon::now(),
             ]);
 
             $user = User::create($request->only([
-                'username', 'type', 'email', 'password', 'phone'
+                'username', 'type', 'email', 'password', 'phone', 'email_verified_at'
             ]));
 
             // Store the code in the cache for 10 minutes
