@@ -20,56 +20,65 @@ class ProductRepository
         protected VariantOptionValue $variantOptionValue
     ) {}
 
-    public function getAll($request)
+    /**
+     * Get all products with optional filters
+     */
+    public function getAll($request, array $filters = [])
     {
-        $query = $this->model->with(['category', 'subCategory', 'images', 'productPrices.currency'])->filter($request);
+        $query = $this->model
+            ->with(['category', 'subCategory', 'images', 'productPrices.currency']);
 
-        if ($request->has('per_page')) {
-            return $query->paginate($request->per_page);
+        // Apply filters if provided
+        if (!empty($filters['is_best_seller'])) {
+            $query->where('is_best_seller', 1);
         }
 
-        return $query->get();
+        if (!empty($filters['is_new_arrival'])) {
+            $query->where('is_new_arrival', 1);
+        }
+
+        return $request->filled('per_page')
+            ? $query->paginate($request->per_page)
+            : $query->get();
     }
 
     public function find($id)
     {
         return $this->model
-            ->with(['category', 'subCategory', 'productOptions.values', 'productVariants', 'productPrices.currency'])
+            ->with([
+                'category',
+                'subCategory',
+                'productOptions.values',
+                'productVariants.optionValues',
+                'productPrices.currency'
+            ])
             ->findOrFail($id);
     }
 
     public function findWithVariants($id)
     {
-        $productWithVariants = $this->model
+        return $this->model
             ->with([
                 'category:id,name_en,name_ar',
                 'subCategory:id,name_en,name_ar',
                 'productPrices.currency',
-                'images' => function($query) {
-                },
+                'images',
                 'productOptions.values.images',
-                'productOptions.values' => function($query) {
-                    $query->orderBy('order');
-                },
-                'productVariants' => function($query) {
-                    $query->orderBy('order')->with([
+                'productOptions.values' => fn ($q) => $q->orderBy('order'),
+                'productVariants' => fn ($q) =>
+                    $q->orderBy('order')->with([
                         'optionValues.productOption',
-                        'optionValues.images'
-                    ]);
-                }
+                        'optionValues.images',
+                        'images'
+                    ])
             ])
             ->findOrFail($id);
-
-        return $productWithVariants;
     }
-
 
     public function create(array $data)
     {
-        try {
-            DB::beginTransaction();
-
-            $product = $this->model->create([
+        return DB::transaction(function () use ($data) {
+            return $this->model->create([
                 'name_en' => $data['name_en'],
                 'name_ar' => $data['name_ar'],
                 'description_en' => $data['description_en'] ?? null,
@@ -80,21 +89,15 @@ class ProductRepository
                 'quantity' => $data['quantity'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
+                'is_best_seller' => $data['is_best_seller'] ?? false,
+                'is_new_arrival' => $data['is_new_arrival'] ?? false,
             ]);
-
-            DB::commit();
-            return $product;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     public function update($id, array $data)
     {
-        try {
-            DB::beginTransaction();
-
+        return DB::transaction(function () use ($id, $data) {
             $product = $this->model->findOrFail($id);
 
             $product->update(array_filter([
@@ -108,76 +111,64 @@ class ProductRepository
                 'quantity' => $data['quantity'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'is_active' => $data['is_active'] ?? $product->is_active,
+                'is_best_seller' => $data['is_best_seller'] ?? $product->is_best_seller,
+                'is_new_arrival' => $data['is_new_arrival'] ?? $product->is_new_arrival,
             ]));
 
-            DB::commit();
             return $product->fresh();
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+        });
     }
 
     public function delete($id)
     {
-        try {
-            DB::beginTransaction();
+        return DB::transaction(function () use ($id) {
+            $product = $this->model
+                ->with(['images', 'productVariants.images'])
+                ->findOrFail($id);
 
-            $product = $this->model->findOrFail($id);
-
-            // Delete all images
+            // Delete product images
             foreach ($product->images as $image) {
-                if (!empty($image->image) && Storage::exists($image->image)) {
+                if ($image->image && Storage::exists($image->image)) {
                     Storage::delete($image->image);
                 }
             }
 
-            // Delete variants and their images
-            if($product->has_variants && $product->productVariants->has('images')) {
+            // Delete variant images
+            if ($product->has_variants) {
                 foreach ($product->productVariants as $variant) {
                     foreach ($variant->images as $image) {
-                        if (!empty($image->image) && Storage::exists($image->image)) {
+                        if ($image->image && Storage::exists($image->image)) {
                             Storage::delete($image->image);
                         }
                     }
                 }
             }
 
-            $isDeleted = $product->delete();
-
-            DB::commit();
-            return $isDeleted;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
+            return $product->delete();
+        });
     }
 
     public function updateProductPrices(Product $product, array $prices): void
     {
-        // Delete old prices
         $product->productPrices()->delete();
 
-        // Recreate new ones
-        foreach ($prices as $priceData) {
+        foreach ($prices as $price) {
             $product->productPrices()->create([
-                'currency_id' => $priceData['currency_id'],
-                'price' => $priceData['price'],
-                'price_after_discount' => $priceData['price_after_discount'] ?? null,
+                'currency_id' => $price['currency_id'],
+                'price' => $price['price'],
+                'price_after_discount' => $price['price_after_discount'] ?? null,
             ]);
         }
     }
 
     public function createProductPrices(Product $product, array $prices): void
     {
-        foreach ($prices as $priceData) {
+        foreach ($prices as $price) {
             $product->productPrices()->create([
-                'currency_id' => $priceData['currency_id'],
-                'price' => $priceData['price'],
-                'price_after_discount' => $priceData['price_after_discount'] ?? null,
+                'currency_id' => $price['currency_id'],
+                'price' => $price['price'],
+                'price_after_discount' => $price['price_after_discount'] ?? null,
             ]);
         }
     }
-
-
 }

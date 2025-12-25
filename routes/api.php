@@ -131,16 +131,20 @@ Route::prefix('category')->namespace('Category')->group(function () {
     Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
 });
 
-
 // Product Management
 Route::prefix('products')->group(function () {
     // Basic Product CRUD
     Route::get('/', [ProductController::class, 'index']);
     Route::post('/', [ProductController::class, 'store']);
+    
+    // Specific endpoints first
+    Route::get('/new-arrivals', [ProductController::class, 'newArrivals']);
+    Route::get('/best-sellers', [ProductController::class, 'bestSellers']);
+
+    // Catch-all by ID last
     Route::get('/{id}', [ProductController::class, 'show']);
     Route::put('/{id}', [ProductController::class, 'update']);
     Route::delete('/{id}', [ProductController::class, 'destroy']);
-
 });
 
 Route::prefix('banner')->namespace('Banner')->group(function () {

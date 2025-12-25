@@ -16,8 +16,6 @@ class ProductRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -30,14 +28,21 @@ class ProductRequest extends FormRequest
         };
     }
 
-
+    /**
+     * Index rules
+     */
     private function indexRules(): array
     {
         return [
             'per_page' => ['nullable', 'integer', 'min:1'],
+            'is_best_seller' => ['nullable', 'boolean'],
+            'is_new_arrival' => ['nullable', 'boolean'],
         ];
     }
 
+    /**
+     * Store rules
+     */
     private function storeRules(): array
     {
         return [
@@ -45,21 +50,26 @@ class ProductRequest extends FormRequest
             'name_ar' => 'required|string|max:255',
             'description_en' => 'nullable|string',
             'description_ar' => 'nullable|string',
+
             'category_id' => 'required|exists:categories,id',
             'sub_category_id' => 'nullable|exists:sub_categories,id',
+
             'has_variants' => 'boolean',
 
+            // Flags
+            'is_best_seller' => ['nullable', 'boolean'],
+            'is_new_arrival' => ['nullable', 'boolean'],
+
+            // Images
             'images' => ['nullable', 'array'],
             'images.*.path' => ['required', 'file', 'image', 'mimes:jpeg,png,jpg,gif,svg'],
             'images.*.is_main' => ['nullable', 'boolean'],
 
-            // Simple product fields (when has_variants = false)
-            // 'price' => 'required|numeric|min:0',
-            // 'price_after_discount' => 'required|numeric|min:0',
+            // Simple product fields (no variants)
             'quantity' => 'required_if:has_variants,false|integer|min:0',
             'sku' => 'required_if:has_variants,false|string|unique:products,sku',
 
-            // Options data (when has_variants = true)
+            // Options
             'options' => 'nullable|array',
             'options.*.option_type_id' => 'nullable|exists:product_option_types,id',
             'options.*.values' => 'nullable|array',
@@ -69,6 +79,7 @@ class ProductRequest extends FormRequest
             'options.*.values.*.images' => 'nullable|array',
             'options.*.values.*.images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg',
 
+            // Variants
             'variants' => 'nullable|array',
             'variants.*.sku' => 'nullable|string|unique:product_variants,sku',
             'variants.*.price' => 'nullable|numeric|min:0',
@@ -89,6 +100,9 @@ class ProductRequest extends FormRequest
         ];
     }
 
+    /**
+     * Update rules
+     */
     private function updateRules(): array
     {
         return [
@@ -96,11 +110,14 @@ class ProductRequest extends FormRequest
             'name_ar' => ['nullable', 'string', 'max:255'],
             'description_en' => ['nullable', 'string'],
             'description_ar' => ['nullable', 'string'],
-            // 'price' => ['nullable', 'numeric', 'min:0'],
-            // 'price_after_discount' => ['nullable', 'numeric', 'min:0'],
+
             'category_id' => ['nullable', 'exists:categories,id'],
             'sub_category_id' => ['nullable', 'exists:sub_categories,id'],
             'has_variants' => ['nullable', 'boolean'],
+
+            // Flags
+            'is_best_seller' => ['nullable', 'boolean'],
+            'is_new_arrival' => ['nullable', 'boolean'],
 
             // Images
             'images' => ['nullable', 'array'],
@@ -109,11 +126,11 @@ class ProductRequest extends FormRequest
             'deleted_images' => ['nullable', 'array'],
             'deleted_images.*' => ['exists:product_images,id'],
 
-            // For simple products (no variants)
+            // Simple product
             'sku' => ['required_if:has_variants,false', 'string'],
             'quantity' => ['required_if:has_variants,false', 'integer', 'min:0'],
 
-            // Options update
+            // Options
             'options' => 'nullable|array',
             'options.*.option_type_id' => 'nullable|exists:product_option_types,id',
             'options.*.values' => 'nullable|array',
@@ -123,7 +140,7 @@ class ProductRequest extends FormRequest
             'options.*.values.*.images' => 'nullable|array',
             'options.*.values.*.images.*' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
 
-            // Variants update
+            // Variants
             'variants' => 'nullable|array',
             'variants.*.sku' => 'nullable|string|unique:product_variants,sku',
             'variants.*.price' => 'nullable|numeric|min:0',

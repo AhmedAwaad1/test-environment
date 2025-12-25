@@ -19,14 +19,19 @@ class Product extends Model
         'sub_category_id',
         'category_id',
         'quantity',
+          'is_best_seller',
+    'is_new_arrival',
         'is_active',
         'has_variants',
         'sku',
     ];
 
+
     protected $casts = [
         'has_variants' => 'boolean',
         'is_active'    => 'boolean',
+           'is_best_seller' => 'boolean',
+    'is_new_arrival' => 'boolean',
     ];
 
     public function productPrices()
