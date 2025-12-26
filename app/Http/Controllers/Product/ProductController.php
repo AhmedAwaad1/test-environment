@@ -15,9 +15,6 @@ class ProductController extends Controller
 
     /**
      * Get all products (with optional filters)
-     * ?is_best_seller=1
-     * ?is_new_arrival=1
-     * ?per_page=10
      */
     public function index(ProductRequest $request)
     {
@@ -39,9 +36,10 @@ class ProductController extends Controller
     {
         $data = $request->validated();
 
-        // Ensure boolean flags are stored correctly
-        $data['is_best_seller'] = $request->boolean('is_best_seller');
-        $data['is_new_arrival'] = $request->boolean('is_new_arrival');
+        // Consistent Fix: Ensure strings "1"/"0" from FormData are handled as booleans
+        $data['is_best_seller'] = $request->input('is_best_seller') == '1' || $request->input('is_best_seller') === 'true';
+        $data['is_new_arrival'] = $request->input('is_new_arrival') == '1' || $request->input('is_new_arrival') === 'true';
+        $data['status'] = $request->input('status') == '1' || $request->input('status') === 'true';
 
         return $this->service->createProduct($data);
     }
@@ -53,12 +51,17 @@ class ProductController extends Controller
     {
         $data = $request->validated();
 
+        // Fix: Manual boolean casting for multipart/form-data updates
         if ($request->has('is_best_seller')) {
-            $data['is_best_seller'] = $request->boolean('is_best_seller');
+            $data['is_best_seller'] = $request->input('is_best_seller') == '1' || $request->input('is_best_seller') === 'true';
         }
 
         if ($request->has('is_new_arrival')) {
-            $data['is_new_arrival'] = $request->boolean('is_new_arrival');
+            $data['is_new_arrival'] = $request->input('is_new_arrival') == '1' || $request->input('is_new_arrival') === 'true';
+        }
+
+        if ($request->has('status')) {
+            $data['status'] = $request->input('status') == '1' || $request->input('status') === 'true';
         }
 
         return $this->service->updateProduct($id, $data);
@@ -74,7 +77,6 @@ class ProductController extends Controller
 
     /**
      * Best sellers endpoint
-     * /api/products/best-sellers
      */
     public function bestSellers(Request $request)
     {
@@ -83,7 +85,6 @@ class ProductController extends Controller
 
     /**
      * New arrivals endpoint
-     * /api/products/new-arrivals
      */
     public function newArrivals(Request $request)
     {

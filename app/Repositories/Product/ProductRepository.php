@@ -95,29 +95,33 @@ class ProductRepository
         });
     }
 
-    public function update($id, array $data)
-    {
-        return DB::transaction(function () use ($id, $data) {
-            $product = $this->model->findOrFail($id);
+public function update($id, array $data)
+{
+    return DB::transaction(function () use ($id, $data) {
+        $product = $this->model->findOrFail($id);
 
-            $product->update(array_filter([
-                'name_en' => $data['name_en'] ?? null,
-                'name_ar' => $data['name_ar'] ?? null,
-                'description_en' => $data['description_en'] ?? null,
-                'description_ar' => $data['description_ar'] ?? null,
-                'category_id' => $data['category_id'] ?? null,
-                'sub_category_id' => $data['sub_category_id'] ?? null,
-                'has_variants' => $data['has_variants'] ?? $product->has_variants,
-                'quantity' => $data['quantity'] ?? null,
-                'sku' => $data['sku'] ?? null,
-                'is_active' => $data['is_active'] ?? $product->is_active,
-                'is_best_seller' => $data['is_best_seller'] ?? $product->is_best_seller,
-                'is_new_arrival' => $data['is_new_arrival'] ?? $product->is_new_arrival,
-            ]));
+        // FIX: Do NOT use array_filter() alone. 
+        // Either remove it entirely or use a callback to only filter NULLS.
+        $updateData = [
+            'name_en' => $data['name_en'] ?? $product->name_en,
+            'name_ar' => $data['name_ar'] ?? $product->name_ar,
+            'description_en' => $data['description_en'] ?? $product->description_en,
+            'description_ar' => $data['description_ar'] ?? $product->description_ar,
+            'category_id' => $data['category_id'] ?? $product->category_id,
+            'sub_category_id' => $data['sub_category_id'] ?? $product->sub_category_id,
+            'has_variants' => isset($data['has_variants']) ? $data['has_variants'] : $product->has_variants,
+            'quantity' => $data['quantity'] ?? $product->quantity,
+            'sku' => $data['sku'] ?? $product->sku,
+            'is_active' => isset($data['is_active']) ? $data['is_active'] : $product->is_active,
+            'is_best_seller' => isset($data['is_best_seller']) ? $data['is_best_seller'] : $product->is_best_seller,
+            'is_new_arrival' => isset($data['is_new_arrival']) ? $data['is_new_arrival'] : $product->is_new_arrival,
+        ];
 
-            return $product->fresh();
-        });
-    }
+        $product->update($updateData);
+
+        return $product->fresh();
+    });
+}
 
     public function delete($id)
     {
