@@ -26,16 +26,8 @@ class ProductRepository
     public function getAll($request, array $filters = [])
     {
         $query = $this->model
-            ->with(['category', 'subCategory', 'images', 'productPrices.currency']);
-
-        // Apply filters if provided
-        if (!empty($filters['is_best_seller'])) {
-            $query->where('is_best_seller', 1);
-        }
-
-        if (!empty($filters['is_new_arrival'])) {
-            $query->where('is_new_arrival', 1);
-        }
+            ->with(['category', 'subCategory', 'images', 'productPrices.currency'])
+            ->filter($filters);
 
         return $request->filled('per_page')
             ? $query->paginate($request->per_page)

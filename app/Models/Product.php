@@ -101,6 +101,14 @@ class Product extends Model
             $query->where('sub_category_id', $filters['sub_category_id']);
         }
 
+        // Special filters
+        if ($filters['is_best_seller'] ?? false) {
+            $query->where('is_best_seller', 1);
+        }
+        if ($filters['is_new_arrival'] ?? false) {
+            $query->where('is_new_arrival', 1);
+        }
+
         // Active status filter
         if (isset($filters['is_active'])) {
             $query->where('is_active', $filters['is_active']);

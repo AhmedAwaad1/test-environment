@@ -40,13 +40,8 @@ class ProductService
 
             $currency = $this->geoCurrencyService->getCurrencyForRequest();
 
-            $filters = [
-                'is_best_seller' => $request->get('is_best_seller'),
-                'is_new_arrival' => $request->get('is_new_arrival'),
-            ];
-
             // Apply filters only if set
-            $products = $this->productRepo->getAll($request, $filters);
+            $products = $this->productRepo->getAll($request, $request->all());
 
             $resource = $request->per_page
                 ? new PaginationResource($products, ProductResource::class)
