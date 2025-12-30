@@ -64,7 +64,7 @@ class ProductResource extends JsonResource
             'avg_rating' => round($this->reviews_avg_rating ?? 0, 1),
 
             'prices' => $priceData,
-            'default_price' => $defaultPrice,
+            'default_price' => $priceData,
 
             'is_best_seller' => (bool) $this->is_best_seller,
             'is_new_arrival' => (bool) $this->is_new_arrival,
