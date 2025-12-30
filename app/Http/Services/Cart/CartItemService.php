@@ -73,7 +73,14 @@ class CartItemService
         }
 
         if (!$productPrice) {
-            throw new \Exception("No price available for this product in the cart currency (ID: {$currencyId}) or default currency.");
+            $productPrice = $item->productPrices->first();
+            if ($productPrice) {
+                $currencyId = $productPrice->currency_id;
+            }
+        }
+
+        if (!$productPrice) {
+            throw new \Exception("No price available for this product in any currency.");
         }
 
         $unitRaw   = (float) $productPrice->price;
