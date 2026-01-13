@@ -58,6 +58,28 @@ class CartItemResource extends JsonResource
                     'main_image' => $mainImage,
                 ];
             }),
+
+            'variant' => $this->whenLoaded('productVariant', function () {
+                $variantData = [
+                    'id'    => $this->productVariant->id,
+                    'sku'   => $this->productVariant->sku,
+                    'title' => $this->productVariant->getTitle(),
+                ];
+
+                // Add color info if available
+                $colorValue = $this->productVariant->optionValues->first(function($value) {
+                    return $value->productOption && strtolower($value->productOption->optionType->name ?? '') === 'color';
+                });
+
+                if ($colorValue) {
+                    $variantData['color_info'] = [
+                        'name' => $colorValue->value,
+                        'hex_code' => $colorValue->hex_code,
+                    ];
+                }
+
+                return $variantData;
+            }),
         ];
     }
 

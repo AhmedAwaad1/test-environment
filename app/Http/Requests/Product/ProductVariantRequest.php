@@ -31,6 +31,7 @@ class ProductVariantRequest extends FormRequest
     private function storeRules(): array
     {
         return [
+            'product_id' => ['required', 'exists:products,id'],
             'sku' => ['required', 'string', 'unique:product_variants,sku'],
             'price' => ['required', 'numeric', 'min:0'],
             'price_after_discount' => ['nullable', 'numeric', 'min:0'],

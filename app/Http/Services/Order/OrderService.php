@@ -219,7 +219,9 @@ class OrderService
 
             // لو الدفع ناجح فورًا (CAPTURED): نكمّل زي المعتاد
             foreach ($cart->cartItems as $item) {
-                if ($item->product_id) {
+                if ($item->product_variant_id) {
+                    $item->productVariant?->decrement('quantity', (int)$item->quantity);
+                } elseif ($item->product_id) {
                     $item->product?->decrement('quantity', (int)$item->quantity);
                 }
             }
@@ -263,20 +265,20 @@ class OrderService
     protected function validateProductsAndStock($cartItems)
     {
         foreach ($cartItems as $item) {
-            if ($item->product_id) {
-                $validation = $this->productValidator->validateProduct($item->product, $item->quantity);
-            } else {
+            if ($item->product_variant_id) {
                 $validation = $this->productValidator->validateVariant($item->productVariant, $item->quantity);
+            } else {
+                $validation = $this->productValidator->validateProduct($item->product, $item->quantity);
             }
 
             if ($validation !== true) {
                 Log::error("Stock validation failed", [
                     'user_id'            => auth()->id(),
-                    'product_or_variant' => $item->product_id ? 'product' : 'variant',
-                    'product_id'         => $item->product_id ?? $item->product_variant_id,
+                    'product_or_variant' => $item->product_variant_id ? 'variant' : 'product',
+                    'product_id'         => $item->product_variant_id ?? $item->product_id,
                     'reason'             => $validation
                 ]);
-                return ['error' => $validation, 'product' => $item->product_id ? $item->product : $item->productVariant];
+                return ['error' => $validation, 'product' => $item->product_variant_id ? $item->productVariant : $item->product];
             }
 
         }

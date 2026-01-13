@@ -39,6 +39,49 @@ class ProductVariantService
         }
     }
 
+    public function createVariant($productId, array $data)
+    {
+        try {
+            DB::beginTransaction();
+
+            $product = $this->productRepo->find($productId);
+            if (!$product) {
+                return Response::errorResponse('Product not found', [], 404);
+            }
+
+            if (!$product->has_variants) {
+                $product->update(['has_variants' => true]);
+            }
+
+            $variant = $this->variantRepo->create([
+                'product_id'           => $productId,
+                'sku'                  => $data['sku'],
+                'price'                => $data['price'],
+                'price_after_discount' => $data['price_after_discount'] ?? null,
+                'quantity'             => $data['quantity'],
+                'barcode'              => $data['barcode'] ?? null,
+                'weight'               => $data['weight'] ?? null,
+                'is_active'            => $data['is_active'] ?? true,
+                'order'                => $data['order'] ?? 1,
+            ]);
+
+            if (!empty($data['option_values'])) {
+                $this->updateVariantOptionValues($variant, $data['option_values']);
+            }
+
+            DB::commit();
+
+            return Response::successResponse(
+                new ProductVariantResource($variant->load(['optionValues.productOption.optionType', 'images'])),
+                'Variant created successfully',
+                201
+            );
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return Response::handleException($e, 'Failed to create variant');
+        }
+    }
+
     public function updateVariant($variantId, array $data)
     {
         try {

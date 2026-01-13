@@ -16,7 +16,7 @@ class ProductVariantRepository
 
     public function create(array $data)
     {
-        return $this->model->create($data);
+        return ProductVariant::create($data);
     }
 
     public function findByOptions($productId, array $optionValues)
@@ -47,31 +47,34 @@ class ProductVariantRepository
     {
         $variant = $this->model->findOrFail($id);
 
-        // Delete variant images
-        if(!empty($variant->image) && Storage::exists($variant->image)) {
+        // Delete variant images if they exist via the relationship
+        if ($variant->relationLoaded('images') || $variant->images()->exists()) {
             foreach ($variant->images as $image) {
-                if (!empty($image->image) && Storage::exists($image->image)) {
-                    Storage::delete($image->image);
+                if (!empty($image->image) && Storage::disk('public')->exists($image->image)) {
+                    Storage::disk('public')->delete($image->image);
                 }
                 $image->delete();
             }
         }
 
-        $variant->optionValues()->delete();
+        // Detach option values (removes links in variant_option_values) 
+        // without deleting the actual ProductOptionValue records
+        $variant->optionValues()->detach();
+
         return $variant->delete();
     }
 
     public function find($id)
     {
         return $this->model
-            ->with(['optionValues.productOption', 'optionValues.images'])
+            ->with(['optionValues.productOption.optionType', 'optionValues.images'])
             ->find($id);
     }
 
     public function getByProductId($productId)
     {
         return $this->model
-            ->with(['optionValues.productOption', 'optionValues.images'])
+            ->with(['optionValues.productOption.optionType', 'optionValues.images'])
             ->where('product_id', $productId)
             ->orderBy('order')
             ->get();

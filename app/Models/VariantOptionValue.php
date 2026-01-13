@@ -22,6 +22,13 @@ class VariantOptionValue extends Model
     }
     public function option()
     {
-        return $this->belongsTo(ProductOption::class, 'option_id');
+        return $this->hasOneThrough(
+            ProductOption::class,
+            ProductOptionValue::class,
+            'id', // Foreign key on ProductOptionValue table
+            'id', // Foreign key on ProductOption table
+            'product_option_value_id', // Local key on VariantOptionValue table
+            'product_option_id' // Local key on ProductOptionValue table
+        );
     }
 }

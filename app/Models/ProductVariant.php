@@ -34,29 +34,37 @@ class ProductVariant extends Model
         return $this->hasMany(VariantOptionValue::class);
     }
 
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class, 'product_id', 'product_id');
+    }
+
     public function getIsActiveAttribute($value)
     {
         return $value == 1;
     }
 
-    // public function getTitle()
-    // {
-    //     return $this->optionValues()
-    //         ->orderBy('option_id')
-    //         ->pluck('value')
-    //         ->implode(' / ');
-    // }
+    public function getTitle()
+    {
+        return $this->optionValues()
+            ->with('productOption')
+            ->get()
+            ->sortBy(fn($val) => $val->productOption->order ?? 0)
+            ->pluck('value')
+            ->implode(' / ');
+    }
 
-    // public function getAttributes()
-    // {
-    //     return $this->optionValues()
-    //         ->with('option')
-    //         ->get()
-    //         ->mapWithKeys(function ($item) {
-    //             return [$item->option->name => $item->value];
-    //         })
-    //         ->toArray();
-    // }
+    public function getVariantAttributes()
+    {
+        return $this->optionValues()
+            ->with('productOption.optionType')
+            ->get()
+            ->mapWithKeys(function ($item) {
+                $name = $item->productOption->optionType->name ?? 'Option';
+                return [$name => $item->value];
+            })
+            ->toArray();
+    }
 
     public function scopeFilter($query, $filters)
     {

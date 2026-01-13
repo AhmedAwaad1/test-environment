@@ -5,6 +5,7 @@ namespace App\Http\Resources\Product;
 use App\Http\Resources\Category\CategoryResource;
 use App\Http\Resources\ProductImage\ProductImageResource;
 use App\Http\Resources\SubCategory\SubCategoryResource;
+use App\Http\Resources\ProductVariant\ProductVariantResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductResource extends JsonResource
@@ -82,6 +83,7 @@ class ProductResource extends JsonResource
             }),
 
             'quantity' => $this->quantity,
+            'variants' => ProductVariantResource::collection($this->whenLoaded('productVariants')),
         ];
     }
 }

@@ -20,6 +20,16 @@ class ProductVariantController extends Controller
     {
         return $this->variantService->getProductVariants($productId);
     }
+
+    /**
+     * Store a new variant
+     */
+    public function store(ProductVariantRequest $request)
+    {
+        $productId = $request->product_id;
+        return $this->variantService->createVariant($productId, $request->validated());
+    }
+
     /**
      * Update variant details
      */

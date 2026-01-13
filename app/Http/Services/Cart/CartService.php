@@ -158,6 +158,7 @@ class CartService
 
             $cart->refresh()->load([
                 'cartItems.product.images',
+                'cartItems.productVariant.optionValues.productOption.optionType',
                 'cartItems.currency',
             ]);
 
@@ -250,16 +251,21 @@ class CartService
     {
         if (!empty($data['product_variant_id'])) {
             $item       = $this->productVarRepo->find($data['product_variant_id']);
+            if (!$item) {
+                return ['error' => 'Product variant not found'];
+            }
             $existing   = $this->cartItemRepo->variantExistsInCart($cartId, $item->id);
             $currentQty = $existing ? $existing->quantity : 0;
             $totalQty   = $currentQty + $data['quantity'];
             $validation = $this->productValidator->validateVariant($item, $totalQty);
             $type       = 'variant';
-            $price      = $item->price ?? 0;
         } else {
             $item = $this->productRepo->find($data['product_id']);
+            if (!$item) {
+                return ['error' => 'Product not found'];
+            }
             if ($item->has_variants) {
-                return ['error' => 'Product has variants and cannot be added to cart'];
+                return ['error' => 'Product has variants and cannot be added to cart directly. Please select a variant.'];
             }
 
             $existing   = $this->cartItemRepo->productExistsInCart($cartId, $item->id);

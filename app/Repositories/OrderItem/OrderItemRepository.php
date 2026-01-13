@@ -29,11 +29,19 @@ class OrderItemRepository
             $perUnit   = $unitAfter ?? $unit;
             $totalLine = (float) ($item->total_price ?? round($perUnit * (int)$item->quantity, 2));
 
+            $productName = optional($item->product)->name_en;
+            if ($item->product_variant_id && $item->productVariant) {
+                $variantTitle = $item->productVariant->getTitle();
+                if ($variantTitle) {
+                    $productName .= " ({$variantTitle})";
+                }
+            }
+
             OrderItem::create([
                 'order_id'                  => $orderId,
                 'product_id'                => $item->product_id ?? null,
-                'product_variant_id'        => null,
-                'product_name'              => optional($item->product)->name_en,
+                'product_variant_id'        => $item->product_variant_id ?? null,
+                'product_name'              => $productName,
                 'product_price_id'          => $item->product_price_id ?? null,
                 'unit_price'                => $unit,
                 'unit_price_after_discount' => $unitAfter,

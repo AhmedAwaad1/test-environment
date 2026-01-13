@@ -42,8 +42,9 @@ class CartRequest extends FormRequest
     {
         return [
             'session_id'         => ['nullable', 'string'],
-            'product_id'      => ['nullable', 'exists:products,id'],
-            'quantity'        => ['required', 'integer', 'min:1'],
+            'product_id'         => ['required_without:product_variant_id', 'nullable', 'exists:products,id'],
+            'product_variant_id' => ['required_without:product_id', 'nullable', 'exists:product_variants,id'],
+            'quantity'           => ['required', 'integer', 'min:1'],
         ];
     }
 

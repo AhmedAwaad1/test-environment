@@ -308,11 +308,147 @@ class ProductService
 
     private function handleProductVariantsUpdate($product, array $data): void
     {
-        if (!isset($data['has_variants'])) return;
+        // If has_variants is not provided, we don't change the variant structure
+        // This handles simple status updates or partial updates.
+        if (!isset($data['has_variants'])) {
+            // Even if has_variants is not set, if variants are provided, update them
+            if (!empty($data['variants'])) {
+                $this->updateProductVariants($product->id, $data);
+            }
+            return;
+        }
 
-        $data['has_variants']
-            ? $this->updateProductVariants($product->id, $data)
-            : $this->deleteAllVariants($product);
+        if ($data['has_variants']) {
+            $this->updateProductVariants($product->id, $data);
+        } else {
+            $this->deleteAllVariants($product);
+        }
+    }
+
+    private function updateProductVariants(int $productId, array $data): void
+    {
+        // 1. Handle Options and build map first
+        $optionValueMap = [];
+        if (!empty($data['options'])) {
+            $optionValueMap = $this->updateOptionsAndValues($productId, $data['options']);
+        } else {
+            $optionValueMap = $this->getExistingOptionValueMap($productId);
+        }
+
+        // 2. Get existing variants to handle deletions (sync)
+        $existingVariants = $this->productVariantRepo->getByProductId($productId);
+        $processedIds = [];
+
+        // 3. Process variants from request
+        if (!empty($data['variants'])) {
+            foreach ($data['variants'] as $variantData) {
+                // Ensure price and price_after_discount are handled if present, 
+                // though variants usually inherit from product prices in this design
+                $variantFields = [
+                    'sku'       => $variantData['sku'],
+                    'quantity'  => $variantData['quantity'],
+                    'barcode'   => $variantData['barcode'] ?? null,
+                    'weight'    => $variantData['weight'] ?? null,
+                    'is_active' => $variantData['is_active'] ?? true,
+                    'order'     => $variantData['order'] ?? 1,
+                ];
+
+                if (!empty($variantData['id'])) {
+                    // Update existing
+                    $variant = $this->productVariantRepo->update($variantData['id'], $variantFields);
+                    $processedIds[] = $variant->id;
+                } else {
+                    // Create new
+                    $variantFields['product_id'] = $productId;
+                    $variant = $this->productVariantRepo->create($variantFields);
+                    $processedIds[] = $variant->id;
+                }
+
+                // Sync option values for this variant
+                if (!empty($variantData['option_values'])) {
+                    $this->syncVariantOptionValues($variant, $variantData['option_values'], $optionValueMap);
+                }
+            }
+        }
+
+        // 4. Delete variants not present in the update request
+        foreach ($existingVariants as $existingVariant) {
+            if (!in_array($existingVariant->id, $processedIds)) {
+                $this->productVariantRepo->delete($existingVariant->id);
+            }
+        }
+    }
+
+    private function updateOptionsAndValues(int $productId, array $options): array
+    {
+        $map = [];
+        
+        // When updating options, we often want to sync them. 
+        // For simplicity in this flow, we'll create new ones if they don't have IDs
+        // and keep track of them for the map.
+        foreach ($options as $optionData) {
+            $option = $this->productOptionRepo->create([
+                'product_id'             => $productId,
+                'product_option_type_id' => $optionData['option_type_id'],
+                'order'                  => $optionData['order'] ?? 1,
+            ]);
+            
+            $option->load('optionType');
+
+            foreach ($optionData['values'] as $index => $valueData) {
+                $value = $this->productOptionValueRepo->create([
+                    'product_option_id' => $option->id,
+                    'value'             => $valueData['value'],
+                    'hex_code'          => $valueData['hex_code'] ?? null,
+                    'order'             => $valueData['order'] ?? ($index + 1),
+                ]);
+
+                if ($option->optionType) {
+                    $map[strtolower($option->optionType->name)][strtolower($value->value)] = $value->id;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    private function getExistingOptionValueMap(int $productId): array
+    {
+        $map = [];
+        $options = $this->productOptionRepo->getByProductId($productId);
+        foreach ($options as $option) {
+            foreach ($option->values as $value) {
+                if ($option->optionType) {
+                    $map[strtolower($option->optionType->name)][strtolower($value->value)] = $value->id;
+                }
+            }
+        }
+        return $map;
+    }
+
+    private function syncVariantOptionValues($variant, array $optionValues, array $optionValueMap): void
+    {
+        // Remove existing links
+        $this->variantOptionValue->where('product_variant_id', $variant->id)->delete();
+
+        foreach ($optionValues as $valueData) {
+            $valueId = null;
+
+            // Try to find the ID in the map
+            foreach ($optionValueMap as $typeName => $values) {
+                if (isset($values[strtolower($valueData['value'])])) {
+                    $valueId = $values[strtolower($valueData['value'])];
+                    break;
+                }
+            }
+
+            if ($valueId) {
+                $this->variantOptionValue->create([
+                    'product_variant_id'      => $variant->id,
+                    'product_option_value_id' => $valueId,
+                ]);
+            }
+        }
     }
 
     private function deleteAllVariants($product)

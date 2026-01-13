@@ -47,9 +47,4 @@ class ProductOptionValue extends Model
     {
         return $this->hasMany(ProductOptionValueImage::class);
     }
-
-    public function variants()
-    {
-        return $this->belongsToMany(ProductVariant::class, 'variant_option_values');
-    }
 }

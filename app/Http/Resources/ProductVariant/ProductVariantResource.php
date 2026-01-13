@@ -46,18 +46,13 @@ class ProductVariantResource extends JsonResource
         ];
 
         // Add variant title and attributes only if optionValues are loaded
-        if ($this->relationLoaded('optionValues') && !$this->optionValues->isEmpty()) {
-            $data['title'] = $this->optionValues->map(function($value) {
-                return $value->value;
-            })->join(' / ');
-
-            $data['attributes'] = $this->optionValues->mapWithKeys(function($value) {
-                return [$value->productOption->name => $value->value];
-            });
+        if ($this->relationLoaded('optionValues')) {
+            $data['title'] = $this->getTitle();
+            $data['attributes'] = $this->getVariantAttributes();
 
             // Handle color information
             $colorValue = $this->optionValues->first(function($value) {
-                return $value->productOption && strtolower($value->productOption->name) === 'color';
+                return $value->productOption && strtolower($value->productOption->optionType->name ?? '') === 'color';
             });
 
             if ($colorValue) {

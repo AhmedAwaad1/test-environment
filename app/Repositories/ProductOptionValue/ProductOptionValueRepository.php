@@ -12,7 +12,13 @@ class ProductOptionValueRepository
 
     public function create(array $data)
     {
-        return ProductOptionValue::create($data);
+        return $this->model->updateOrCreate(
+            [
+                'product_option_id' => $data['product_option_id'],
+                'value'             => $data['value'],
+            ],
+            $data
+        );
     }
 
     public function delete($id)

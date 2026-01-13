@@ -34,7 +34,8 @@ class CartItemService
         string $type,
         ?int $cartCurrencyId = null
     ) {
-        $productId  = $item->id;
+        $productId  = ($type === 'variant') ? $item->product_id : $item->id;
+        $variantId  = ($type === 'variant') ? $item->id : null;
 
         // Use cart currency if provided, otherwise default
         $currencyId = $cartCurrencyId
@@ -73,7 +74,8 @@ class CartItemService
         }
 
         if (!$productPrice) {
-            $productPrice = $item->productPrices->first();
+            $itemForPrice = ($type === 'variant') ? $item->product : $item;
+            $productPrice = $itemForPrice->productPrices->first();
             if ($productPrice) {
                 $currencyId = $productPrice->currency_id;
             }
@@ -83,22 +85,41 @@ class CartItemService
             throw new \Exception("No price available for this product in any currency.");
         }
 
-        $unitRaw   = (float) $productPrice->price;
+        // VARIANT PRICE OVERRIDE: If it's a variant, use its specific price if set
+        $unitRaw = $productPrice->price;
         $unitAfter = $productPrice->price_after_discount;
+
+        if ($type === 'variant') {
+            if ($item->price > 0) {
+                $unitRaw = $item->price;
+                // If variant has its own price, it MUST have its own discount price or no discount at all
+                $unitAfter = ($item->price_after_discount > 0) ? $item->price_after_discount : null;
+            } elseif ($item->price_after_discount > 0) {
+                // If variant only has discount price override (unlikely but possible)
+                $unitAfter = $item->price_after_discount;
+            }
+        }
+
+        $unitRaw   = (float) $unitRaw;
         $unitAfter = ($unitAfter !== null && (float)$unitAfter > 0) ? (float)$unitAfter : null;
         $perUnit   = $unitAfter ?? $unitRaw;
 
-        $existingSamePrice = $this->cartItemRepo
-            ->findByCartProductAndPrice($cartId, $productId, $productPrice->id);
+        if ($type === 'variant') {
+            $existingItem = $this->cartItemRepo
+                ->findByCartAndVariantAndPrice($cartId, $variantId, $productPrice->id);
+        } else {
+            $existingItem = $this->cartItemRepo
+                ->findByCartProductAndPrice($cartId, $productId, $productPrice->id);
+        }
 
-        if ($existingSamePrice) {
-            return $this->cartItemRepo->incrementQuantity($existingSamePrice, $quantity);
+        if ($existingItem) {
+            return $this->cartItemRepo->incrementQuantity($existingItem, $quantity);
         }
 
         return $this->cartItemRepo->create([
             'cart_id'                    => $cartId,
             'product_id'                 => $productId,
-            'product_variant_id'         => null,
+            'product_variant_id'         => $variantId,
             'quantity'                   => max(1, $quantity),
             'product_price_id'           => $productPrice->id,
             'currency_id'                => $currencyId,
@@ -111,7 +132,10 @@ class CartItemService
     {
         $added = max(1, (int)$addedQty);
 
-        $perUnit               = $cartItem->unit_price_after_discount ?? $cartItem->unit_price;
+        $perUnit = ($cartItem->unit_price_after_discount !== null && (float)$cartItem->unit_price_after_discount > 0)
+            ? (float)$cartItem->unit_price_after_discount
+            : (float)$cartItem->unit_price;
+
         $cartItem->quantity    += $added;
         $cartItem->total_price = round($perUnit * $cartItem->quantity, 2);
         $cartItem->save();

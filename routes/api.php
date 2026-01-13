@@ -136,7 +136,7 @@ Route::prefix('products')->group(function () {
     // Basic Product CRUD
     Route::get('/', [ProductController::class, 'index']);
     Route::post('/', [ProductController::class, 'store']);
-    
+
     // Specific endpoints first
     Route::get('/new-arrivals', [ProductController::class, 'newArrivals']);
     Route::get('/best-sellers', [ProductController::class, 'bestSellers']);
@@ -145,6 +145,38 @@ Route::prefix('products')->group(function () {
     Route::get('/{id}', [ProductController::class, 'show']);
     Route::put('/{id}', [ProductController::class, 'update']);
     Route::delete('/{id}', [ProductController::class, 'destroy']);
+
+    // --- Product Variants ---
+    Route::prefix('{productId}/variants')->group(function () {
+        Route::get('/', [ProductVariantController::class, 'index']);
+        Route::post('/get-by-options', [ProductVariantController::class, 'getByOptions']);
+    });
+
+    // --- Product Options & Values ---
+    Route::prefix('{productId}/options')->group(function () {
+        Route::get('/', [ProductOptionController::class, 'index']);
+        Route::post('/', [ProductOptionController::class, 'store']);
+    });
+});
+
+// Standalone Variant/Option Management (for Update/Delete)
+Route::prefix('product-variants')->group(function () {
+    Route::post('/', [ProductVariantController::class, 'store']);
+    Route::put('/{id}', [ProductVariantController::class, 'update']);
+    Route::patch('/{id}/stock', [ProductVariantController::class, 'updateStock']);
+    Route::patch('/{id}/toggle-status', [ProductVariantController::class, 'toggleStatus']);
+    Route::delete('/{id}', [ProductVariantController::class, 'destroy']);
+});
+
+Route::prefix('product-options')->group(function () {
+    Route::put('/{id}', [ProductOptionController::class, 'update']);
+    Route::delete('/{id}', [ProductOptionController::class, 'destroy']);
+
+    // Values within Options
+    Route::post('/{id}/values', [ProductOptionController::class, 'addValue']);
+    Route::put('/values/{valueId}', [ProductOptionController::class, 'updateValue']);
+    Route::delete('/values/{valueId}', [ProductOptionController::class, 'deleteValue']);
+    Route::post('/{id}/reorder-values', [ProductOptionController::class, 'reorderValues']);
 });
 
 Route::prefix('banner')->namespace('Banner')->group(function () {
