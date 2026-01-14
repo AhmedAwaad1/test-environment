@@ -181,13 +181,12 @@ Route::prefix('product-options')->group(function () {
     Route::post('/{id}/reorder-values', [ProductOptionController::class, 'reorderValues']);
 });
 
-Route::prefix('option-types')->group(function () {
-
-    Route::get('/', [ProductOptionTypeController::class, 'index']);
-    Route::post('/', [ProductOptionTypeController::class, 'store']);
-    Route::get('/{id}', [ProductOptionTypeController::class, 'show']);
-    Route::put('/{id}', [ProductOptionTypeController::class, 'update']);
-    Route::delete('/{id}', [ProductOptionTypeController::class, 'destroy']);
+    Route::prefix('option-types')->group(function () {
+    Route::get('/', [ProductOptionTypeController::class, 'index'])->name('option-types.index');
+    Route::post('/', [ProductOptionTypeController::class, 'store'])->name('option-types.store');
+    Route::get('/{id}', [ProductOptionTypeController::class, 'show'])->name('option-types.show');
+    Route::put('/{id}', [ProductOptionTypeController::class, 'update'])->name('option-types.update');
+    Route::delete('/{id}', [ProductOptionTypeController::class, 'destroy'])->name('option-types.destroy');
 });
 
 // Keep the old one for backward compatibility if needed by frontend
@@ -219,7 +218,7 @@ Route::prefix('district')->namespace('District')->group(function () {
     Route::delete('/{id}', [DistrictController::class, 'destroy'])->name('district.destroy');
 });
 
-Route::prefix('address')->namespace('Addres')->group(function () {
+Route::prefix('address')->namespace('Address')->group(function () {
     // Get all user addresses
     Route::get('/', [AddressController::class, 'index'])->name('address.index');
     // Get specific address
