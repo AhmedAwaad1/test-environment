@@ -20,6 +20,11 @@ class ProductVariant extends Model
         'is_active',
     ];
 
+    public function productPrices()
+    {
+        return $this->hasMany(ProductPrice::class, 'product_id', 'product_id');
+    }
+
     public function product()
     {
         return $this->belongsTo(Product::class);

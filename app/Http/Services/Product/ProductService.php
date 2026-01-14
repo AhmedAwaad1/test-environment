@@ -173,8 +173,11 @@ class ProductService
 
             DB::commit();
 
+            // Fetch a completely fresh product with all relationships loaded for the response
+            $freshProduct = $this->productRepo->findWithVariants($product->id);
+
             return Response::successResponse(
-                new ProductResource($this->productRepo->findWithVariants($product->id)),
+                new ProductResource($freshProduct),
                 'Product updated successfully'
             );
         } catch (\Exception $e) {
@@ -236,31 +239,75 @@ class ProductService
     private function handleProductImages($product, $images)
     {
         foreach ($images as $image) {
-            $isMain = isset($image['is_main']) && filter_var($image['is_main'], FILTER_VALIDATE_BOOLEAN);
+            $isMain = false;
+            $imageFile = null;
+
+            if (is_array($image)) {
+                $isMain = isset($image['is_main']) && ($image['is_main'] == '1' || $image['is_main'] === 'true' || $image['is_main'] === true);
+                $imageFile = $image['path'] ?? null;
+            } else {
+                $imageFile = $image;
+            }
 
             if ($isMain) {
                 $product->images()->update(['is_main' => false]);
             }
 
-            $product->images()->create([
-                'image'   => $image['path'],
-                'is_main' => $isMain,
-            ]);
+            if ($imageFile instanceof \Illuminate\Http\UploadedFile) {
+                $path = $imageFile->store('products', 'public');
+            } else {
+                $path = $imageFile;
+            }
+
+            if ($path && is_string($path)) {
+                $product->images()->create([
+                    'image'   => $path,
+                    'is_main' => $isMain,
+                ]);
+            }
         }
     }
 
     private function createVariants(int $productId, array $variants, array $optionValueMap): void
     {
         foreach ($variants as $variant) {
+            // Extract default price from prices array if available
+            $defaultPrice = 0;
+            $defaultPriceAfterDiscount = null;
+
+            if (!empty($variant['prices'])) {
+                // Look for currency_id = 1 or take the first one
+                $priceData = collect($variant['prices'])->firstWhere('currency_id', 1) 
+                            ?? collect($variant['prices'])->first();
+                
+                if ($priceData) {
+                    $defaultPrice = $priceData['price'];
+                    $defaultPriceAfterDiscount = $priceData['price_after_discount'] ?? null;
+                }
+            }
+
             $createdVariant = $this->productVariantRepo->create([
-                'product_id' => $productId,
-                'sku'        => $variant['sku'],
-                'quantity'   => $variant['quantity'],
-                'barcode'    => $variant['barcode'] ?? null,
-                'weight'     => $variant['weight'] ?? null,
-                'is_active'  => $variant['is_active'] ?? true,
-                'order'      => $variant['order'] ?? 1,
+                'product_id'           => $productId,
+                'sku'                  => $variant['sku'],
+                'price'                => $defaultPrice,
+                'price_after_discount' => $defaultPriceAfterDiscount,
+                'quantity'             => $variant['quantity'],
+                'barcode'              => $variant['barcode'] ?? null,
+                'weight'               => $variant['weight'] ?? null,
+                'is_active'            => $variant['is_active'] ?? true,
+                'order'                => $variant['order'] ?? 1,
             ]);
+
+            // Save multi-currency prices if provided
+            if (!empty($variant['prices'])) {
+                foreach ($variant['prices'] as $priceData) {
+                    $createdVariant->productPrices()->create([
+                        'currency_id'          => $priceData['currency_id'],
+                        'price'                => $priceData['price'],
+                        'price_after_discount' => $priceData['price_after_discount'] ?? null,
+                    ]);
+                }
+            }
 
             foreach ($variant['option_values'] as $value) {
                 foreach ($optionValueMap as $valuesMap) {
@@ -342,15 +389,29 @@ class ProductService
         // 3. Process variants from request
         if (!empty($data['variants'])) {
             foreach ($data['variants'] as $variantData) {
-                // Ensure price and price_after_discount are handled if present, 
-                // though variants usually inherit from product prices in this design
+                // Extract default price from prices array if available
+                $defaultPrice = 0;
+                $defaultPriceAfterDiscount = null;
+
+                if (!empty($variantData['prices'])) {
+                    $priceData = collect($variantData['prices'])->firstWhere('currency_id', 1) 
+                                ?? collect($variantData['prices'])->first();
+                    
+                    if ($priceData) {
+                        $defaultPrice = $priceData['price'];
+                        $defaultPriceAfterDiscount = $priceData['price_after_discount'] ?? null;
+                    }
+                }
+
                 $variantFields = [
-                    'sku'       => $variantData['sku'],
-                    'quantity'  => $variantData['quantity'],
-                    'barcode'   => $variantData['barcode'] ?? null,
-                    'weight'    => $variantData['weight'] ?? null,
-                    'is_active' => $variantData['is_active'] ?? true,
-                    'order'     => $variantData['order'] ?? 1,
+                    'sku'                  => $variantData['sku'],
+                    'price'                => $defaultPrice,
+                    'price_after_discount' => $defaultPriceAfterDiscount,
+                    'quantity'             => $variantData['quantity'],
+                    'barcode'              => $variantData['barcode'] ?? null,
+                    'weight'               => $variantData['weight'] ?? null,
+                    'is_active'            => $variantData['is_active'] ?? true,
+                    'order'                => $variantData['order'] ?? 1,
                 ];
 
                 if (!empty($variantData['id'])) {
@@ -362,6 +423,22 @@ class ProductService
                     $variantFields['product_id'] = $productId;
                     $variant = $this->productVariantRepo->create($variantFields);
                     $processedIds[] = $variant->id;
+                }
+
+                // Save multi-currency prices if provided
+                if (!empty($variantData['prices'])) {
+                    // Optionally clear existing prices for update flow if needed
+                    if (!empty($variantData['id'])) {
+                        $variant->productPrices()->delete();
+                    }
+                    
+                    foreach ($variantData['prices'] as $priceData) {
+                        $variant->productPrices()->create([
+                            'currency_id'          => $priceData['currency_id'],
+                            'price'                => $priceData['price'],
+                            'price_after_discount' => $priceData['price_after_discount'] ?? null,
+                        ]);
+                    }
                 }
 
                 // Sync option values for this variant

@@ -26,7 +26,13 @@ class ProductRepository
     public function getAll($request, array $filters = [])
     {
         $query = $this->model
-            ->with(['category', 'subCategory', 'images', 'productPrices.currency'])
+            ->with([
+                'category', 
+                'subCategory', 
+                'images', 
+                'productPrices.currency',
+                'productVariants.optionValues.productOption.optionType'
+            ])
             ->filter($filters);
 
         return $request->filled('per_page')

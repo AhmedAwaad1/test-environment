@@ -61,7 +61,23 @@ class ProductController extends Controller
         }
 
         if ($request->has('status')) {
-            $data['status'] = $request->input('status') == '1' || $request->input('status') === 'true';
+            $data['is_active'] = $request->input('status') == '1' || $request->input('status') === 'true';
+        }
+
+        if ($request->has('has_variants')) {
+            $data['has_variants'] = $request->input('has_variants') == '1' || $request->input('has_variants') === 'true';
+        }
+
+        // Ensure variants and options are passed if they exist in the request
+        // even if not explicitly in validated() (though they should be)
+        if ($request->has('variants')) {
+            $data['variants'] = $request->input('variants');
+        }
+        if ($request->has('options')) {
+            $data['options'] = $request->input('options');
+        }
+        if ($request->has('images')) {
+            $data['images'] = $request->allFiles()['images'] ?? $request->input('images');
         }
 
         return $this->service->updateProduct($id, $data);

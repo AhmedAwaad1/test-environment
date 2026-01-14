@@ -35,17 +35,29 @@ class ProductResource extends JsonResource
         // ✅ Select correct default price
         $priceEntry =
             $prices->firstWhere('currency_id', $currencyId)
-            ?? $prices->first(fn ($p) => $p->currency?->is_default);
+            ?? $prices->first(fn ($p) => $p->currency?->is_default)
+            ?? $prices->first();
 
-        $defaultPrice = [
-            'price' => $priceEntry?->price ?? 0,
-            'price_after_discount' =>
-                ($priceEntry?->price_after_discount > 0)
-                    ? $priceEntry->price_after_discount
-                    : $priceEntry?->price,
-            'currency_id' => $priceEntry?->currency_id,
-            'currency' => $priceEntry?->currency?->name,
-        ];
+        // Check if we should use variant price
+        if ($this->has_variants && $this->relationLoaded('productVariants') && $this->productVariants->isNotEmpty()) {
+            $firstVariant = $this->productVariants->first();
+            $defaultPrice = [
+                'price' => $firstVariant->price ?? 0,
+                'price_after_discount' => $firstVariant->price_after_discount ?? $firstVariant->price ?? 0,
+                'currency_id' => $priceEntry?->currency_id,
+                'currency' => $priceEntry?->currency?->name,
+            ];
+        } else {
+            $defaultPrice = [
+                'price' => $priceEntry?->price ?? 0,
+                'price_after_discount' =>
+                    ($priceEntry?->price_after_discount > 0)
+                        ? $priceEntry->price_after_discount
+                        : $priceEntry?->price ?? 0,
+                'currency_id' => $priceEntry?->currency_id,
+                'currency' => $priceEntry?->currency?->name,
+            ];
+        }
 
         return [
             'id' => $this->id,
@@ -64,8 +76,8 @@ class ProductResource extends JsonResource
             // 🔥 Comes from withAvg (NO query here)
             'avg_rating' => round($this->reviews_avg_rating ?? 0, 1),
 
-            'prices' => $priceData,
-            'default_price' => $priceData,
+            'prices' => $this->when(!$this->has_variants, $priceData),
+            'default_price' => $defaultPrice,
 
             'is_best_seller' => (bool) $this->is_best_seller,
             'is_new_arrival' => (bool) $this->is_new_arrival,

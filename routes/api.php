@@ -28,6 +28,7 @@ use App\Http\Controllers\Subscribe\SubscribeController;
 use App\Http\Controllers\Testimonial\TestimonialController;
 
 // Add this line
+use App\Http\Controllers\Product\ProductOptionTypeController;
 use App\Http\Controllers\UserProfile\UserProfileController;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use Illuminate\Http\Request;
@@ -169,6 +170,7 @@ Route::prefix('product-variants')->group(function () {
 });
 
 Route::prefix('product-options')->group(function () {
+    Route::get('/types', [ProductOptionTypeController::class, 'index']);
     Route::put('/{id}', [ProductOptionController::class, 'update']);
     Route::delete('/{id}', [ProductOptionController::class, 'destroy']);
 
@@ -178,6 +180,17 @@ Route::prefix('product-options')->group(function () {
     Route::delete('/values/{valueId}', [ProductOptionController::class, 'deleteValue']);
     Route::post('/{id}/reorder-values', [ProductOptionController::class, 'reorderValues']);
 });
+
+Route::prefix('option-types')->group(function () {
+    Route::get('/', [ProductOptionTypeController::class, 'index']);
+    Route::post('/', [ProductOptionTypeController::class, 'store']);
+    Route::get('/{id}', [ProductOptionTypeController::class, 'show']);
+    Route::put('/{id}', [ProductOptionTypeController::class, 'update']);
+    Route::delete('/{id}', [ProductOptionTypeController::class, 'destroy']);
+});
+
+// Keep the old one for backward compatibility if needed by frontend
+Route::get('option-type', [ProductOptionTypeController::class, 'index']);
 
 Route::prefix('banner')->namespace('Banner')->group(function () {
     // Get all banners
@@ -398,4 +411,3 @@ Route::prefix('quiz')->group(function () {
 Route::prefix('homework')->group(function () {
     Route::delete('/{id}', [HomeworkController::class, 'destroy'])->whereNumber('id');
 });
-
