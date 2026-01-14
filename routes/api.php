@@ -182,6 +182,7 @@ Route::prefix('product-options')->group(function () {
 });
 
 Route::prefix('option-types')->group(function () {
+
     Route::get('/', [ProductOptionTypeController::class, 'index']);
     Route::post('/', [ProductOptionTypeController::class, 'store']);
     Route::get('/{id}', [ProductOptionTypeController::class, 'show']);
