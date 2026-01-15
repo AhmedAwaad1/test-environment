@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Payment\TapRedirectController;
 use App\Http\Controllers\Payment\TapWebhookController;
 use App\Http\Controllers\Product\ProductOptionController;
+use App\Http\Controllers\Product\ProductAttributeFilterController;
 use App\Http\Controllers\Review\ReviewController;
 use App\Http\Controllers\HomeworkController;
 
@@ -191,6 +192,12 @@ Route::prefix('product-options')->group(function () {
 
 // Keep the old one for backward compatibility if needed by frontend
 Route::get('option-type', [ProductOptionTypeController::class, 'index']);
+
+// Dynamic Product Attribute & Filter Discovery
+Route::get('product-attributes/filters', [ProductAttributeFilterController::class, 'index'])
+    ->name('product-attributes.filters');
+Route::post('product-attributes/filter-products', [ProductAttributeFilterController::class, 'filter'])
+    ->name('product-attributes.filter-products');
 
 Route::prefix('banner')->namespace('Banner')->group(function () {
     // Get all banners
