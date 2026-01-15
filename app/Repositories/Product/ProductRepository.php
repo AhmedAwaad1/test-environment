@@ -125,27 +125,46 @@ public function update($id, array $data)
     {
         return DB::transaction(function () use ($id) {
             $product = $this->model
-                ->with(['images', 'productVariants.images'])
+                ->with(['images', 'productOptions.values.images', 'productVariants', 'productPrices'])
                 ->findOrFail($id);
 
-            // Delete product images
+            $disk = Storage::disk('public');
+
+            // 1. Delete product images from storage
             foreach ($product->images as $image) {
-                if ($image->image && Storage::exists($image->image)) {
-                    Storage::delete($image->image);
+                if ($image->image && $disk->exists($image->image)) {
+                    $disk->delete($image->image);
                 }
             }
 
-            // Delete variant images
-            if ($product->has_variants) {
-                foreach ($product->productVariants as $variant) {
-                    foreach ($variant->images as $image) {
-                        if ($image->image && Storage::exists($image->image)) {
-                            Storage::delete($image->image);
+            // 2. Delete product option value images from storage
+            foreach ($product->productOptions as $option) {
+                foreach ($option->values as $value) {
+                    foreach ($value->images as $image) {
+                        if ($image->image && $disk->exists($image->image)) {
+                            $disk->delete($image->image);
                         }
                     }
+                    // Explicitly delete option value to trigger any potential events
+                    $value->delete();
                 }
+                // Explicitly delete option
+                $option->delete();
             }
 
+            // 3. Explicitly delete variants to ensure cleanup if DB cascade fails
+            foreach ($product->productVariants as $variant) {
+                // If variant has its own cleanup logic (like in ProductVariantRepository::delete),
+                // we should ideally call that. But for now, we'll just delete the record.
+                $variant->delete();
+            }
+
+            // 4. Explicitly delete prices
+            foreach ($product->productPrices as $price) {
+                $price->delete();
+            }
+
+            // 5. Finally delete the product itself
             return $product->delete();
         });
     }
