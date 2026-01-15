@@ -39,10 +39,10 @@ class ProductVariant extends Model
         return $this->hasMany(VariantOptionValue::class);
     }
 
-//    public function images()
-//    {
-//        return $this->hasMany(ProductImage::class, 'product_id', 'product_id');
-//    }
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class, 'product_id', 'product_id');
+    }
 
     public function getIsActiveAttribute($value)
     {
