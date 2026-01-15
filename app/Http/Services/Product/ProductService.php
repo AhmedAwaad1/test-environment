@@ -4,6 +4,7 @@ namespace App\Http\Services\Product;
 
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Product\ProductResource;
+use App\Http\Resources\Product\ProductListResource;
 use App\Http\Resources\ProductVariant\ProductVariantResource;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Repositories\Product\ProductRepository;
@@ -40,8 +41,29 @@ class ProductService
 
             $currency = $this->geoCurrencyService->getCurrencyForRequest();
 
+            $isListResource = $request->get('resource') === 'list' || $request->get('fields') === 'list';
+
+            // For list resource, default to pagination with per_page=10
+            if ($isListResource && !$request->filled('per_page')) {
+                $request->merge(['per_page' => 10]);
+            }
+
             // Apply filters only if set
             $products = $this->productRepo->getAll($request, $request->all());
+
+            if ($isListResource) {
+                return Response::successResponse([
+                    'data' => ProductListResource::collection($products),
+                    'meta' => [
+                        'current_page' => $products->currentPage(),
+                        'last_page' => $products->lastPage(),
+                        'per_page' => $products->perPage(),
+                        'total' => $products->total(),
+                    ],
+                    'currency' => $currency?->name,
+                    'currency_id' => $currency?->id,
+                ], 'Products retrieved successfully');
+            }
 
             $resource = $request->per_page
                 ? new PaginationResource($products, ProductResource::class)
