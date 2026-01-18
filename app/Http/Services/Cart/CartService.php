@@ -92,18 +92,33 @@ class CartService
     public function addToCart(array $data)
     {
         try {
-
             DB::beginTransaction();
+            
+            // Normalize input: Convert single product format to items array for unified processing
+            if (isset($data['items']) && is_array($data['items'])) {
+                // Bulk format - use items array as-is
+                $items = $data['items'];
+                $sessionId = $data['session_id'] ?? null;
+            } else {
+                // Single format (backward compatible) - wrap into items array
+                $items = [[
+                    'product_id' => $data['product_id'] ?? null,
+                    'product_variant_id' => $data['product_variant_id'] ?? null,
+                    'quantity' => $data['quantity'] ?? 1,
+                ]];
+                $sessionId = $data['session_id'] ?? null;
+            }
+
             $user = $this->resolveUserFromRequest();
 
             if ($user) {
                 $cart = $this->cartRepo->findOrCreateUserCart($user->id);
             } else {
-                if (empty($data['session_id'])) {
+                if (empty($sessionId)) {
                     DB::rollBack();
                     return Response::errorResponse('Session ID is required for guest cart.', [], 400);
                 }
-                $cart = $this->cartRepo->findOrCreateBySessionId($data['session_id']);
+                $cart = $this->cartRepo->findOrCreateBySessionId($sessionId);
             }
 
             $xForwardedFor   = trim((string)request()->header('X-Forwarded-For', ''));
@@ -112,9 +127,9 @@ class CartService
 
             if ($xForwardedFor === '') {
                 session()->forget(['currency_id', 'country_id']);
-                if (!empty($data['session_id'])) {
-                    Cache::forget("currency_id_{$data['session_id']}");
-                    Cache::forget("country_id_{$data['session_id']}");
+                if (!empty($sessionId)) {
+                    Cache::forget("currency_id_{$sessionId}");
+                    Cache::forget("country_id_{$sessionId}");
                 }
 
                 $cart->currency_id = $defaultCurrency->id;
@@ -129,28 +144,37 @@ class CartService
             }
 
             session(['currency_id' => $cart->currency_id]);
-            if (!empty($data['session_id'])) {
-                Cache::put("currency_id_{$data['session_id']}", $cart->currency_id, now()->addDays(30));
+            if (!empty($sessionId)) {
+                Cache::put("currency_id_{$sessionId}", $cart->currency_id, now()->addDays(30));
             }
 
-            $itemData = $this->getCartItemData($data, $cart->id);
-            if ($itemData['error']) {
-                DB::rollBack();
-                return Response::errorResponse($itemData['error'], [], 400);
+            // Process each item in the loop
+            foreach ($items as $itemData) {
+                $itemDataWithSession = array_merge($itemData, ['session_id' => $sessionId]);
+                
+                // Use existing getCartItemData for validation
+                $cartItemData = $this->getCartItemData($itemDataWithSession, $cart->id);
+                
+                if ($cartItemData['error']) {
+                    DB::rollBack();
+                    return Response::errorResponse($cartItemData['error'], [], 400);
+                }
+
+                $item = $cartItemData['item'];
+                $type = $cartItemData['type'];
+                $quantity = max(1, (int)($itemData['quantity'] ?? 1));
+
+                // Use existing createNewCartItem service
+                $this->cartItemService->createNewCartItem(
+                    $cart->id,
+                    $item,
+                    $quantity,
+                    $type,
+                    $cart->currency_id
+                );
             }
 
-            $item     = $itemData['item'];
-            $type     = $itemData['type'];
-            $quantity = max(1, (int)($data['quantity'] ?? 1));
-
-            $this->cartItemService->createNewCartItem(
-                $cart->id,
-                $item,
-                $quantity,
-                $type,
-                $cart->currency_id
-            );
-
+            // Calculate totals and apply coupon ONLY ONCE after all items are added
             $this->calculateTotalPrice($cart);
             $this->couponService->checkAndApplyCouponIfExists($cart);
 
@@ -162,7 +186,8 @@ class CartService
                 'cartItems.currency',
             ]);
 
-            return Response::successResponse(new CartResource($cart), 'Item added to cart', 201);
+            $message = count($items) === 1 ? 'Item added to cart' : 'Items added to cart';
+            return Response::successResponse(new CartResource($cart), $message, 201);
 
         } catch (\Throwable $e) {
             DB::rollBack();

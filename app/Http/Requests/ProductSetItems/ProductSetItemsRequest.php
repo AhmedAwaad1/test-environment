@@ -41,15 +41,15 @@ class ProductSetItemsRequest extends FormRequest
     private function storeRules(): array
     {
         return [
-            'product_id' => 'required|exists:products,id',
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'required|exists:products,id',
+            'sku' => 'nullable|string|max:255',
+            'quantity' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
             'name_en' => 'nullable|string|max:255',
             'name_ar' => 'nullable|string|max:255',
             'description_en' => 'nullable|string',
             'description_ar' => 'nullable|string',
-            'how_to_use_en' => 'nullable|string',
-            'how_to_use_ar' => 'nullable|string',
-            'features_en' => 'nullable|json',
-            'features_ar' => 'nullable|json',
             'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:5048',
         ];
     }
@@ -57,15 +57,15 @@ class ProductSetItemsRequest extends FormRequest
     private function updateRules(): array
     {
         return [
-            'product_id' => 'nullable|exists:products,id',
+            'product_ids' => 'nullable|array|min:1',
+            'product_ids.*' => 'required_with:product_ids|exists:products,id',
+            'sku' => 'nullable|string|max:255',
+            'quantity' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
             'name_en' => 'nullable|string|max:255',
             'name_ar' => 'nullable|string|max:255',
             'description_en' => 'nullable|string',
             'description_ar' => 'nullable|string',
-            'how_to_use_en' => 'nullable|string',
-            'how_to_use_ar' => 'nullable|string',
-            'features_en' => 'nullable|json',
-            'features_ar' => 'nullable|json',
             'image' => 'nullable|file|image|mimes:jpeg,png,jpg,gif,svg|max:5048',
         ];
     }

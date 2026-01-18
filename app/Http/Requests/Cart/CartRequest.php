@@ -40,6 +40,19 @@ class CartRequest extends FormRequest
 
     private function storeRules(): array
     {
+        // Support both single and bulk formats
+        // If 'items' array is provided, it's bulk mode; otherwise, use single mode
+        if ($this->has('items') && is_array($this->input('items'))) {
+            return [
+                'session_id' => ['nullable', 'string'],
+                'items' => ['required', 'array', 'min:1'],
+                'items.*.product_id' => ['required_without:items.*.product_variant_id', 'nullable', 'exists:products,id'],
+                'items.*.product_variant_id' => ['required_without:items.*.product_id', 'nullable', 'exists:product_variants,id'],
+                'items.*.quantity' => ['required', 'integer', 'min:1'],
+            ];
+        }
+        
+        // Single product format (backward compatible)
         return [
             'session_id'         => ['nullable', 'string'],
             'product_id'         => ['required_without:product_variant_id', 'nullable', 'exists:products,id'],

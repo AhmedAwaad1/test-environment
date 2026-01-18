@@ -76,6 +76,12 @@ class Product extends Model
         return $this->hasMany(Review::class);
     }
 
+    public function setItems()
+    {
+        return $this->belongsToMany(ProductSetItems::class, 'product_product_set_item', 'product_id', 'product_set_item_id')
+            ->withTimestamps();
+    }
+
     public function lowestPrice()
     {
         return $this->hasOne(ProductPrice::class)->orderByRaw('COALESCE(price_after_discount, price) ASC');

@@ -377,16 +377,6 @@ Route::prefix('subscribe')->namespace('Subscribe')->group(function () {
 });
 
 
-Route::get('/test-ip', function () {
-    $geo  = new GeoCurrencyService();
-    $ip   = request()->ip();
-    $code = $geo->getCountryCodeFromIp($ip);
-    return response()->json([
-        'ip'           => $ip,
-        'country_code' => $code
-    ]);
-});
-
 // Testimonial Routes
 Route::prefix('testimonial')->namespace('Testimonial')->group(function () {
     // Get all Testimonials

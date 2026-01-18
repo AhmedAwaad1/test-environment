@@ -10,26 +10,86 @@ class ProductSetItems extends Model
     use HasFactory;
 
     protected $fillable = [
-        'product_id',
+        'sku',
+        'quantity',
+        'is_active',
         'name_en',
         'name_ar',
         'description_en',
         'description_ar',
-        'how_to_use_en',
-        'how_to_use_ar',
-        'features_en',
-        'features_ar',
         'image',
     ];
 
     protected $casts = [
-        'features_en' => 'array',
-        'features_ar' => 'array',
+        'is_active'   => 'boolean',
     ];
 
+    /**
+     * Many-to-many relationship with Products
+     */
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'product_product_set_item', 'product_set_item_id', 'product_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Keep old relationship for backward compatibility (if needed)
+     * @deprecated Use products() instead
+     */
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->hasOne(Product::class, 'id', 'product_id');
+    }
+
+    /**
+     * Calculate total price for a specific currency from all products
+     */
+    public function getTotalPriceForCurrency($currencyId)
+    {
+        $totalPrice = 0;
+        $totalPriceAfterDiscount = 0;
+
+        foreach ($this->products as $product) {
+            $productPrice = $product->productPrices()->where('currency_id', $currencyId)->first();
+            if ($productPrice) {
+                $totalPrice += $productPrice->price;
+                $totalPriceAfterDiscount += ($productPrice->price_after_discount ?? $productPrice->price);
+            }
+        }
+
+        return [
+            'price' => $totalPrice,
+            'price_after_discount' => $totalPriceAfterDiscount,
+        ];
+    }
+
+    /**
+     * Get all calculated prices grouped by currency
+     */
+    public function getCalculatedPrices()
+    {
+        $pricesByCurrency = [];
+
+        foreach ($this->products as $product) {
+            foreach ($product->productPrices as $productPrice) {
+                $currencyId = $productPrice->currency_id;
+                
+                if (!isset($pricesByCurrency[$currencyId])) {
+                    $pricesByCurrency[$currencyId] = [
+                        'currency_id' => $currencyId,
+                        'currency' => $productPrice->currency,
+                        'price' => 0,
+                        'price_after_discount' => 0,
+                    ];
+                }
+
+                $pricesByCurrency[$currencyId]['price'] += $productPrice->price;
+                $pricesByCurrency[$currencyId]['price_after_discount'] += ($productPrice->price_after_discount ?? $productPrice->price);
+            }
+        }
+
+        return array_values($pricesByCurrency);
     }
 
     public function scopeFilter($query, $filters)
@@ -42,9 +102,11 @@ class ProductSetItems extends Model
             });
         }
 
-        // Product ID filter
+        // Product ID filter - search in related products
         if ($filters['product_id'] ?? false) {
-            $query->where('product_id', $filters['product_id']);
+            $query->whereHas('products', function($q) use ($filters) {
+                $q->where('products.id', $filters['product_id']);
+            });
         }
 
         // Sort options
@@ -77,10 +139,14 @@ class ProductSetItems extends Model
 
     public function setImageAttribute($value)
     {
-        if (is_string($value)) {
+        if (is_null($value)) {
+            $this->attributes['image'] = null;
+        } elseif (is_string($value)) {
             $this->attributes['image'] = $value;
-        } else {
+        } elseif (is_object($value) && method_exists($value, 'store')) {
             $this->attributes['image'] = $value->store('product_set_items', 'public');
+        } else {
+            $this->attributes['image'] = null;
         }
     }
 } 

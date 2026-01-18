@@ -13,7 +13,7 @@ class ProductSetItemsRepository
 
     public function getAll($request)
     {
-        $query = $this->model->with(['product'])->filter($request);
+        $query = $this->model->with(['products.productPrices.currency', 'products.images'])->filter($request);
 
         if ($request->has('per_page')) {
             return $query->paginate($request->per_page);
@@ -25,7 +25,7 @@ class ProductSetItemsRepository
     public function find($id)
     {
         return $this->model
-            ->with(['product'])
+            ->with(['products.productPrices.currency', 'products.images', 'products.category', 'products.subCategory'])
             ->findOrFail($id);
     }
 
@@ -35,20 +35,23 @@ class ProductSetItemsRepository
             DB::beginTransaction();
 
             $productSetItem = $this->model->create([
-                'product_id' => $data['product_id'],
+                'sku' => $data['sku'] ?? null,
+                'quantity' => $data['quantity'] ?? 0,
+                'is_active' => $data['is_active'] ?? true,
                 'name_en' => $data['name_en'] ?? null,
                 'name_ar' => $data['name_ar'] ?? null,
                 'description_en' => $data['description_en'] ?? null,
                 'description_ar' => $data['description_ar'] ?? null,
-                'how_to_use_en' => $data['how_to_use_en'] ?? null,
-                'how_to_use_ar' => $data['how_to_use_ar'] ?? null,
-                'features_en' => $data['features_en'] ?? null,
-                'features_ar' => $data['features_ar'] ?? null,
                 'image' => $data['image'] ?? null,
             ]);
 
+            // Attach products to the set
+            if (!empty($data['product_ids']) && is_array($data['product_ids'])) {
+                $productSetItem->products()->attach($data['product_ids']);
+            }
+
             DB::commit();
-            return $productSetItem;
+            return $productSetItem->load(['products.productPrices.currency', 'products.images']);
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
@@ -62,21 +65,32 @@ class ProductSetItemsRepository
 
             $productSetItem = $this->model->findOrFail($id);
 
-            $productSetItem->update(array_filter([
-                'product_id' => $data['product_id'] ?? null,
+            $updateData = array_filter([
+                'sku' => $data['sku'] ?? null,
                 'name_en' => $data['name_en'] ?? null,
                 'name_ar' => $data['name_ar'] ?? null,
                 'description_en' => $data['description_en'] ?? null,
                 'description_ar' => $data['description_ar'] ?? null,
-                'how_to_use_en' => $data['how_to_use_en'] ?? null,
-                'how_to_use_ar' => $data['how_to_use_ar'] ?? null,
-                'features_en' => $data['features_en'] ?? null,
-                'features_ar' => $data['features_ar'] ?? null,
                 'image' => $data['image'] ?? null,
-            ]));
+            ], fn($value) => $value !== null);
+
+            // Handle quantity and is_active separately as they can be 0/false
+            if (array_key_exists('quantity', $data)) {
+                $updateData['quantity'] = $data['quantity'];
+            }
+            if (array_key_exists('is_active', $data)) {
+                $updateData['is_active'] = $data['is_active'];
+            }
+
+            $productSetItem->update($updateData);
+
+            // Update products if provided
+            if (isset($data['product_ids']) && is_array($data['product_ids'])) {
+                $productSetItem->products()->sync($data['product_ids']);
+            }
 
             DB::commit();
-            return $productSetItem->fresh();
+            return $productSetItem->fresh()->load(['products.productPrices.currency', 'products.images']);
         } catch (\Exception $e) {
             DB::rollBack();
             throw $e;
