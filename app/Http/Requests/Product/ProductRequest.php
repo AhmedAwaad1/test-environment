@@ -78,15 +78,15 @@ class ProductRequest extends FormRequest
             'variants.*.option_values' => 'nullable|array',
             'variants.*.option_values.*.value' => 'nullable|string|max:255',
 
-            'variants.*.prices' => ['nullable', 'array'],
-            'variants.*.prices.*.currency_id' => ['required', 'exists:currencies,id'],
-            'variants.*.prices.*.price' => ['required', 'numeric'],
-            'variants.*.prices.*.price_after_discount' => ['nullable', 'numeric'],
+            'variants.*.prices' => ['required_if:has_variants,1,true', 'array'],
+            'variants.*.prices.*.currency_id' => ['required_with:variants.*.prices', 'exists:currencies,id'],
+            'variants.*.prices.*.price' => ['required_with:variants.*.prices', 'numeric', 'min:0'],
+            'variants.*.prices.*.price_after_discount' => ['nullable', 'numeric', 'min:0'],
 
-            'prices' => ['nullable', 'array'],
-            'prices.*.currency_id' => ['required', 'exists:currencies,id'],
-            'prices.*.price' => ['required', 'numeric'],
-            'prices.*.price_after_discount' => ['nullable', 'numeric'],
+            'prices' => ['required_if:has_variants,0,false', 'array'],
+            'prices.*.currency_id' => ['required_with:prices', 'exists:currencies,id'],
+            'prices.*.price' => ['required_with:prices', 'numeric', 'min:0'],
+            'prices.*.price_after_discount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 
@@ -137,14 +137,14 @@ class ProductRequest extends FormRequest
             'variants.*.option_values.*.value' => 'nullable|string|max:255',
 
             'variants.*.prices' => ['nullable', 'array'],
-            'variants.*.prices.*.currency_id' => ['required', 'exists:currencies,id'],
-            'variants.*.prices.*.price' => ['required', 'numeric'],
-            'variants.*.prices.*.price_after_discount' => ['nullable', 'numeric'],
+            'variants.*.prices.*.currency_id' => ['required_with:variants.*.prices', 'exists:currencies,id'],
+            'variants.*.prices.*.price' => ['required_with:variants.*.prices', 'numeric', 'min:0'],
+            'variants.*.prices.*.price_after_discount' => ['nullable', 'numeric', 'min:0'],
 
             'prices' => ['nullable', 'array'],
-            'prices.*.currency_id' => ['required', 'exists:currencies,id'],
-            'prices.*.price' => ['required', 'numeric'],
-            'prices.*.price_after_discount' => ['nullable', 'numeric'],
+            'prices.*.currency_id' => ['required_with:prices', 'exists:currencies,id'],
+            'prices.*.price' => ['required_with:prices', 'numeric', 'min:0'],
+            'prices.*.price_after_discount' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }
