@@ -20,11 +20,6 @@ $app = require_once __DIR__.'/bootstrap/app.php';
 $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
-// --- SAFETY CONFIGURATION ---
-// Set this to false ONLY when you are ready to delete for real.
-$dryRun = true; 
-// ----------------------------
-
 $productRepo = app(ProductRepository::class);
 
 $invalidProductIds = Product::where('has_variants', true)
@@ -38,13 +33,16 @@ if ($total === 0) {
     exit;
 }
 
-if ($dryRun) {
-    echo "\033[33m[DRY RUN MODE]\033[0m No products will be deleted.\n";
+// --- SAFETY CONFIGURATION ---
+// بدل ما تثبتها، خليها تتغير لو كتبت --force 
+$dryRun = !in_array('--force', $argv); 
+
+if ($dryRun) { 
+    echo "\033[33m[DRY RUN MODE]\033[0m بنجرب بس، مفيش حاجة هتتمسح. عشان تمسح بجد زود --force في الآخر\n"; 
     echo "Found \033[1m$total\033[0m products that meet the criteria for deletion.\n";
     echo "Sample IDs: " . implode(', ', $invalidProductIds->take(10)->toArray()) . "...\n";
-    echo "\nTo perform the actual deletion, edit this file and set \033[1m\$dryRun = false;\033[0m\n";
-} else {
-    echo "\033[31m[REAL MODE]\033[0m Starting deletion of \033[1m$total\033[0m products...\n";
+} else { 
+    echo "\033[31m[LIVE MODE]\033[0m التنفيذ الفعلي شغال دلوقتي...\n"; 
     echo "This may take a while as it cleans up images and related records.\n\n";
     
     $deletedCount = 0;
