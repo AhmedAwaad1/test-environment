@@ -35,12 +35,18 @@ class ProductSetItemsRequest extends FormRequest
     {
         return [
             'per_page' => ['nullable', 'integer', 'min:1'],
+            'category_id' => ['nullable', 'exists:categories,id'],
+            'search' => ['nullable', 'string', 'max:255'],
+            'product_id' => ['nullable', 'exists:products,id'],
+            'sort_by' => ['nullable', 'string', 'in:name,created_at'],
+            'sort_direction' => ['nullable', 'string', 'in:asc,desc'],
         ];
     }
 
     private function storeRules(): array
     {
         return [
+            'category_id' => 'required|exists:categories,id',
             'product_ids' => 'required|array|min:1',
             'product_ids.*' => 'required|exists:products,id',
             'sku' => 'nullable|string|max:255',
@@ -57,6 +63,7 @@ class ProductSetItemsRequest extends FormRequest
     private function updateRules(): array
     {
         return [
+            'category_id' => 'nullable|exists:categories,id',
             'product_ids' => 'nullable|array|min:1',
             'product_ids.*' => 'required_with:product_ids|exists:products,id',
             'sku' => 'nullable|string|max:255',

@@ -3,6 +3,7 @@
 namespace App\Http\Resources\ProductSetItems;
 
 use App\Http\Resources\Product\ProductListResource;
+use App\Http\Resources\Category\CategoryResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductSetItemsResource extends JsonResource
@@ -46,6 +47,8 @@ class ProductSetItemsResource extends JsonResource
 
         return [
             'id' => $this->id,
+            'category_id' => $this->category_id,
+            'category' => new CategoryResource($this->whenLoaded('category')),
             'sku' => $this->sku,
             'quantity' => $this->quantity,
             'is_active' => $this->is_active,

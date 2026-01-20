@@ -10,6 +10,7 @@ class ProductSetItems extends Model
     use HasFactory;
 
     protected $fillable = [
+        'category_id',
         'sku',
         'quantity',
         'is_active',
@@ -31,6 +32,11 @@ class ProductSetItems extends Model
     {
         return $this->belongsToMany(Product::class, 'product_product_set_item', 'product_set_item_id', 'product_id')
             ->withTimestamps();
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
     }
 
     /**
@@ -94,6 +100,11 @@ class ProductSetItems extends Model
 
     public function scopeFilter($query, $filters)
     {
+        // Category ID filter
+        if ($filters['category_id'] ?? false) {
+            $query->where('category_id', $filters['category_id']);
+        }
+
         // Search in name and description
         if ($filters['search'] ?? false) {
             $query->where(function($q) use ($filters) {

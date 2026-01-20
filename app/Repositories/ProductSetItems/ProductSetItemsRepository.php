@@ -13,7 +13,7 @@ class ProductSetItemsRepository
 
     public function getAll($request)
     {
-        $query = $this->model->with(['products.productPrices.currency', 'products.images'])->filter($request);
+        $query = $this->model->with(['category', 'products.productPrices.currency', 'products.images'])->filter($request);
 
         if ($request->has('per_page')) {
             return $query->paginate($request->per_page);
@@ -25,7 +25,7 @@ class ProductSetItemsRepository
     public function find($id)
     {
         return $this->model
-            ->with(['products.productPrices.currency', 'products.images', 'products.category', 'products.subCategory'])
+            ->with(['category', 'products.productPrices.currency', 'products.images', 'products.category', 'products.subCategory'])
             ->findOrFail($id);
     }
 
@@ -35,6 +35,7 @@ class ProductSetItemsRepository
             DB::beginTransaction();
 
             $productSetItem = $this->model->create([
+                'category_id' => $data['category_id'],
                 'sku' => $data['sku'] ?? null,
                 'quantity' => $data['quantity'] ?? 0,
                 'is_active' => $data['is_active'] ?? true,
@@ -66,6 +67,7 @@ class ProductSetItemsRepository
             $productSetItem = $this->model->findOrFail($id);
 
             $updateData = array_filter([
+                'category_id' => $data['category_id'] ?? null,
                 'sku' => $data['sku'] ?? null,
                 'name_en' => $data['name_en'] ?? null,
                 'name_ar' => $data['name_ar'] ?? null,
