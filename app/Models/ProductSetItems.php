@@ -11,6 +11,7 @@ class ProductSetItems extends Model
 
     protected $fillable = [
         'category_id',
+        'sub_category_id',
         'sku',
         'quantity',
         'is_active',
@@ -37,6 +38,11 @@ class ProductSetItems extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function subCategory()
+    {
+        return $this->belongsTo(SubCategory::class);
     }
 
     /**
@@ -103,6 +109,11 @@ class ProductSetItems extends Model
         // Category ID filter
         if ($filters['category_id'] ?? false) {
             $query->where('category_id', $filters['category_id']);
+        }
+
+        // Sub Category ID filter
+        if ($filters['sub_category_id'] ?? false) {
+            $query->where('sub_category_id', $filters['sub_category_id']);
         }
 
         // Search in name and description

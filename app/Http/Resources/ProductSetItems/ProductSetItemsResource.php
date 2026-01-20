@@ -4,6 +4,7 @@ namespace App\Http\Resources\ProductSetItems;
 
 use App\Http\Resources\Product\ProductListResource;
 use App\Http\Resources\Category\CategoryResource;
+use App\Http\Resources\SubCategory\SubCategoryResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductSetItemsResource extends JsonResource
@@ -49,6 +50,8 @@ class ProductSetItemsResource extends JsonResource
             'id' => $this->id,
             'category_id' => $this->category_id,
             'category' => new CategoryResource($this->whenLoaded('category')),
+            'sub_category_id' => $this->sub_category_id,
+            'sub_category' => new SubCategoryResource($this->whenLoaded('subCategory')),
             'sku' => $this->sku,
             'quantity' => $this->quantity,
             'is_active' => $this->is_active,
