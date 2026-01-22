@@ -25,6 +25,6 @@ class Favorite extends Model
     }
     public function productSetItem()
     {
-        return $this->belongsTo(ProductSetItem::class);
+        return $this->belongsTo(ProductSetItems::class);
     }
 }
