@@ -41,7 +41,8 @@ class FavoriteRequest extends FormRequest
     private function storeRules(): array
     {
         return [
-            'product_id' => ['required', 'exists:products,id'],
+            'product_id' => ['required_without:product_set_item_id', 'nullable', 'exists:products,id'],
+            'product_set_item_id' => ['required_without:product_id', 'nullable', 'exists:product_set_items,id'],
         ];
     }
 
