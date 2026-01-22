@@ -13,6 +13,8 @@ class CartItem extends Model
         'cart_id',
         'product_variant_id',
         'product_id',
+        'product_set_item_id',
+        'selected_product_ids',
         'quantity',
         'product_price_id',
         'currency_id',
@@ -25,6 +27,7 @@ class CartItem extends Model
         'unit_price' => 'decimal:2',
         'unit_price_after_discount' => 'decimal:2',
         'total_price' => 'decimal:2',
+        'selected_product_ids' => 'array',
     ];
 
     public function cart()
@@ -40,6 +43,11 @@ class CartItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function productSetItem()
+    {
+        return $this->belongsTo(ProductSetItems::class, 'product_set_item_id');
     }
 
     public function currency()

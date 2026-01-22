@@ -11,6 +11,7 @@ use App\Repositories\Cart\CartRepository;
 use App\Repositories\CartItem\CartItemRepository;
 use App\Repositories\Product\ProductRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
+use App\Repositories\ProductSetItems\ProductSetItemsRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -22,7 +23,7 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 class CartService
 {
     protected $cartRepo, $cartItemRepo, $productVarRepo, $couponService,
-        $productRepo, $productValidator, $cartItemService, $geoCurrencyService, $productPriceService;
+        $productRepo, $productValidator, $cartItemService, $geoCurrencyService, $productPriceService, $productSetRepo;
 
     public function __construct(
         CartRepository           $cartRepo,
@@ -33,7 +34,8 @@ class CartService
         CartItemService          $cartItemService,
         CouponService            $couponService,
         GeoCurrencyService       $geoCurrencyService,
-        ProductPriceService      $productPriceService
+        ProductPriceService      $productPriceService,
+        ProductSetItemsRepository $productSetRepo
 
     )
     {
@@ -46,6 +48,7 @@ class CartService
         $this->couponService       = $couponService;
         $this->geoCurrencyService  = $geoCurrencyService;
         $this->productPriceService = $productPriceService;
+        $this->productSetRepo      = $productSetRepo;
     }
 
     public function getUserCart()
@@ -104,6 +107,8 @@ class CartService
                 $items = [[
                     'product_id' => $data['product_id'] ?? null,
                     'product_variant_id' => $data['product_variant_id'] ?? null,
+                    'product_set_item_id' => $data['product_set_item_id'] ?? null,
+                    'selected_product_ids' => $data['selected_product_ids'] ?? null,
                     'quantity' => $data['quantity'] ?? 1,
                 ]];
                 $sessionId = $data['session_id'] ?? null;
@@ -170,7 +175,8 @@ class CartService
                     $item,
                     $quantity,
                     $type,
-                    $cart->currency_id
+                    $cart->currency_id,
+                    $itemData['selected_product_ids'] ?? null
                 );
             }
 
@@ -183,6 +189,8 @@ class CartService
             $cart->refresh()->load([
                 'cartItems.product.images',
                 'cartItems.productVariant.optionValues.productOption.optionType',
+                'cartItems.productSetItem.products.images',
+                'cartItems.productSetItem.products.productPrices',
                 'cartItems.currency',
             ]);
 
@@ -284,6 +292,15 @@ class CartService
             $totalQty   = $currentQty + $data['quantity'];
             $validation = $this->productValidator->validateVariant($item, $totalQty);
             $type       = 'variant';
+        } elseif (!empty($data['product_set_item_id'])) {
+            $item       = $this->productSetRepo->find($data['product_set_item_id']);
+            if (!$item) {
+                return ['error' => 'Product set item not found'];
+            }
+            $existing   = $this->cartItemRepo->setItemExistsInCart($cartId, $item->id);
+            // Assuming ProductSetItems has a quantity or we just allow adding it
+            $type       = 'set';
+            $validation = true; // You might want to add validation logic for sets later
         } else {
             $item = $this->productRepo->find($data['product_id']);
             if (!$item) {

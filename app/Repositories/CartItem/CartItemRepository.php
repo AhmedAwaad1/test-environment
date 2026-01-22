@@ -43,10 +43,19 @@ class CartItemRepository
     {
         return CartItem::where('cart_id', $cartId)
             ->where('product_id', $productId)
+            ->whereNull('product_variant_id')
+            ->whereNull('product_set_item_id')
             ->first();
     }
 
-    public function findByCartAndVariantAndPrice(int $cartId, int $variantId, int $productPriceId): ?CartItem
+    public function setItemExistsInCart($cartId, $setId)
+    {
+        return CartItem::where('cart_id', $cartId)
+            ->where('product_set_item_id', $setId)
+            ->first();
+    }
+
+    public function findByCartAndVariantAndPrice(int $cartId, int $variantId, ?int $productPriceId): ?CartItem
     {
         return CartItem::where('cart_id', $cartId)
                        ->where('product_variant_id', $variantId)
@@ -54,13 +63,32 @@ class CartItemRepository
                        ->first();
     }
 
-    public function findByCartProductAndPrice(int $cartId, int $productId, int $productPriceId): ?CartItem
+    public function findByCartProductAndPrice(int $cartId, int $productId, ?int $productPriceId): ?CartItem
     {
         return CartItem::where('cart_id', $cartId)
                        ->where('product_id', $productId)
                        ->whereNull('product_variant_id')
+                       ->whereNull('product_set_item_id')
                        ->where('product_price_id', $productPriceId)
                        ->first();
+    }
+
+    public function findByCartSetItemAndPrice(int $cartId, int $setId, ?int $productPriceId, ?array $selectedProductIds = null): ?CartItem
+    {
+        $query = CartItem::where('cart_id', $cartId)
+                       ->where('product_set_item_id', $setId)
+                       ->where('product_price_id', $productPriceId);
+
+        if ($selectedProductIds) {
+            // Sort to ensure consistent comparison
+            sort($selectedProductIds);
+            $query->whereJsonContains('selected_product_ids', $selectedProductIds)
+                  ->whereRaw('JSON_LENGTH(selected_product_ids) = ?', [count($selectedProductIds)]);
+        } else {
+            $query->whereNull('selected_product_ids');
+        }
+
+        return $query->first();
     }
 
     public function incrementQuantity(CartItem $item, int $by = 1): CartItem

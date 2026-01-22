@@ -26,6 +26,8 @@ class CartRepository
                        'cartItems.productVariant.product',
                        'cartItems.productPrice',
                        'cartItems.productVariant.optionValues.images',
+                       'cartItems.productSetItem.products.images',
+                       'cartItems.productSetItem.products.productPrices',
                    ])
                    ->first();
     }
@@ -49,6 +51,11 @@ class CartRepository
                    ->with([
                        'cartItems.product.images',
                        'cartItems.currency',
+                       'cartItems.productVariant.product',
+                       'cartItems.productPrice',
+                       'cartItems.productVariant.optionValues.images',
+                       'cartItems.productSetItem.products.images',
+                       'cartItems.productSetItem.products.productPrices',
                    ])
                    ->first();
     }

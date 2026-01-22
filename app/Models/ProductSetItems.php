@@ -45,6 +45,11 @@ class ProductSetItems extends Model
         return $this->belongsTo(SubCategory::class);
     }
 
+    public function productSetItemPrices()
+    {
+        return $this->hasMany(ProductSetItemPrice::class, 'product_set_item_id');
+    }
+
     /**
      * Keep old relationship for backward compatibility (if needed)
      * @deprecated Use products() instead
@@ -57,12 +62,17 @@ class ProductSetItems extends Model
     /**
      * Calculate total price for a specific currency from all products
      */
-    public function getTotalPriceForCurrency($currencyId)
+    public function getTotalPriceForCurrency($currencyId, ?array $selectedProductIds = null)
     {
         $totalPrice = 0;
         $totalPriceAfterDiscount = 0;
 
-        foreach ($this->products as $product) {
+        $products = $this->products;
+        if ($selectedProductIds) {
+            $products = $products->whereIn('id', $selectedProductIds);
+        }
+
+        foreach ($products as $product) {
             $productPrice = $product->productPrices()->where('currency_id', $currencyId)->first();
             if ($productPrice) {
                 $totalPrice += $productPrice->price;

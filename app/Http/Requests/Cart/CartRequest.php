@@ -46,8 +46,11 @@ class CartRequest extends FormRequest
             return [
                 'session_id' => ['nullable', 'string'],
                 'items' => ['required', 'array', 'min:1'],
-                'items.*.product_id' => ['required_without:items.*.product_variant_id', 'nullable', 'exists:products,id'],
-                'items.*.product_variant_id' => ['required_without:items.*.product_id', 'nullable', 'exists:product_variants,id'],
+                'items.*.product_id' => ['required_without_all:items.*.product_variant_id,items.*.product_set_item_id', 'nullable', 'exists:products,id'],
+                'items.*.product_variant_id' => ['required_without_all:items.*.product_id,items.*.product_set_item_id', 'nullable', 'exists:product_variants,id'],
+                'items.*.product_set_item_id' => ['required_without_all:items.*.product_id,items.*.product_variant_id', 'nullable', 'exists:product_set_items,id'],
+                'items.*.selected_product_ids' => ['nullable', 'array'],
+                'items.*.selected_product_ids.*' => ['exists:products,id'],
                 'items.*.quantity' => ['required', 'integer', 'min:1'],
             ];
         }
@@ -55,8 +58,11 @@ class CartRequest extends FormRequest
         // Single product format (backward compatible)
         return [
             'session_id'         => ['nullable', 'string'],
-            'product_id'         => ['required_without:product_variant_id', 'nullable', 'exists:products,id'],
-            'product_variant_id' => ['required_without:product_id', 'nullable', 'exists:product_variants,id'],
+            'product_id'         => ['required_without_all:product_variant_id,product_set_item_id', 'nullable', 'exists:products,id'],
+            'product_variant_id' => ['required_without_all:product_id,product_set_item_id', 'nullable', 'exists:product_variants,id'],
+            'product_set_item_id' => ['required_without_all:product_id,product_variant_id', 'nullable', 'exists:product_set_items,id'],
+            'selected_product_ids' => ['nullable', 'array'],
+            'selected_product_ids.*' => ['exists:products,id'],
             'quantity'           => ['required', 'integer', 'min:1'],
         ];
     }
