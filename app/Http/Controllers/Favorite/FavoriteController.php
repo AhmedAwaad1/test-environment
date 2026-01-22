@@ -21,9 +21,14 @@ class FavoriteController extends Controller
         return $this->favoriteService->getAllFavorites($request);
     }
 
-    public function show(FavoriteRequest $request)
+    public function userFavorites(FavoriteRequest $request)
     {
-        return $this->favoriteService->getFavoriteById($request->id);
+        return $this->favoriteService->getUserFavorites($request);
+    }
+
+    public function show($id)
+    {
+        return $this->favoriteService->getFavoriteById($id);
     }
 
     public function store(FavoriteRequest $request)
@@ -31,9 +36,9 @@ class FavoriteController extends Controller
         return $this->favoriteService->createFavorite($request->validated());
     }
 
-    public function destroy(FavoriteRequest $request)
+    public function destroy($id)
     {
-        return $this->favoriteService->deleteFavorite($request->id);
+        return $this->favoriteService->deleteFavorite($id);
     }
 
     public function deleteAllFavorite()

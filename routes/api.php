@@ -291,6 +291,8 @@ Route::prefix('favorite')->namespace('Favorite')->group(function () {
     Route::delete('/all', [FavoriteController::class, 'deleteAllFavorite'])->name('favorite.delete_all');
     // Get all user favorites
     Route::get('/', [FavoriteController::class, 'index'])->name('favorite.index');
+    // Get user favorites by auth
+    Route::get('/user-auth', [FavoriteController::class, 'userFavorites'])->name('favorite.user_auth');
     // Get specific favorite
     Route::get('/{id}', [FavoriteController::class, 'show'])->name('favorite.show');
     // Create favorite

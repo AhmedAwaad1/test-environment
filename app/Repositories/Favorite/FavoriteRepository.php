@@ -13,6 +13,12 @@ class FavoriteRepository
             ->with(['product.images', 'productSetItem.products.productPrices.currency', 'productSetItem.products.images']);
     }
 
+    public function getByUser($userId)
+    {
+        return Favorite::where('user_id', $userId)
+            ->with(['product.images', 'productSetItem.products.productPrices.currency', 'productSetItem.products.images']);
+    }
+
     public function find($id)
     {
         return Favorite::where('user_id', auth()->id())

@@ -29,6 +29,20 @@ class FavoriteService
         return Response::successResponse($favorites, 'favorites retrieved successfully');
     }
 
+    public function getUserFavorites($request)
+    {
+        $userId = auth()->id();
+        $query = $this->favoriteRepo->getByUser($userId);
+
+        if ($request->per_page) {
+            $favorites = new PaginationResource($query->paginate($request->per_page), FavoriteResource::class);
+        } else {
+            $favorites = FavoriteResource::collection($query->get());
+        }
+
+        return Response::successResponse($favorites, 'user favorites retrieved successfully');
+    }
+
     public function getFavoriteById($id)
     {
         try {
