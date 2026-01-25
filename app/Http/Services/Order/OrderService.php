@@ -223,6 +223,8 @@ class OrderService
                     $item->productVariant?->decrement('quantity', (int)$item->quantity);
                 } elseif ($item->product_id) {
                     $item->product?->decrement('quantity', (int)$item->quantity);
+                } elseif ($item->product_set_item_id) {
+                    $item->productSetItem?->decrement('quantity', (int)$item->quantity);
                 }
             }
 
@@ -267,18 +269,32 @@ class OrderService
         foreach ($cartItems as $item) {
             if ($item->product_variant_id) {
                 $validation = $this->productValidator->validateVariant($item->productVariant, $item->quantity);
-            } else {
+            } elseif ($item->product_id) {
                 $validation = $this->productValidator->validateProduct($item->product, $item->quantity);
+            } elseif ($item->product_set_item_id) {
+                $validation = $this->productValidator->validateProductSetItem($item->productSetItem, $item->quantity);
+            } else {
+                $validation = 'Product not found';
             }
 
             if ($validation !== true) {
                 Log::error("Stock validation failed", [
                     'user_id'            => auth()->id(),
-                    'product_or_variant' => $item->product_variant_id ? 'variant' : 'product',
-                    'product_id'         => $item->product_variant_id ?? $item->product_id,
+                    'product_or_variant' => $item->product_variant_id ? 'variant' : ($item->product_id ? 'product' : 'set_item'),
+                    'product_id'         => $item->product_variant_id ?? ($item->product_id ?? $item->product_set_item_id),
                     'reason'             => $validation
                 ]);
-                return ['error' => $validation, 'product' => $item->product_variant_id ? $item->productVariant : $item->product];
+                
+                $product = null;
+                if ($item->product_variant_id) {
+                    $product = $item->productVariant;
+                } elseif ($item->product_id) {
+                    $product = $item->product;
+                } elseif ($item->product_set_item_id) {
+                    $product = $item->productSetItem;
+                }
+
+                return ['error' => $validation, 'product' => $product];
             }
 
         }

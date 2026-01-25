@@ -46,4 +46,24 @@ class ProductValidatorService
 
         return true;
     }
+
+    public function validateProductSetItem($setProduct, int $quantity)
+    {
+        if (!$setProduct) {
+            return 'Product set item not found';
+        }
+
+        // Lock the set product for update (pessimistic locking)
+        $setProduct = \App\Models\ProductSetItems::where('id', $setProduct->id)->lockForUpdate()->first();
+
+        if ($setProduct->quantity < $quantity) {
+            return 'Insufficient stock for the product set item';
+        }
+
+        if (!$setProduct->is_active) {
+            return 'Product set item is not active';
+        }
+
+        return true;
+    }
 }

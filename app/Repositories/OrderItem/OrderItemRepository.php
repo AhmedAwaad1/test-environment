@@ -35,12 +35,15 @@ class OrderItemRepository
                 if ($variantTitle) {
                     $productName .= " ({$variantTitle})";
                 }
+            } elseif ($item->product_set_item_id && $item->productSetItem) {
+                $productName = $item->productSetItem->name_en;
             }
 
             OrderItem::create([
                 'order_id'                  => $orderId,
                 'product_id'                => $item->product_id ?? null,
                 'product_variant_id'        => $item->product_variant_id ?? null,
+                'product_set_item_id'       => $item->product_set_item_id ?? null,
                 'product_name'              => $productName,
                 'product_price_id'          => $item->product_price_id ?? null,
                 'unit_price'                => $unit,
