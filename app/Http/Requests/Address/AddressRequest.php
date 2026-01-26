@@ -42,11 +42,6 @@ class AddressRequest extends FormRequest
 
     private function storeRules(): array
     {
-        $countryId = session('country_id');
-        $country = Country::find($countryId);
-
-        $hasCountryShipping = $country && $country->shipping_price > 0;
-
         return [
             'phone' => ['required', 'string', 'max:255'],
             'address' => ['required', 'string', 'max:255'],

@@ -126,32 +126,28 @@ class CartService
                 $cart = $this->cartRepo->findOrCreateBySessionId($sessionId);
             }
 
-            $xForwardedFor   = trim((string)request()->header('X-Forwarded-For', ''));
-            $geo             = app(GeoCurrencyService::class);
-            $defaultCurrency = $geo->getDefaultCurrency();
-
-            if ($xForwardedFor === '') {
-                session()->forget(['currency_id', 'country_id']);
-                if (!empty($sessionId)) {
-                    Cache::forget("currency_id_{$sessionId}");
-                    Cache::forget("country_id_{$sessionId}");
-                }
-
-                $cart->currency_id = $defaultCurrency->id;
-                $cart->save();
-
-            } else {
-                if (!$cart->currency_id) {
-                    $detected          = $geo->getCurrencyForRequest() ?? $defaultCurrency;
-                    $cart->currency_id = $detected->id;
-                    $cart->save();
-                }
+            // --- REFACTOR: Remove IP/Geo logic & Force EGP (Egypt) ---
+            $egpCurrency = \App\Models\Currency::where('name', 'EGP')->first();
+            
+            // Fallback if EGP isn't in DB (though it should be)
+            if (!$egpCurrency) {
+                 // Try to get default currency from Geo service as a last resort backup
+                 $geo = app(GeoCurrencyService::class);
+                 $egpCurrency = $geo->getDefaultCurrency();
             }
 
+            // Always enforce EGP currency if not set or if we want to force it
+            if (!$cart->currency_id || $cart->currency_id !== $egpCurrency->id) {
+                $cart->currency_id = $egpCurrency->id;
+                $cart->save();
+            }
+
+            // Update session/cache to reflect this forced currency
             session(['currency_id' => $cart->currency_id]);
             if (!empty($sessionId)) {
                 Cache::put("currency_id_{$sessionId}", $cart->currency_id, now()->addDays(30));
             }
+            // ----------------------------------------------------------
 
             // Process each item in the loop
             foreach ($items as $itemData) {

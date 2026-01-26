@@ -42,7 +42,7 @@ class CardPaymentHandler implements PaymentHandlerInterface
         // --- REAL MODE (Tap) يبقى زي ما شرحنا قبل كده ---
         try {
             $amount   = (float) $order->total_price;
-            $currency = $order->currency?->name ?: 'KWD';
+            $currency = $order->currency?->name ?: 'EGP';
 
             $user    = $order->user;
             $address = $order->address;
@@ -52,8 +52,8 @@ class CardPaymentHandler implements PaymentHandlerInterface
                 'last_name'  => $user?->last_name  ?? '',
                 'email'      => $user?->email      ?? 'guest@example.com',
                 'phone'      => [
-                    'country_code' => $address?->country?->phone_code ?? '965',
-                    'number'       => $address?->phone ? preg_replace('/\D+/', '', $address->phone) : '50000000',
+                    'country_code' => $address?->country?->phone_code ?? '20',
+                    'number'       => $address?->phone ? preg_replace('/\D+/', '', $address->phone) : '10000000',
                 ],
             ];
 

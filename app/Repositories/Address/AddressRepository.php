@@ -54,4 +54,23 @@ class AddressRepository
         return $address;
     }
 
+    public function handleCheckoutAddress($userId, array $requestData)
+    {
+        if (!empty($requestData['address_id'])) {
+            return $this->find($requestData['address_id'], $userId);
+        }
+
+        $egypt = \App\Models\Country::where('country_code', 'EG')->first();
+
+        return $this->create([
+            'user_id'     => $userId,
+            'phone'       => $requestData['phone'],
+            'address'     => $requestData['address'],
+            'city_id'     => $requestData['city_id'] ?? null,
+            'district_id' => $requestData['district_id'] ?? null,
+            'country_id'  => $egypt?->id,
+            'is_default'  => $requestData['is_default'] ?? false,
+            'session_id'  => $requestData['session_id'] ?? null,
+        ]);
+    }
 }

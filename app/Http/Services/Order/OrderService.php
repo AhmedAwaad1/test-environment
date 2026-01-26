@@ -2,6 +2,7 @@
 
 namespace App\Http\Services\Order;
 
+use App\Events\OrderPlaced;
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Order\OrderResource;
 use App\Http\Services\Cart\ProductValidatorService;
@@ -107,55 +108,13 @@ class OrderService
 
         $orderNumber = $this->generateOrderNumber();
 
-        $allowedGulf = ['SA','AE','KW','QA','OM','BH'];
+        $userAddress = $this->addressRepo->handleCheckoutAddress($user->id, $request);
 
-        $country = null;
-        if (session()->has('country_id')) {
-            $country = Country::find(session('country_id'));
-        }
-        if (!$country) {
-            $code = app(GeoCurrencyService::class)->getCountryCodeFromIp();
-            if ($code) {
-                $country = Country::where('country_code', strtoupper($code))->first();
-            }
-        }
-        if (!$country || !in_array(strtoupper((string)$country->country_code), $allowedGulf, true)) {
-            $country = Country::where('country_code', 'KW')->first();
+        if (!$userAddress) {
+            return Response::errorResponse('address not found', [], 404);
         }
 
-        if (!$isGuest) {
-            if (!empty($request['address_id'])) {
-                $userAddress = $this->addressRepo->find($request['address_id'], $user->id);
-                if (!$userAddress) {
-                    return Response::errorResponse('address not found', [], 404);
-                }
-            } else {
-                $userAddress = $this->addressRepo->create([
-                    'user_id'     => $user->id,
-                    'phone'       => $request['phone'],
-                    'address'     => $request['address'],
-                    'city_id'     => $request['city_id'] ?? null,
-                    'district_id' => $request['district_id'] ?? null,
-                    'country_id'  => $country?->id,
-                    'is_default'  => $request['is_default'] ?? false,
-                ]);
-            }
-        } else {
-            $userAddress = $this->addressRepo->create([
-                'user_id'     => $user->id,
-                'phone'       => $request['phone'],
-                'address'     => $request['address'],
-                'city_id'     => $request['city_id'] ?? null,
-                'district_id' => $request['district_id'] ?? null,
-                'country_id'  => $country?->id,
-                'is_default'  => $request['is_default'] ?? false,
-            ]);
-        }
-
-        $shippingPrice = (float) ($userAddress->getShippingPrice() ?? 0);
-        if ($shippingPrice <= 0) {
-            $shippingPrice = (float) ($country->shipping_price ?? 0);
-        }
+        $shippingPrice = (float) $userAddress->getShippingPrice();
 
         $request = array_merge($request, [
             'order_number'   => $orderNumber,
@@ -202,6 +161,9 @@ class OrderService
                 
                 DB::commit();
 
+                // Fire event for stock and cart cleanup
+                event(new OrderPlaced($order, $cart));
+
                 $responseData = new OrderResource(
                     $order->load(['orderItems', 'currency', 'address.country', 'address.city', 'address.district'])
                 );
@@ -218,19 +180,10 @@ class OrderService
             }
 
             // لو الدفع ناجح فورًا (CAPTURED): نكمّل زي المعتاد
-            foreach ($cart->cartItems as $item) {
-                if ($item->product_variant_id) {
-                    $item->productVariant?->decrement('quantity', (int)$item->quantity);
-                } elseif ($item->product_id) {
-                    $item->product?->decrement('quantity', (int)$item->quantity);
-                } elseif ($item->product_set_item_id) {
-                    $item->productSetItem?->decrement('quantity', (int)$item->quantity);
-                }
-            }
-
             DB::commit();
 
-            $cart->delete();
+            // Fire event for stock and cart cleanup
+            event(new OrderPlaced($order, $cart));
 
             $responseData = new OrderResource(
                 $order->load(['orderItems', 'currency', 'address.country', 'address.city', 'address.district'])

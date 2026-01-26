@@ -4,21 +4,17 @@ namespace App\Http\Services\Country;
 
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Country\CountryResource;
-use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Repositories\Country\CountryRepository;
 use Illuminate\Support\Facades\Response;
 
 class CountryService
 {
     protected CountryRepository $countryRepo;
-    protected GeoCurrencyService $geoCurrencyService;
 
     public function __construct(
-        CountryRepository $countryRepo,
-        GeoCurrencyService $geoCurrencyService
+        CountryRepository $countryRepo
     ) {
         $this->countryRepo = $countryRepo;
-        $this->geoCurrencyService = $geoCurrencyService;
     }
 
 
@@ -103,11 +99,8 @@ class CountryService
     public function detectCountryByIp()
     {
         try {
-            $code = $this->geoCurrencyService->getCountryCodeFromIp();
-
-            if (!$code) {
-                return Response::errorResponse('Unable to detect country from IP', [], 404);
-            }
+            // Hardcoded to Egypt
+            $code = 'EG';
 
             $country = $this->countryRepo->findByCountryCode($code);
 
@@ -129,12 +122,8 @@ class CountryService
 
     public function getCountryObjectByIp()
     {
-        $code = $this->geoCurrencyService->getCountryCodeFromIp();
-
-        if (!$code) {
-            return null;
-        }
-
+        // Hardcoded to Egypt
+        $code = 'EG';
         return $this->countryRepo->findByCountryCode($code);
     }
 

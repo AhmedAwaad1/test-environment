@@ -21,6 +21,8 @@ class DistrictResource extends JsonResource
             'name_en' => $this->name_en,
             'name_ar' => $this->name_ar,
             'city_id' => $this->city_id,
+            'city_name_en' => $this->city->name_en ?? null,
+            'city_name_ar' => $this->city->name_ar ?? null,
             'shipping_price' =>$this->shipping_price,
         ];
     }

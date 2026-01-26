@@ -2,6 +2,7 @@
 
 namespace App\Http\Services\Cart;
 
+use App\Http\Services\Cart\ProductValidatorService;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
 use App\Http\Services\ProductPrice\ProductPriceService;
 use App\Models\Cart;
@@ -23,6 +24,7 @@ class CartItemService
         protected PromoCodeRepository $couponRepo,
         protected GeoCurrencyService  $geoCurrencyService,
         protected ProductPriceService $productPriceService,
+        protected ProductValidatorService $productValidator,
     )
     {
     }
@@ -39,9 +41,13 @@ class CartItemService
         $variantId  = ($type === 'variant') ? $item->id : null;
         $setId      = ($type === 'set') ? $item->id : null;
 
-        // Use cart currency if provided, otherwise default
-        $currencyId = $cartCurrencyId
-            ?? $this->geoCurrencyService->getDefaultCurrency()->id;
+        // Use cart currency if provided, otherwise default to EGP
+        $currencyId = $cartCurrencyId;
+        
+        if (!$currencyId) {
+            $egpCurrency = \App\Models\Currency::where('code', 'EGP')->first();
+            $currencyId = $egpCurrency ? $egpCurrency->id : $this->geoCurrencyService->getDefaultCurrency()->id;
+        }
 
         $productPrice = null;
         $unitRaw = 0;
@@ -68,146 +74,15 @@ class CartItemService
                 }
             }
 
-            // SAFETY FALLBACK for SETS: Try default currency if no price found
-            if ($unitRaw <= 0 && $cartCurrencyId) {
-                $defaultCurrency = $this->geoCurrencyService->getDefaultCurrency();
-                if ($defaultCurrency && $defaultCurrency->id !== $currencyId) {
-                    \Log::warning('No set price for currency ' . $currencyId . ', trying default currency ' . $defaultCurrency->id, [
-                        'set_id' => $setId,
-                        'original_currency' => $currencyId,
-                        'partial' => !empty($selectedProductIds)
-                    ]);
-
-                    if ($selectedProductIds && !empty($selectedProductIds)) {
-                        $calculated = $item->getTotalPriceForCurrency($defaultCurrency->id, $selectedProductIds);
-                    } else {
-                        $setPrice = $item->productSetItemPrices()->where('currency_id', $defaultCurrency->id)->first();
-                        if ($setPrice) {
-                            $unitRaw = $setPrice->price;
-                            $unitAfter = $setPrice->price_after_discount;
-                            $productPrice = $setPrice;
-                            $currencyId = $defaultCurrency->id;
-                        } else {
-                            $calculated = $item->getTotalPriceForCurrency($defaultCurrency->id);
-                        }
-                    }
-
-                    if (!isset($setPrice) || !$setPrice) {
-                        if ($calculated['price'] > 0) {
-                            $unitRaw = $calculated['price'];
-                            $unitAfter = $calculated['price_after_discount'];
-                            $currencyId = $defaultCurrency->id;
-                        }
-                    }
-
-                    if ($unitRaw > 0) {
-                        $cart = Cart::find($cartId);
-                        if ($cart) {
-                            $cart->currency_id = $defaultCurrency->id;
-                            $cart->save();
-                            session(['currency_id' => $defaultCurrency->id]);
-                            if ($cart->session_id) {
-                                Cache::put("currency_id_{$cart->session_id}", $defaultCurrency->id, now()->addDays(30));
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Still no price? Try ANY currency
             if ($unitRaw <= 0) {
-                 if (!$selectedProductIds || empty($selectedProductIds)) {
-                     $firstPrice = $item->productSetItemPrices()->first();
-                     if ($firstPrice) {
-                         $unitRaw = $firstPrice->price;
-                         $unitAfter = $firstPrice->price_after_discount;
-                         $currencyId = $firstPrice->currency_id;
-                         $productPrice = $firstPrice;
-
-                         // Update cart currency to match the found currency
-                         $cart = \App\Models\Cart::find($cartId);
-                         if ($cart) {
-                             $cart->currency_id = $currencyId;
-                             $cart->save();
-                             session(['currency_id' => $currencyId]);
-                             if ($cart->session_id) {
-                                 \Illuminate\Support\Facades\Cache::put("currency_id_{$cart->session_id}", $currencyId, now()->addDays(30));
-                             }
-                         }
-                     }
-                 }
-
-                 if ($unitRaw <= 0) {
-                    // Try to find ANY product price in the set (full or partial)
-                    foreach (\App\Models\Currency::all() as $currency) {
-                        $calculated = $item->getTotalPriceForCurrency($currency->id, $selectedProductIds ?: null);
-                        if ($calculated['price'] > 0) {
-                            $unitRaw = $calculated['price'];
-                            $unitAfter = $calculated['price_after_discount'];
-                            $currencyId = $currency->id;
-
-                            // Update cart currency to match the found currency
-                            $cart = \App\Models\Cart::find($cartId);
-                            if ($cart) {
-                                $cart->currency_id = $currencyId;
-                                $cart->save();
-                                session(['currency_id' => $currencyId]);
-                                if ($cart->session_id) {
-                                    \Illuminate\Support\Facades\Cache::put("currency_id_{$cart->session_id}", $currencyId, now()->addDays(30));
-                                }
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if ($unitRaw <= 0) {
-                throw new \Exception("No price available for this product set (or selected items) in any currency.");
+                throw new \Exception("No price available for this product set in the required currency.");
             }
         } else {
             $productPrice = $this->productPriceService
                 ->getProductPriceByProductAndCurrency($productId, $currencyId);
 
-            // SAFETY FALLBACK: Try default currency if no price found
-            if (!$productPrice && $cartCurrencyId) {
-                $defaultCurrency = $this->geoCurrencyService->getDefaultCurrency();
-
-                if ($defaultCurrency && $defaultCurrency->id !== $currencyId) {
-                    \Log::warning('No price for currency ' . $currencyId . ', trying default currency ' . $defaultCurrency->id, [
-                        'product_id' => $productId,
-                        'original_currency' => $currencyId
-                    ]);
-
-                    $productPrice = $this->productPriceService
-                        ->getProductPriceByProductAndCurrency($productId, $defaultCurrency->id);
-
-                    if ($productPrice) {
-                        $cart = Cart::find($cartId);
-                        if ($cart) {
-                            $cart->currency_id = $defaultCurrency->id;
-                            $cart->save();
-
-                            session(['currency_id' => $defaultCurrency->id]);
-                            if ($cart->session_id) {
-                                Cache::put("currency_id_{$cart->session_id}", $defaultCurrency->id, now()->addDays(30));
-                            }
-                        }
-                        $currencyId = $defaultCurrency->id;
-                    }
-                }
-            }
-
             if (!$productPrice) {
-                $itemForPrice = ($type === 'variant') ? $item->product : $item;
-                $productPrice = $itemForPrice->productPrices->first();
-                if ($productPrice) {
-                    $currencyId = $productPrice->currency_id;
-                }
-            }
-
-            if (!$productPrice) {
-                throw new \Exception("No price available for this product in any currency.");
+                throw new \Exception("No price available for this product in the required currency.");
             }
 
             $unitRaw = $productPrice->price;
@@ -278,6 +153,22 @@ class CartItemService
         }
 
         $newQty = max(1, (int)($data['quantity'] ?? 1));
+
+        // --- UNIFIED STOCK VALIDATION ---
+        if ($item->product_variant_id) {
+            $validation = $this->productValidator->validateVariant($item->productVariant, $newQty);
+        } elseif ($item->product_id) {
+            $validation = $this->productValidator->validateProduct($item->product, $newQty);
+        } elseif ($item->product_set_item_id) {
+            $validation = $this->productValidator->validateProductSetItem($item->productSetItem, $newQty);
+        } else {
+            $validation = 'Product type not supported for stock validation';
+        }
+
+        if ($validation !== true) {
+            throw new \Exception($validation);
+        }
+        // --------------------------------
 
         // برضه هنا: 0 = مفيش خصم
         $perUnit = ($item->unit_price_after_discount !== null && (float)$item->unit_price_after_discount > 0)

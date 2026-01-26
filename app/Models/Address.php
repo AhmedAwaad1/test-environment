@@ -51,21 +51,32 @@ class Address extends Model
         return $query;
     }
 
-    public function getShippingPrice(): ?float
+    public function getShippingPrice(): float
     {
-        if ($this->district && $this->district->shipping_price > 0) {
+        // 1. District Priority
+        if ($this->district_id && $this->district && (float)$this->district->shipping_price > 0) {
             return (float)$this->district->shipping_price;
         }
 
-        if ($this->city && $this->city->shipping_price > 0) {
+        // 2. City Priority (Fallback)
+        if ($this->city_id && $this->city && (float)$this->city->shipping_price > 0) {
             return (float)$this->city->shipping_price;
         }
 
-        if ($this->city && $this->city->country && $this->city->country->shipping_price > 0) {
-            return (float)$this->city->country->shipping_price;
+        // 3. Country Priority (Final Fallback for Egypt)
+        $country = $this->country ?? ($this->city ? $this->city->country : null);
+        
+        // If still no country, fallback to Egypt record
+        if (!$country) {
+            $country = \App\Models\Country::where('country_code', 'EG')->first();
         }
 
-        return 0;
+        if ($country && (float)$country->shipping_price > 0) {
+            return (float)$country->shipping_price;
+        }
+
+        // Default to 0 if no shipping price is found in the hierarchy
+        return 0.0;
     }
 
 

@@ -15,87 +15,33 @@ class GeoCurrencyService
 {
     public function getCurrencyForRequest(): ?Currency
     {
-        $sessionId = request()->input('session_id');
-        $isGuest = !$this->isUserAuthenticated();
-
-        if ($isGuest && $sessionId) {
-            $cacheKey = "currency_id_{$sessionId}";
-
-            if (Cache::has($cacheKey)) {
-                return Currency::find(Cache::get($cacheKey));
-            }
-        } else {
-            if (session()->has('currency_id')) {
-                return Currency::find(session('currency_id'));
-            }
-        }
-
-
-        $ip = request()->ip();
-        $countryCode = $this->getCountryCodeFromIp();
-
-        $country = Country::where('country_code', strtoupper($countryCode))->first();
+        // Hardcode Egypt logic
+        $countryCode = 'EG';
+        $country = Country::where('country_code', $countryCode)->first();
+        
         if ($country) {
             session(['country_id' => $country->id]);
         }
 
-        $currency = $country
-            ? Currency::where('country_code', strtoupper($countryCode))->first()
-            : null;
+        $currency = Currency::where('country_code', $countryCode)->first();
 
         if ($currency) {
-            $this->storeCurrency($currency->id, $sessionId, $isGuest);
+            $this->storeCurrency($currency->id, null, false);
             return $currency;
         }
 
-        $default = $this->getDefaultCurrency();
-        $this->storeCurrency($default?->id, $sessionId, $isGuest);
-        return $default;
+        return $this->getDefaultCurrency();
     }
-
 
     public function getDefaultCurrency(): ?Currency
     {
-        return Currency::where('is_default', true)->first();
+        return Currency::where('country_code', 'EG')->first() 
+            ?? Currency::where('is_default', true)->first();
     }
 
-    public function getCountryCodeFromIp(): ?string
+    public function getCountryCodeFromIp(): string
     {
-        try {
-            $ip = request()->header('X-Forwarded-For');
-
-            if ($ip && strpos($ip, ',') !== false) {
-                $ip = trim(explode(',', $ip)[0]);
-            }
-
-            if (!$ip || $ip === '127.0.0.1' || $ip === '::1') {
-                $ip = request()->ip();
-            }
-
-            if ($ip === '127.0.0.1' || $ip === '::1') {
-                \Log::channel('geoip')->info('Local IP Detected', ['ip' => $ip, 'country' => 'EG']);
-                return 'EG';
-            }
-
-            $reader = new \GeoIp2\Database\Reader(storage_path('app/geoip/GeoLite2-Country.mmdb'));
-            $record = $reader->country($ip);
-
-            $countryCode = $record->country->isoCode;
-
-            \Log::channel('geoip')->info('IP Country Resolved', [
-                'ip' => $ip,
-                'country' => $countryCode,
-            ]);
-
-            return $countryCode;
-
-        } catch (\Exception $e) {
-            \Log::channel('geoip')->error('GeoIP lookup failed', [
-                'ip' => $ip ?? 'undefined',
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
+        return 'EG';
     }
 
 

@@ -5,20 +5,15 @@ namespace App\Http\Controllers\Country;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Country\CountryRequest;
 use App\Http\Services\Country\CountryService;
-use App\Http\Services\GeoCurrency\GeoCurrencyService;
 
 class CountryController extends Controller
 {
-    protected GeoCurrencyService $geoCurrencyService;
     protected CountryService $countryService;
     public function __construct(
-        GeoCurrencyService $geoCurrencyService,
         CountryService $countryService
     )
     {
         $this->countryService = $countryService;
-        $this->geoCurrencyService = $geoCurrencyService;
-
     }
 
     public function index(CountryRequest $request)
