@@ -182,10 +182,31 @@ class Product extends Model
             $direction = $filters['sort_direction'] ?? 'asc';
             switch ($filters['sort_by']) {
                 case 'name':
-                    $query->orderBy('name_en', $direction);
+                case 'A_Z':
+                    $query->orderBy('name_en', 'asc');
+                    break;
+                case 'Z_A':
+                    $query->orderBy('name_en', 'desc');
                     break;
                 case 'created_at':
-                    $query->orderBy('created_at', $direction);
+                case 'newest':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'best_seller':
+                    $query->orderBy('is_best_seller', 'desc');
+                    break;
+                case 'rating':
+                    $query->withAvg('reviews', 'rating')
+                        ->orderBy('reviews_avg_rating', 'desc');
+                    break;
+                case 'lowest_price':
+                case 'highest_price':
+                    $direction = $filters['sort_by'] === 'highest_price' ? 'desc' : 'asc';
+                    $currencyId = optional(app(GeoCurrencyService::class)->getCurrencyForRequest())->id ?? config('app.default_currency_id');
+                    $query->join('product_prices', 'products.id', '=', 'product_prices.product_id')
+                        ->where('product_prices.currency_id', $currencyId)
+                        ->select('products.*', DB::raw('COALESCE(product_prices.price_after_discount, product_prices.price) as sort_price'))
+                        ->orderBy('sort_price', $direction);
                     break;
                 default:
                     $query->latest();
