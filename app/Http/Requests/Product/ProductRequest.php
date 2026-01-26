@@ -29,6 +29,9 @@ class ProductRequest extends FormRequest
             // Accept 0,1,true,false
             'is_best_seller' => ['nullable', 'in:0,1,true,false'],
             'is_new_arrival' => ['nullable', 'in:0,1,true,false'],
+            'filters' => ['nullable', 'array'],
+            'filters.*.attribute_name' => ['required_with:filters', 'string'],
+            'filters.*.value' => ['required_with:filters', 'string'],
         ];
     }
 

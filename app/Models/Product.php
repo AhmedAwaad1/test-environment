@@ -144,6 +144,24 @@ class Product extends Model
             }
         }
 
+        // Attribute filters
+        if (isset($filters['filters']) && is_array($filters['filters'])) {
+            foreach ($filters['filters'] as $filter) {
+                $attributeName = $filter['attribute_name'] ?? null;
+                $value = $filter['value'] ?? null;
+
+                if ($attributeName && $value) {
+                    $normalizedValue = strtolower($value);
+                    $query->whereHas('productVariants.optionValues', function ($q) use ($attributeName, $normalizedValue) {
+                        $q->whereRaw('LOWER(value) = ?', [$normalizedValue])
+                          ->whereHas('productOption.optionType', function ($q2) use ($attributeName) {
+                              $q2->whereRaw('LOWER(name) = ?', [strtolower($attributeName)]);
+                          });
+                    });
+                }
+            }
+        }
+
 //        $prices = DB::table('product_prices')
 //                    ->select('product_id', DB::raw('MIN(COALESCE(price_after_discount, price)) as final_price'))
 //                    ->groupBy('product_id')
