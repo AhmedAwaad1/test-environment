@@ -14,10 +14,11 @@ class ProductAttributeFilterService
     {
     }
 
-    public function getActiveFilters()
+    public function getActiveFilters($request)
     {
         try {
-            $attributes = $this->repository->getActiveFilters();
+            $categoryId = $request->input('category_id');
+            $attributes = $this->repository->getActiveFilters($categoryId);
 
             $resource = ProductAttributeFilterResource::collection($attributes);
 

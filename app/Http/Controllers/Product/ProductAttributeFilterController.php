@@ -16,9 +16,9 @@ class ProductAttributeFilterController extends Controller
      * Get all active product attributes and their unique values
      * that are currently assigned to available ProductVariants.
      */
-    public function index()
+    public function index(Request $request)
     {
-        return $this->service->getActiveFilters();
+        return $this->service->getActiveFilters($request);
     }
 
     /**

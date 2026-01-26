@@ -7,13 +7,30 @@ use App\Models\ProductOptionType;
 
 class ProductAttributeFilterRepository
 {
-    public function getActiveFilters()
+    public function getActiveFilters($categoryId = null)
     {
-        return ProductOptionType::with(['productOptions.values' => function ($query) {
-            $query->whereHas('productVariants')
-                  ->select('product_option_values.*')
-                  ->distinct();
-        }])->get();
+        $query = ProductOptionType::query();
+
+        if ($categoryId) {
+            $query->whereHas('productOptions.product', function ($q) use ($categoryId) {
+                $q->where('category_id', $categoryId);
+            });
+        }
+
+        return $query->with([
+            'productOptions' => function ($q) use ($categoryId) {
+                if ($categoryId) {
+                    $q->whereHas('product', function ($q2) use ($categoryId) {
+                        $q2->where('category_id', $categoryId);
+                    });
+                }
+            },
+            'productOptions.values' => function ($query) {
+                $query->whereHas('productVariants')
+                    ->select('product_option_values.*')
+                    ->distinct();
+            }
+        ])->get();
     }
 
     /**
