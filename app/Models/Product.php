@@ -201,10 +201,10 @@ class Product extends Model
             switch ($filters['sort_by']) {
                 case 'name':
                 case 'A_Z':
-                    $query->orderBy('name_en', 'asc');
+                    $query->orderByRaw('LOWER(name_en) asc');
                     break;
                 case 'Z_A':
-                    $query->orderBy('name_en', 'desc');
+                    $query->orderByRaw('LOWER(name_en) desc');
                     break;
                 case 'created_at':
                 case 'newest':
@@ -221,9 +221,30 @@ class Product extends Model
                 case 'highest_price':
                     $direction = $filters['sort_by'] === 'highest_price' ? 'desc' : 'asc';
                     $currencyId = optional(app(GeoCurrencyService::class)->getCurrencyForRequest())->id ?? config('app.default_currency_id');
-                    $query->join('product_prices', 'products.id', '=', 'product_prices.product_id')
-                        ->where('product_prices.currency_id', $currencyId)
-                        ->select('products.*', DB::raw('COALESCE(product_prices.price_after_discount, product_prices.price) as sort_price'))
+
+                    $query->select('products.*')
+                        ->addSelect(['sort_price' => function ($q) use ($currencyId) {
+                            $q->selectRaw('CASE 
+                                WHEN has_variants = 1 AND EXISTS (SELECT 1 FROM product_variants WHERE product_id = products.id) THEN (
+                                    SELECT COALESCE(pv.price_after_discount, pv.price) 
+                                    FROM product_variants pv 
+                                    WHERE pv.product_id = products.id 
+                                    ORDER BY pv.order ASC, pv.id ASC 
+                                    LIMIT 1
+                                )
+                                ELSE (
+                                    SELECT CASE WHEN pp.price_after_discount > 0 THEN pp.price_after_discount ELSE pp.price END 
+                                    FROM product_prices pp 
+                                    LEFT JOIN currencies c ON c.id = pp.currency_id
+                                    WHERE pp.product_id = products.id 
+                                    ORDER BY 
+                                        CASE WHEN pp.currency_id = ? THEN 0 ELSE 1 END ASC,
+                                        CASE WHEN c.is_default = 1 THEN 0 ELSE 1 END ASC,
+                                        pp.id ASC
+                                    LIMIT 1
+                                )
+                            END', [$currencyId]);
+                        }])
                         ->orderBy('sort_price', $direction);
                     break;
                 default:
