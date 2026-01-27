@@ -57,6 +57,8 @@ class ProductListResource extends JsonResource
             'sku' => $this->sku,
             'quantity' => $this->quantity,
             'has_variants' => (bool) $this->has_variants,
+            'created_at' => $this->created_at,
+            'avg_rating' => round($this->reviews_avg_rating ?? 0, 1),
             'default_price' => $defaultPrice,
             'category' => $this->whenLoaded('category', fn () => [
                 'name_en' => $this->category->name_en,

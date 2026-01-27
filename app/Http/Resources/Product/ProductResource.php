@@ -69,6 +69,7 @@ class ProductResource extends JsonResource
 
             'has_variants' => (bool) $this->has_variants,
             'status' => (bool) $this->is_active,
+            'created_at' => $this->created_at,
 
             'category_id' => $this->category_id,
             'sub_category_id' => $this->sub_category_id,
