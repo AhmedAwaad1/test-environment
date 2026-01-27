@@ -108,10 +108,10 @@ class Product extends Model
         }
 
         // Special filters
-        if ($filters['is_best_seller'] ?? false) {
+        if (($filters['is_best_seller'] ?? false) || ($filters['best_seller'] ?? false)) {
             $query->where('is_best_seller', 1);
         }
-        if ($filters['is_new_arrival'] ?? false) {
+        if (($filters['is_new_arrival'] ?? false) || ($filters['new_arrival'] ?? false)) {
             $query->where('is_new_arrival', 1);
         }
 
@@ -211,11 +211,13 @@ class Product extends Model
                     $query->orderBy('created_at', 'desc');
                     break;
                 case 'best_seller':
-                    $query->orderBy('is_best_seller', 'desc');
+                    $query->orderBy('is_best_seller', 'desc')
+                          ->orderBy('created_at', 'desc');
                     break;
                 case 'rating':
                     $query->withAvg('reviews', 'rating')
-                        ->orderBy('reviews_avg_rating', 'desc');
+                        ->orderBy('reviews_avg_rating', 'desc')
+                        ->orderBy('created_at', 'desc');
                     break;
                 case 'lowest_price':
                 case 'highest_price':
