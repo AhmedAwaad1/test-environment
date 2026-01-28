@@ -35,30 +35,20 @@ class OrderService
 
     public function getOrderById($id)
     {
-        try {
-            $order = $this->orderRepo->findOrderById($id);
+        $order = $this->orderRepo->findOrderById($id);
 
-            if (!$order) {
-                return Response::errorResponse('Order not found', [], 404);
-            }
-
-            return Response::successResponse(new OrderResource($order), 'Order found successfully');
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return Response::handleModelNotFoundException($e, 'Order');
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to retrieve order');
+        if (!$order) {
+            return Response::errorResponse('Order not found', [], 404);
         }
+
+        return Response::successResponse(new OrderResource($order), 'Order found successfully');
     }
 
     public function updateOrder($id, $data)
     {
-        try {
-            $order = $this->orderRepo->updateOrderById($id, $data);
+        $order = $this->orderRepo->updateOrderById($id, $data);
 
-            return Response::successResponse(new OrderResource($order), 'Order updated successfully');
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to update order');
-        }
+        return Response::successResponse(new OrderResource($order), 'Order updated successfully');
     }
 }
 

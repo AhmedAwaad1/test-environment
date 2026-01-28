@@ -268,12 +268,24 @@ class CartService
 
     public function calculateTotalPrice(Cart $cart)
     {
-        $total = $cart->cartItems()->sum('total_price');
+        $total = 0;
+        $totalAfterDiscount = 0;
 
-        $cart->total_price = $total;
+        foreach ($cart->cartItems as $item) {
+            $unitPrice = (float) $item->unit_price;
+            $unitPriceAfter = $item->unit_price_after_discount !== null 
+                ? (float) $item->unit_price_after_discount 
+                : $unitPrice;
+
+            $total += $unitPrice * $item->quantity;
+            $totalAfterDiscount += $unitPriceAfter * $item->quantity;
+        }
+
+        $cart->total_price = round($total, 2);
+        $cart->total_price_after_discount = round($totalAfterDiscount, 2);
         $cart->save();
 
-        return $total;
+        return $cart->total_price;
     }
 
     private function getCartItemData(array $data, $cartId): array

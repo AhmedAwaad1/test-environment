@@ -19,36 +19,28 @@ class AuthService
 {
     public function register($request)
     {
-        try {
-            $verificationCode = rand(100000, 999999);
+        $verificationCode = rand(100000, 999999);
 
-            $request->merge([
-                'password' => bcrypt($request->password),
-                'email_verified_at' => Carbon::now(),
-            ]);
+        $request->merge([
+            'password' => bcrypt($request->password),
+            'email_verified_at' => Carbon::now(),
+        ]);
 
-            $user = User::create($request->only([
-                'username', 'type', 'email', 'password', 'phone', 'email_verified_at'
-            ]));
+        $user = User::create($request->only([
+            'username', 'type', 'email', 'password', 'phone', 'email_verified_at'
+        ]));
 
-            // Store the code in the cache for 10 minutes
-            Cache::put('email_verification_code_' . $user->email, $verificationCode, now()->addMinutes(10));
+        // Store the code in the cache for 10 minutes
+        Cache::put('email_verification_code_' . $user->email, $verificationCode, now()->addMinutes(10));
 
-            // ✉️ Send the code via email using a Job
-            SendVerificationEmail::dispatch($user->email, $verificationCode);
+        // ✉️ Send the code via email using a Job
+        SendVerificationEmail::dispatch($user->email, $verificationCode);
 
-            $token = JWTAuth::fromUser($user);
+        $token = JWTAuth::fromUser($user);
 
-            $responseData = $user->toArray();
+        $responseData = $user->toArray();
 
-            return Response::successResponse($responseData, 'User created successfully', 201);
-        } catch (\Exception $e) {
-            if ($e->getCode() === '23000') {
-                return Response::errorResponse('User with these credentials already exists', [], 400);
-            }
-
-            return Response::errorResponse('Failed to create user: ' . $e->getMessage(), [], 400);
-        }
+        return Response::successResponse($responseData, 'User created successfully', 201);
     }
 
     public function login($request)
@@ -91,16 +83,12 @@ class AuthService
 
     public function refreshToken($oldToken)
     {
-        try {
-            JWTAuth::setToken($oldToken);
-            $newAccessToken = JWTAuth::refresh();
+        JWTAuth::setToken($oldToken);
+        $newAccessToken = JWTAuth::refresh();
 
-            return Response::successResponse([
-                'new_token' => $newAccessToken
-            ], 200);
-        } catch (\Exception $e) {
-            return Response::errorResponse('Invalid refresh token', [], 400);
-        }
+        return Response::successResponse([
+            'new_token' => $newAccessToken
+        ], 200);
     }
 
     public function sendResetCodeToEmail($request)

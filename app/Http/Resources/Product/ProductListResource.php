@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Product;
 
+use App\Http\Resources\ProductImage\ProductImageResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductListResource extends JsonResource
@@ -35,19 +36,17 @@ class ProductListResource extends JsonResource
             ];
         }
 
-        // Compute main_image_url server-side
-        $mainImageUrl = null;
+        // Compute main_image server-side
+        $mainImage = null;
         if ($this->has_variants && $this->relationLoaded('productVariants') && $this->productVariants->isNotEmpty()) {
             $firstVariant = $this->productVariants->first();
             if ($firstVariant->relationLoaded('images') && $firstVariant->images->isNotEmpty()) {
-                $img = $firstVariant->images->firstWhere('is_main', true) ?? $firstVariant->images->first();
-                $mainImageUrl = $img?->image;
+                $mainImage = $firstVariant->images->firstWhere('is_main', true) ?? $firstVariant->images->first();
             }
         }
         
-        if (!$mainImageUrl && $this->relationLoaded('images') && $this->images->isNotEmpty()) {
-            $img = $this->images->firstWhere('is_main', true) ?? $this->images->first();
-            $mainImageUrl = $img?->image;
+        if (!$mainImage && $this->relationLoaded('images') && $this->images->isNotEmpty()) {
+            $mainImage = $this->images->firstWhere('is_main', true) ?? $this->images->first();
         }
 
         return [
@@ -66,7 +65,8 @@ class ProductListResource extends JsonResource
             'sub_category' => $this->whenLoaded('subCategory', fn () => [
                 'name_en' => $this->subCategory->name_en,
             ]),
-            'main_image_url' => $mainImageUrl,
+            'main_image' => $mainImage ? new ProductImageResource($mainImage) : null,
+            'main_image_url' => $mainImage ? $mainImage->image : null,
         ];
     }
 }

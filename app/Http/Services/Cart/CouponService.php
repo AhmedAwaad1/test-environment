@@ -116,19 +116,22 @@ class CouponService
 
     public function applyCouponDiscount(Cart $cart, $coupon)
     {
-        $total = $cart->total_price;
+        // Use total_price_after_discount (product-discounted) as the base for coupon
+        $baseTotal = (float)($cart->total_price_after_discount ?? $cart->total_price);
 
         if ($coupon->discount_percentage) {
             $cart->coupon_code = $coupon->code;
-            $cart->discount_amount = ($total * $coupon->discount_percentage) / 100;
+            $cart->discount_amount = ($baseTotal * $coupon->discount_percentage) / 100;
         } else {
             $cart->discount_amount = 0;
         }
 
-        $cart->total_price_after_discount = $total - $cart->discount_amount;
+        // We don't overwrite total_price_after_discount here anymore
+        // as it should represent product-level discounts.
+        // The grand total will be calculated in the Resource/Order.
         $cart->save();
 
-        return $cart->total_price_after_discount;
+        return $baseTotal - $cart->discount_amount;
     }
 
 }

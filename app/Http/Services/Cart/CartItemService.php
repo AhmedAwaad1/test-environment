@@ -99,8 +99,7 @@ class CartItemService
             }
         }
 
-        $perUnit = ($unitAfter !== null && (float)$unitAfter > 0) ? (float)$unitAfter : (float)$unitRaw;
-        $totalPrice = round($perUnit * max(1, $quantity), 2);
+        $totalPrice = round((float)$unitRaw * max(1, $quantity), 2);
 
         // Check if item already exists in cart to update quantity
         if ($type === 'variant') {
@@ -133,17 +132,12 @@ class CartItemService
     {
         $added = max(1, (int)$addedQty);
 
-        $perUnit = ($cartItem->unit_price_after_discount !== null && (float)$cartItem->unit_price_after_discount > 0)
-            ? (float)$cartItem->unit_price_after_discount
-            : (float)$cartItem->unit_price;
-
         $cartItem->quantity    += $added;
-        $cartItem->total_price = round($perUnit * $cartItem->quantity, 2);
+        $cartItem->total_price = round((float)$cartItem->unit_price * $cartItem->quantity, 2);
         $cartItem->save();
 
         return $cartItem;
     }
-
 
     public function updateCartItemQuantity($cartItemId, array $data)
     {
@@ -170,13 +164,8 @@ class CartItemService
         }
         // --------------------------------
 
-        // برضه هنا: 0 = مفيش خصم
-        $perUnit = ($item->unit_price_after_discount !== null && (float)$item->unit_price_after_discount > 0)
-            ? (float)$item->unit_price_after_discount
-            : (float)$item->unit_price;
-
         $item->quantity    = $newQty;
-        $item->total_price = round($perUnit * $newQty, 2);
+        $item->total_price = round((float)$item->unit_price * $newQty, 2);
         $item->save();
 
         return $item;

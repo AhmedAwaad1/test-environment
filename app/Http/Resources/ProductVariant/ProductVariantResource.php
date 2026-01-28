@@ -32,14 +32,7 @@ class ProductVariantResource extends JsonResource
             'discount_percentage' => $this->when($this->price_after_discount, function() {
                 return round((($this->price - $this->price_after_discount) / $this->price) * 100);
             }),
-            'images' => $this->whenLoaded('images', function() {
-                return $this->images->map(function($image) {
-                    return [
-                        'id' => $image->id,
-                        'image' => $image->image,
-                    ];
-                });
-            }),
+            'images' => ProductImageResource::collection($this->whenLoaded('images')),
             'option_values' => ProductOptionValueResource::collection($this->whenLoaded('optionValues')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

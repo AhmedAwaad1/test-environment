@@ -36,46 +36,38 @@ class BlogService
 
     public function createBlog($request)
     {
-        try {
-            $blog = Blog::create($request->all());
+        $blog = Blog::create($request->all());
 
-            if ($request->hasFile('image')) {
-                $path = $request->file('image')->store('blog', 'public');
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('blog', 'public');
 
-                $blog->image = $path;
-                $blog->save();
-            }
-
-            return Response::successResponse(new BlogResource($blog), 'Blog created successfully', 201);
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to create blog: ' . $e->getMessage());
+            $blog->image = $path;
+            $blog->save();
         }
+
+        return Response::successResponse(new BlogResource($blog), 'Blog created successfully', 201);
     }
 
     public function updateBlog($request)
     {
-        try {
-            $blog = Blog::find($request->id);
+        $blog = Blog::find($request->id);
 
-            if (!$blog) {
-                return Response::errorResponse('Blog not found', [], 404);
-            }
-            $blog->update($request->all());
-
-            if ($request->hasFile('image')) {
-                if ($blog->image) {
-                    Storage::delete($blog->image);
-                }
-                $path = $request->file('image')->store('blog', 'public');
-
-                $blog->image = $path;
-                $blog->save();
-            }
-
-            return Response::successResponse(new BlogResource($blog), 'Blog updated successfully', 200);
-        } catch (\Exception $e) {
-            throw new \Exception('Failed to update blog: ' . $e->getMessage());
+        if (!$blog) {
+            return Response::errorResponse('Blog not found', [], 404);
         }
+        $blog->update($request->all());
+
+        if ($request->hasFile('image')) {
+            if ($blog->image) {
+                Storage::delete($blog->image);
+            }
+            $path = $request->file('image')->store('blog', 'public');
+
+            $blog->image = $path;
+            $blog->save();
+        }
+
+        return Response::successResponse(new BlogResource($blog), 'Blog updated successfully', 200);
     }
 
     public function deleteBlog($id)

@@ -94,10 +94,7 @@ class CartItemRepository
     public function incrementQuantity(CartItem $item, int $by = 1): CartItem
     {
         $item->quantity += max(1, $by);
-        $perUnit = ($item->unit_price_after_discount !== null && (float)$item->unit_price_after_discount > 0) 
-            ? $item->unit_price_after_discount 
-            : $item->unit_price;
-        $item->total_price = round($perUnit * $item->quantity, 2);
+        $item->total_price = round((float)$item->unit_price * $item->quantity, 2);
         $item->save();
 
         return $item;

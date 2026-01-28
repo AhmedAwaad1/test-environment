@@ -95,6 +95,13 @@ class ProductResource extends JsonResource
                 return $img ? new ProductImageResource($img) : null;
             }),
 
+            'main_image_url' => $this->whenLoaded('images', function () {
+                $img = $this->images->firstWhere('is_main', true)
+                    ?? $this->images->first();
+
+                return $img ? $img->image : null;
+            }),
+
             'quantity' => $this->quantity,
             'variants' => ProductVariantResource::collection($this->whenLoaded('productVariants')),
         ];

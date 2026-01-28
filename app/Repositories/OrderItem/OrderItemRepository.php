@@ -21,22 +21,28 @@ class OrderItemRepository
     public function createOrderItems($orderId, $cartItems)
     {
         foreach ($cartItems as $item) {
+            // CRITICAL: Use the values already calculated in memory (CreateOrderAction)
+            // to ensure the snapshot matches the validated price.
             $unit      = (float) ($item->unit_price ?? 0);
             $unitAfter = $item->unit_price_after_discount !== null
                 ? (float) $item->unit_price_after_discount
                 : null;
 
-            $perUnit   = $unitAfter ?? $unit;
-            $totalLine = (float) ($item->total_price ?? round($perUnit * (int)$item->quantity, 2));
+            $totalLine = round(((float)($unitAfter ?? $unit)) * (int)$item->quantity, 2);
 
-            $productName = optional($item->product)->name_en;
-            if ($item->product_variant_id && $item->productVariant) {
-                $variantTitle = $item->productVariant->getTitle();
-                if ($variantTitle) {
-                    $productName .= " ({$variantTitle})";
+            // Use the product name snapshot from memory if available, otherwise fallback
+            $productName = $item->product_name_snapshot ?? null;
+
+            if (!$productName) {
+                $productName = optional($item->product)->name_en;
+                if ($item->product_variant_id && $item->productVariant) {
+                    $variantTitle = $item->productVariant->getTitle();
+                    if ($variantTitle) {
+                        $productName .= " ({$variantTitle})";
+                    }
+                } elseif ($item->product_set_item_id && $item->productSetItem) {
+                    $productName = $item->productSetItem->name_en;
                 }
-            } elseif ($item->product_set_item_id && $item->productSetItem) {
-                $productName = $item->productSetItem->name_en;
             }
 
             OrderItem::create([

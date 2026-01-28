@@ -28,8 +28,9 @@ class CartResource extends JsonResource
     public function toArray($request): array
     {
         $totalPrice     = (float)($this->total_price ?? 0);
+        $totalAfterDisc = (float)($this->total_price_after_discount ?? $totalPrice);
         $discountAmount = (float)($this->discount_amount ?? 0);
-        $totalAfterDisc = max(0, $totalPrice - $discountAmount);
+        $grandTotal     = max(0, $totalAfterDisc - $discountAmount);
 
         return [
             'id'                         => $this->id,
@@ -38,7 +39,7 @@ class CartResource extends JsonResource
             'discount_amount'            => $this->money($discountAmount),
             'total_price'                => $this->money($totalPrice),
             'total_price_after_discount' => $this->money($totalAfterDisc),
-            'grand_total'                => $this->money($totalAfterDisc), // Shipping decoupled
+            'grand_total'                => $this->money($grandTotal), // Shipping decoupled
 
             'cart_items' => CartItemResource::collection($this->whenLoaded('cartItems')),
             'user'       => new AuthResource($this->whenLoaded('user')),

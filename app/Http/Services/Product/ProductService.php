@@ -12,6 +12,7 @@ use App\Repositories\ProductOption\ProductOptionRepository;
 use App\Repositories\ProductOptionValue\ProductOptionValueRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
 use App\Models\VariantOptionValue;
+use App\Helpers\CacheHelper;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
@@ -32,28 +33,33 @@ class ProductService
      */
     public function getAllProducts($request)
     {
-        try {
-            session()->forget('currency_id');
+        session()->forget('currency_id');
 
-            if ($sid = $request->get('session_id')) {
-                Cache::forget("currency_id_{$sid}");
-            }
+        if ($sid = $request->get('session_id')) {
+            Cache::forget("currency_id_{$sid}");
+        }
 
-            $currency = $this->geoCurrencyService->getCurrencyForRequest();
+        $currency = $this->geoCurrencyService->getCurrencyForRequest();
 
-            $isListResource = $request->get('resource') === 'list' || $request->get('fields') === 'list';
+        // Limit per_page to prevent memory exhaustion
+        if ($request->filled('per_page')) {
+            $perPage = min((int) $request->per_page, 50);
+            $request->merge(['per_page' => $perPage]);
+        } else {
+            $request->merge(['per_page' => 10]);
+        }
 
-            // For list resource, default to pagination with per_page=10
-            if ($isListResource && !$request->filled('per_page')) {
-                $request->merge(['per_page' => 10]);
-            }
+        $isListResource = $request->get('resource') === 'list' || $request->get('fields') === 'list';
 
-            // Apply filters only if set
+        // Apply filters only if set
+        $cacheKey = CacheHelper::generateKey('products', $request->all());
+
+        $data = Cache::remember($cacheKey, now()->addHours(24), function () use ($request, $currency, $isListResource) {
             $products = $this->productRepo->getAll($request, $request->all());
 
             if ($isListResource) {
-                return Response::successResponse([
-                    'data' => ProductListResource::collection($products),
+                return [
+                    'data' => ProductListResource::collection($products)->resolve(),
                     'meta' => [
                         'current_page' => $products->currentPage(),
                         'last_page' => $products->lastPage(),
@@ -62,23 +68,20 @@ class ProductService
                     ],
                     'currency' => $currency?->name,
                     'currency_id' => $currency?->id,
-                ], 'Products retrieved successfully');
+                ];
             }
 
             $resource = $request->per_page
                 ? new PaginationResource($products, ProductResource::class)
                 : ProductResource::collection($products);
 
-            return Response::successResponse(
-                $resource->additional([
-                    'currency'    => $currency?->name,
-                    'currency_id' => $currency?->id,
-                ]),
-                'Products retrieved successfully'
-            );
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to retrieve products');
-        }
+            return $resource->additional([
+                'currency'    => $currency?->name,
+                'currency_id' => $currency?->id,
+            ])->resolve();
+        });
+
+        return Response::successResponse($data, 'Products retrieved successfully');
     }
 
     /**
@@ -104,24 +107,27 @@ class ProductService
      */
     public function findProduct($id)
     {
-        try {
-            $currency = $this->geoCurrencyService->getCurrencyForRequest();
-            $product  = $this->productRepo->findWithVariants($id);
+        $currency = $this->geoCurrencyService->getCurrencyForRequest();
+        $cacheKey = CacheHelper::generateKey('products', ['id' => $id]);
+
+        $data = Cache::remember($cacheKey, now()->addHours(24), function () use ($id, $currency) {
+            $product = $this->productRepo->findWithVariants($id);
 
             if (!$product) {
-                return Response::errorResponse('Product not found', [], 404);
+                return null;
             }
 
-            return Response::successResponse(
-                (new ProductResource($product))->additional([
-                    'currency'    => $currency?->name,
-                    'currency_id' => $currency?->id,
-                ]),
-                'Product found successfully'
-            );
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to retrieve product');
+            return (new ProductResource($product))->additional([
+                'currency'    => $currency?->name,
+                'currency_id' => $currency?->id,
+            ])->resolve();
+        });
+
+        if (!$data) {
+            return Response::errorResponse('Product not found', [], 404);
         }
+
+        return Response::successResponse($data, 'Product found successfully');
     }
 
     /**
@@ -129,8 +135,7 @@ class ProductService
      */
     public function createProduct(array $data)
     {
-        DB::beginTransaction();
-        try {
+        return DB::transaction(function () use ($data) {
             $product = $this->productRepo->create($data);
 
             if (!empty($data['images'])) {
@@ -150,8 +155,6 @@ class ProductService
                 $this->createVariants($product->id, $data['variants'], $optionValueMap);
             }
 
-            DB::commit();
-
             return Response::successResponse(
                 new ProductResource(
                     $product->load('productVariants', 'productOptions.values', 'productPrices.currency')
@@ -159,10 +162,7 @@ class ProductService
                 'Product created successfully',
                 201
             );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return Response::handleException($e, 'Failed to create product');
-        }
+        });
     }
 
     /**
@@ -170,8 +170,7 @@ class ProductService
      */
     public function updateProduct($id, array $data)
     {
-        DB::beginTransaction();
-        try {
+        return DB::transaction(function () use ($id, $data) {
             $product = $this->productRepo->find($id);
             if (!$product) {
                 return Response::errorResponse('Product not found', [], 404);
@@ -193,8 +192,6 @@ class ProductService
 
             $this->handleProductVariantsUpdate($product, $data);
 
-            DB::commit();
-
             // Fetch a completely fresh product with all relationships loaded for the response
             $freshProduct = $this->productRepo->findWithVariants($product->id);
 
@@ -202,10 +199,7 @@ class ProductService
                 new ProductResource($freshProduct),
                 'Product updated successfully'
             );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return Response::handleException($e, 'Failed to update product');
-        }
+        });
     }
 
     /**
@@ -213,20 +207,16 @@ class ProductService
      */
     public function deleteProduct($id)
     {
-        try {
-            $isDeleted = $this->productRepo->delete($id);
+        $isDeleted = $this->productRepo->delete($id);
 
-            if (!$isDeleted) {
-                return Response::errorResponse('Failed to delete product', [], 400);
-            }
-
-            return Response::successResponse(
-                ['is_success' => true],
-                'Product deleted successfully'
-            );
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to delete product');
+        if (!$isDeleted) {
+            return Response::errorResponse('Failed to delete product', [], 400);
         }
+
+        return Response::successResponse(
+            ['is_success' => true],
+            'Product deleted successfully'
+        );
     }
 
     /**

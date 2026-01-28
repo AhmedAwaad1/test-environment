@@ -3,6 +3,7 @@
 namespace App\Http\Services\Product;
 
 use App\Models\Cart;
+use App\Helpers\CacheHelper;
 use Illuminate\Support\Facades\Log;
 
 class StockService
@@ -15,8 +16,8 @@ class StockService
      */
     public function decrementStockFromCart(Cart $cart): void
     {
-        // Eager load relationships for performance
-        $cart->load(['cartItems.productVariant', 'cartItems.product', 'cartItems.productSetItem']);
+        // Use loadMissing to avoid re-fetching if already loaded (crucial for observers clearing DB)
+        $cart->loadMissing(['cartItems.productVariant', 'cartItems.product', 'cartItems.productSetItem']);
 
         foreach ($cart->cartItems as $item) {
             $decremented = false;
@@ -56,6 +57,7 @@ class StockService
                     Log::info("Successfully decremented stock for {$type} ID: {$targetId}, Quantity: {$item->quantity}");
                 } else {
                     Log::warning("Failed to decrement stock for {$type} ID: {$targetId}: Relationship not found.");
+                    throw new \RuntimeException("Failed to decrement stock for {$type} ID: {$targetId}");
                 }
 
             } catch (\Exception $e) {
@@ -64,7 +66,11 @@ class StockService
                     'target_id' => $targetId,
                     'error' => $e->getMessage()
                 ]);
+                throw $e;
             }
         }
+
+        // Clear products cache after all stock decrements are done
+        CacheHelper::clearByPrefix('products');
     }
 }

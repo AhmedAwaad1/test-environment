@@ -17,8 +17,13 @@ class ProductImageResource extends JsonResource
     {
         return [
             "id" => $this->id,
-            'image' => $this->image,
-            'is_main' => $this->is_main,
+            'is_main' => (int) $this->is_main,
+            'image' => $this->image, // The original string (Required for old Frontend)
+            'thumbnails' => [ // New optimized versions grouped together
+                'webp' => $this->image_webp,
+                'medium' => $this->image_medium,
+                'small' => $this->image_small,
+            ]
         ];
     }
 }

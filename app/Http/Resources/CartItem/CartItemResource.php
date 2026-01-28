@@ -38,7 +38,8 @@ class CartItemResource extends JsonResource
             'unit_price'                 => $this->money($unitRaw),
             'unit_price_after_discount'  => $unitAfter !== null ? $this->money($unitAfter) : null,
             'unit_price_applied'         => $this->money($perUnit),
-            'total_price'                => $this->money($perUnit * $qty),
+            'total_price'                => $this->money($unitRaw * $qty),
+            'total_price_after_discount' => $this->money($perUnit * $qty),
 
             'product_price_id'           => $this->product_price_id,
             'currency' => [

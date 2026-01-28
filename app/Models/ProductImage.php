@@ -12,6 +12,9 @@ class ProductImage extends Model
     protected $fillable = [
         'product_id',
         'image',
+        'image_webp',
+        'image_medium',
+        'image_small',
         'is_main',
     ];
 
@@ -19,6 +22,7 @@ class ProductImage extends Model
     {
         return $this->belongsTo(Product::class);
     }
+
     public function setImageAttribute($value)
     {
         if (is_file($value)) {
@@ -27,8 +31,24 @@ class ProductImage extends Model
             $this->attributes['image'] = $value;
         }
     }
+
     public function getImageAttribute($value)
     {
         return $value ? asset('storage/' . $value) : null;
+    }
+
+    public function getImageWebpAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : $this->image;
+    }
+
+    public function getImageMediumAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : $this->image;
+    }
+
+    public function getImageSmallAttribute($value)
+    {
+        return $value ? asset('storage/' . $value) : $this->image;
     }
 }
