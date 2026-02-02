@@ -20,30 +20,26 @@ class CategorySeeder extends Seeder
 
         $categories = [
             [
-                'name_en' => 'Mens fashion',
-                'name_ar' => 'موضة الرجال',
-                'slug' => 'mens-fashion',
+                'name_en' => 'Meat',
+                'name_ar' => 'لحوم',
+                'slug' => 'meat',
                 'order' => 1,
+                'is_active' => true,
             ],
             [
-                'name_en' => 'Accessories',
-                'name_ar' => 'إكسسوارات',
-                'slug' => 'accessories',
-                'order' => 4,
-            ],
-            [
-                'name_en' => 'Books',
-                'name_ar' => 'كتب',
-                'slug' => 'books',
-                'order' => 3,
-            ],
-            [
-                'name_en' => 'Furniture',
-                'name_ar' => 'أثاث',
-                'slug' => 'furniture',
+                'name_en' => 'Chicken',
+                'name_ar' => 'دواجن',
+                'slug' => 'chicken',
                 'order' => 2,
+                'is_active' => true,
             ],
-            
+            [
+                'name_en' => 'Shrimp & Seafood',
+                'name_ar' => 'جمبري وسي فود',
+                'slug' => 'shrimp-and-seafood',
+                'order' => 3,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($categories as $category) {

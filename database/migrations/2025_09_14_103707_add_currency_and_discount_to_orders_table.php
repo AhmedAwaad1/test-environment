@@ -34,15 +34,16 @@ return new class extends Migration
         if (!$defaultCurrencyId) {
             $defaultCurrencyId = DB::table('currencies')->min('id');
         }
-        if (!$defaultCurrencyId) {
-            throw new \RuntimeException('لا توجد عملات في جدول currencies — ضيف عملة افتراضية قبل الميجريشن.');
+
+        if ($defaultCurrencyId) {
+            DB::table('orders')->whereNull('currency_id')->update(['currency_id' => $defaultCurrencyId]);
+            DB::table('orders')->where('currency_id', 0)->update(['currency_id' => $defaultCurrencyId]);
         }
 
-        DB::table('orders')->whereNull('currency_id')->update(['currency_id' => $defaultCurrencyId]);
-        DB::table('orders')->where('currency_id', 0)->update(['currency_id' => $defaultCurrencyId]);
-
-        Schema::table('orders', function (Blueprint $table) {
-            $table->unsignedBigInteger('currency_id')->nullable(false)->change();
+        Schema::table('orders', function (Blueprint $table) use ($defaultCurrencyId) {
+            if ($defaultCurrencyId || DB::table('orders')->count() === 0) {
+                $table->unsignedBigInteger('currency_id')->nullable(false)->change();
+            }
         });
 
         Schema::table('orders', function (Blueprint $table) {
