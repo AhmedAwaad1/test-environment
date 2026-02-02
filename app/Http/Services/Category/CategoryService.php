@@ -22,21 +22,14 @@ class CategoryService
 
     public function getAllCategories($request)
     {
-        // Force pagination and limit per_page to prevent memory issues
-        if ($request->filled('per_page')) {
-            $perPage = min((int) $request->per_page, 100);
-            $request->merge(['per_page' => $perPage]);
-        } else {
-            $request->merge(['per_page' => 15]);
-        }
-
         $cacheKey = CacheHelper::generateKey('categories', $request->all());
 
         $data = Cache::remember($cacheKey, now()->addHours(24), function () use ($request) {
             $query = $this->categoryRepo->getAll($request->all());
 
-            if ($request->per_page) {
-                return (new PaginationResource($query->paginate($request->per_page), CategoryResource::class))->resolve();
+            if ($request->filled('per_page')) {
+                $perPage = min((int) $request->per_page, 100);
+                return (new PaginationResource($query->paginate($perPage), CategoryResource::class))->resolve();
             } else {
                 return CategoryResource::collection($query->get())->resolve();
             }

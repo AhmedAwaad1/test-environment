@@ -41,14 +41,6 @@ class ProductService
 
         $currency = $this->geoCurrencyService->getCurrencyForRequest();
 
-        // Limit per_page to prevent memory exhaustion
-        if ($request->filled('per_page')) {
-            $perPage = min((int) $request->per_page, 50);
-            $request->merge(['per_page' => $perPage]);
-        } else {
-            $request->merge(['per_page' => 10]);
-        }
-
         $isListResource = $request->get('resource') === 'list' || $request->get('fields') === 'list';
 
         // Apply filters only if set
@@ -71,9 +63,11 @@ class ProductService
                 ];
             }
 
-            $resource = $request->per_page
-                ? new PaginationResource($products, ProductResource::class)
-                : ProductResource::collection($products);
+            if ($request->filled('per_page')) {
+                $resource = new PaginationResource($products, ProductResource::class);
+            } else {
+                $resource = ProductResource::collection($products);
+            }
 
             return $resource->additional([
                 'currency'    => $currency?->name,
