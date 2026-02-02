@@ -41,16 +41,18 @@ return new class extends Migration
         }
 
         Schema::table('orders', function (Blueprint $table) use ($defaultCurrencyId) {
+            // Only set to NOT NULL if a currency exists or the table is empty
             if ($defaultCurrencyId || DB::table('orders')->count() === 0) {
                 $table->unsignedBigInteger('currency_id')->nullable(false)->change();
             }
-        });
 
-        Schema::table('orders', function (Blueprint $table) {
-            $table->foreign('currency_id')
-                  ->references('id')->on('currencies')
-                  ->cascadeOnUpdate()
-                  ->restrictOnDelete();
+            // Always add foreign key if it doesn't exist, but only if currency_id is present
+            if (Schema::hasColumn('orders', 'currency_id')) {
+                $table->foreign('currency_id')
+                      ->references('id')->on('currencies')
+                      ->cascadeOnUpdate()
+                      ->restrictOnDelete();
+            }
         });
     }
 
