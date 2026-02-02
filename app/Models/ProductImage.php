@@ -39,16 +39,25 @@ class ProductImage extends Model
 
     public function getImageWebpAttribute($value)
     {
-        return $value ? asset('storage/' . $value) : $this->image;
+        if ($value && \Illuminate\Support\Facades\Storage::disk('public')->exists($value)) {
+            return asset('storage/' . $value);
+        }
+        return $this->image;
     }
 
     public function getImageMediumAttribute($value)
     {
-        return $value ? asset('storage/' . $value) : $this->image;
+        if ($value && \Illuminate\Support\Facades\Storage::disk('public')->exists($value)) {
+            return asset('storage/' . $value);
+        }
+        return $this->image;
     }
 
     public function getImageSmallAttribute($value)
     {
-        return $value ? asset('storage/' . $value) : $this->image;
+        if ($value && \Illuminate\Support\Facades\Storage::disk('public')->exists($value)) {
+            return asset('storage/' . $value);
+        }
+        return $this->image;
     }
 }
