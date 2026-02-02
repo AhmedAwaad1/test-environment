@@ -57,27 +57,44 @@ class CartItemRepository
 
     public function findByCartAndVariantAndPrice(int $cartId, int $variantId, ?int $productPriceId): ?CartItem
     {
-        return CartItem::where('cart_id', $cartId)
-                       ->where('product_variant_id', $variantId)
-                       ->where('product_price_id', $productPriceId)
-                       ->first();
+        $query = CartItem::where('cart_id', $cartId)
+                       ->where('product_variant_id', $variantId);
+
+        if (is_null($productPriceId)) {
+            $query->whereNull('product_price_id');
+        } else {
+            $query->where('product_price_id', $productPriceId);
+        }
+
+        return $query->first();
     }
 
     public function findByCartProductAndPrice(int $cartId, int $productId, ?int $productPriceId): ?CartItem
     {
-        return CartItem::where('cart_id', $cartId)
+        $query = CartItem::where('cart_id', $cartId)
                        ->where('product_id', $productId)
                        ->whereNull('product_variant_id')
-                       ->whereNull('product_set_item_id')
-                       ->where('product_price_id', $productPriceId)
-                       ->first();
+                       ->whereNull('product_set_item_id');
+
+        if (is_null($productPriceId)) {
+            $query->whereNull('product_price_id');
+        } else {
+            $query->where('product_price_id', $productPriceId);
+        }
+
+        return $query->first();
     }
 
     public function findByCartSetItemAndPrice(int $cartId, int $setId, ?int $productPriceId, ?array $selectedProductIds = null): ?CartItem
     {
         $query = CartItem::where('cart_id', $cartId)
-                       ->where('product_set_item_id', $setId)
-                       ->where('product_price_id', $productPriceId);
+                       ->where('product_set_item_id', $setId);
+
+        if (is_null($productPriceId)) {
+            $query->whereNull('product_price_id');
+        } else {
+            $query->where('product_price_id', $productPriceId);
+        }
 
         if ($selectedProductIds) {
             // Sort to ensure consistent comparison

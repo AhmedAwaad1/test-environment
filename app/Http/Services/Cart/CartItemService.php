@@ -78,24 +78,33 @@ class CartItemService
                 throw new \Exception("No price available for this product set in the required currency.");
             }
         } else {
+            // Fetch product price (for base currency/discount info)
             $productPrice = $this->productPriceService
                 ->getProductPriceByProductAndCurrency($productId, $currencyId);
 
-            if (!$productPrice) {
-                throw new \Exception("No price available for this product in the required currency.");
-            }
-
-            $unitRaw = $productPrice->price;
-            $unitAfter = $productPrice->price_after_discount;
-
-            // VARIANT PRICE OVERRIDE: If it's a variant, use its specific price if set
             if ($type === 'variant') {
-                if ($item->price > 0) {
-                    $unitRaw = $item->price;
-                    $unitAfter = ($item->price_after_discount > 0) ? $item->price_after_discount : null;
-                } elseif ($item->price_after_discount > 0) {
-                    $unitAfter = $item->price_after_discount;
+                // For variants, we use the price from the variant model itself
+                $unitRaw = $item->price;
+                $unitAfter = ($item->price_after_discount > 0) ? $item->price_after_discount : null;
+
+                // Only throw exception if variant price is missing AND base product price is missing
+                if ($unitRaw <= 0 && (!$productPrice || $productPrice->price <= 0)) {
+                    throw new \Exception("No price available for this variant in the required currency.");
                 }
+
+                // If variant doesn't have a price but product does, fallback (optional, but safer)
+                if ($unitRaw <= 0 && $productPrice) {
+                    $unitRaw = $productPrice->price;
+                    $unitAfter = $productPrice->price_after_discount;
+                }
+            } else {
+                // For simple products, base price is mandatory
+                if (!$productPrice) {
+                    throw new \Exception("No price available for this product in the required currency.");
+                }
+
+                $unitRaw = $productPrice->price;
+                $unitAfter = $productPrice->price_after_discount;
             }
         }
 
