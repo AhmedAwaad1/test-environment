@@ -7,23 +7,26 @@ use App\Models\ProductOption;
 use App\Models\ProductOptionValue;
 use App\Models\ProductVariant;
 use App\Models\VariantOptionValue;
+use App\Repositories\BaseRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-class ProductRepository
+class ProductRepository extends BaseRepository implements ProductRepositoryInterface
 {
     public function __construct(
-        protected Product $model,
+        Product $model,
         protected ProductOption $productOption,
         protected ProductOptionValue $productOptionValue,
         protected ProductVariant $productVariant,
         protected VariantOptionValue $variantOptionValue
-    ) {}
+    ) {
+        parent::__construct($model);
+    }
 
     /**
      * Get all products with optional filters
      */
-    public function getAll($request, array $filters = [])
+    public function getAll(array $filters = [])
     {
         $query = $this->model
             ->with([
@@ -35,22 +38,24 @@ class ProductRepository
             ])
             ->filter($filters);
 
-        return $request->filled('per_page')
-            ? $query->paginate($request->per_page)
+        return ($filters['should_paginate'] ?? false)
+            ? $query->paginate($filters['per_page'] ?? 15)
             : $query->get();
     }
 
-    public function find($id)
+    public function find($id, array $columns = ['*'], array $relations = []): ?\Illuminate\Database\Eloquent\Model
     {
+        $relations = array_merge([
+            'category',
+            'subCategory',
+            'productOptions.values',
+            'productVariants.optionValues',
+            'productPrices.currency'
+        ], $relations);
+
         return $this->model
-            ->with([
-                'category',
-                'subCategory',
-                'productOptions.values',
-                'productVariants.optionValues',
-                'productPrices.currency'
-            ])
-            ->findOrFail($id);
+            ->with($relations)
+            ->find($id, $columns);
     }
 
     public function findWithVariants($id)
@@ -73,7 +78,7 @@ class ProductRepository
             ->findOrFail($id);
     }
 
-    public function create(array $data)
+    public function create(array $data): \Illuminate\Database\Eloquent\Model
     {
         return DB::transaction(function () use ($data) {
             return $this->model->create([
@@ -121,7 +126,7 @@ public function update($id, array $data)
     });
 }
 
-    public function delete($id)
+    public function delete($id): ?bool
     {
         return DB::transaction(function () use ($id) {
             $product = $this->model

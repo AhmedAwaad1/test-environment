@@ -15,6 +15,7 @@ use App\Repositories\Coupon\CouponRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Http\Services\Cart\CartCalculationService;
 
 class CartItemService
 {
@@ -25,6 +26,7 @@ class CartItemService
         protected GeoCurrencyService  $geoCurrencyService,
         protected ProductPriceService $productPriceService,
         protected ProductValidatorService $productValidator,
+        protected CartCalculationService $cartCalculationService,
     )
     {
     }
@@ -108,7 +110,7 @@ class CartItemService
             }
         }
 
-        $totalPrice = round((float)$unitRaw * max(1, $quantity), 2);
+        $totalPrice = $this->cartCalculationService->calculateItemPrice((float)$unitRaw, max(1, $quantity));
 
         // Check if item already exists in cart to update quantity
         if ($type === 'variant') {
@@ -142,7 +144,7 @@ class CartItemService
         $added = max(1, (int)$addedQty);
 
         $cartItem->quantity    += $added;
-        $cartItem->total_price = round((float)$cartItem->unit_price * $cartItem->quantity, 2);
+        $cartItem->total_price = $this->cartCalculationService->calculateItemPrice((float)$cartItem->unit_price, $cartItem->quantity);
         $cartItem->save();
 
         return $cartItem;
@@ -174,7 +176,7 @@ class CartItemService
         // --------------------------------
 
         $item->quantity    = $newQty;
-        $item->total_price = round((float)$item->unit_price * $newQty, 2);
+        $item->total_price = $this->cartCalculationService->calculateItemPrice((float)$item->unit_price, $newQty);
         $item->save();
 
         return $item;
@@ -201,16 +203,5 @@ class CartItemService
             DB::rollBack();
             return Response::handleException($e, 'Error deleting cart item');
         }
-    }
-
-    public function calculateItemPrice(float $price, int $quantity): float
-    {
-        return $price * $quantity;
-    }
-
-
-    protected function calculateTotalPriceAfterDiscount(float $total, $coupon)
-    {
-        return $total - ($total * ($coupon->discount / 100));
     }
 }

@@ -3,13 +3,20 @@
 namespace App\Http\Controllers\Product;
 
 use App\Http\Controllers\Controller;
+use App\Traits\CanCastBooleans;
 use App\Http\Requests\Product\ProductRequest;
 use App\Http\Services\Product\ProductService;
+use App\Http\Services\Product\ProductVariantService;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    public function __construct(protected ProductService $service)
+    use CanCastBooleans;
+
+    public function __construct(
+        protected ProductService $service,
+        protected ProductVariantService $variantService
+    )
     {
     }
 
@@ -36,10 +43,7 @@ class ProductController extends Controller
     {
         $data = $request->validated();
 
-        // Consistent Fix: Ensure strings "1"/"0" from FormData are handled as booleans
-        $data['is_best_seller'] = $request->input('is_best_seller') == '1' || $request->input('is_best_seller') === 'true';
-        $data['is_new_arrival'] = $request->input('is_new_arrival') == '1' || $request->input('is_new_arrival') === 'true';
-        $data['status'] = $request->input('status') == '1' || $request->input('status') === 'true';
+        $this->castBooleansInArray($data, ['is_best_seller', 'is_new_arrival', 'status']);
 
         return $this->service->createProduct($data);
     }
@@ -51,21 +55,10 @@ class ProductController extends Controller
     {
         $data = $request->validated();
 
-        // Fix: Manual boolean casting for multipart/form-data updates
-        if ($request->has('is_best_seller')) {
-            $data['is_best_seller'] = $request->input('is_best_seller') == '1' || $request->input('is_best_seller') === 'true';
-        }
-
-        if ($request->has('is_new_arrival')) {
-            $data['is_new_arrival'] = $request->input('is_new_arrival') == '1' || $request->input('is_new_arrival') === 'true';
-        }
+        $this->castBooleansInArray($data, ['is_best_seller', 'is_new_arrival', 'has_variants']);
 
         if ($request->has('status')) {
-            $data['is_active'] = $request->input('status') == '1' || $request->input('status') === 'true';
-        }
-
-        if ($request->has('has_variants')) {
-            $data['has_variants'] = $request->input('has_variants') == '1' || $request->input('has_variants') === 'true';
+            $data['is_active'] = $this->castToBoolean($request->input('status'));
         }
 
         // Ensure variants and options are passed if they exist in the request
@@ -96,7 +89,8 @@ class ProductController extends Controller
      */
     public function bestSellers(Request $request)
     {
-        return $this->service->getBestSellers($request);
+        $request->merge(['is_best_seller' => 1]);
+        return $this->service->getAllProducts($request);
     }
 
     /**
@@ -104,6 +98,7 @@ class ProductController extends Controller
      */
     public function newArrivals(Request $request)
     {
-        return $this->service->getNewArrivals($request);
+        $request->merge(['is_new_arrival' => 1]);
+        return $this->service->getAllProducts($request);
     }
 }

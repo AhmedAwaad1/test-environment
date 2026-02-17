@@ -114,7 +114,16 @@ class CartItemRepository
         $item->total_price = round((float)$item->unit_price * $item->quantity, 2);
         $item->save();
 
-        return $item;
+        return $item->fresh();
+    }
+
+    public function decrementQuantity(CartItem $item, int $by = 1): CartItem
+    {
+        $item->quantity = max(1, $item->quantity - max(1, $by));
+        $item->total_price = round((float)$item->unit_price * $item->quantity, 2);
+        $item->save();
+
+        return $item->fresh();
     }
 
 }

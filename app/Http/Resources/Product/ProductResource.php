@@ -59,6 +59,30 @@ class ProductResource extends JsonResource
             ];
         }
 
+        if ($request->get('dashboard') == 1) {
+            $mainImage = $this->images->firstWhere('is_main', true) ?? $this->images->first();
+
+            return [
+                "id" => $this->id,
+                "name_en" => $this->name_en,
+                "name_ar" => $this->name_ar,
+                "sku" => $this->sku,
+                "has_variants" => (bool) $this->has_variants,
+                "quantity" => $this->quantity,
+                "default_price" => [
+                    "price" => $defaultPrice['price'],
+                    "price_after_discount" => $defaultPrice['price_after_discount']
+                ],
+                "category" => [
+                    "name_en" => $this->category?->name_en
+                ],
+                "sub_category" => [
+                    "name_en" => $this->subCategory?->name_en
+                ],
+                "main_image_url" => $mainImage?->image
+            ];
+        }
+
         return [
             'id' => $this->id,
             'name_en' => $this->name_en,

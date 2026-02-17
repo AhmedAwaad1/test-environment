@@ -6,7 +6,7 @@ use App\Events\OrderPlaced;
 use App\Http\Resources\PaginationResource\PaginationResource;
 use App\Http\Resources\Order\OrderResource;
 use App\Http\Services\GeoCurrency\GeoCurrencyService;
-use App\Repositories\Order\OrderRepository;
+use App\Repositories\Order\OrderRepositoryInterface;
 use App\Actions\Order\ResolveUserAction;
 use App\Actions\Order\CreateOrderAction;
 use App\Actions\Order\ProcessPaymentAction;
@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Response;
 class OrderService
 {
     public function __construct(
-        protected OrderRepository $orderRepo,
+        protected OrderRepositoryInterface $orderRepo,
         protected ResolveUserAction $resolveUserAction,
         protected CreateOrderAction $createOrderAction,
         protected ProcessPaymentAction $processPaymentAction,

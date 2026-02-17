@@ -3,14 +3,16 @@
 namespace App\Actions\Order;
 
 use App\Repositories\UserRepository\UserRepository;
+use App\Repositories\UserRepository\UserRepositoryInterface;
 use App\Repositories\Cart\CartRepository;
+use App\Repositories\Cart\CartRepositoryInterface;
 use Tymon\JWTAuth\Facades\JWTAuth;
 
 class ResolveUserAction
 {
     public function __construct(
-        protected UserRepository $userRepo,
-        protected CartRepository $cartRepo
+        protected UserRepositoryInterface $userRepo,
+        protected CartRepositoryInterface $cartRepo
     ) {}
 
     public function execute(array $request): array

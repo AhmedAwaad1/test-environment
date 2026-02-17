@@ -3,23 +3,23 @@
 namespace App\Repositories\Cart;
 
 use App\Models\Cart;
+use App\Repositories\BaseRepository;
 
-class CartRepository
+class CartRepository extends BaseRepository implements CartRepositoryInterface
 {
+    public function __construct(Cart $model)
+    {
+        parent::__construct($model);
+    }
+
     public function findOrCreateUserCart($userId)
     {
-        $cart = null;
-        $cart = Cart::where('user_id', $userId)->first();
-
-        if (!$cart) {
-            $cart = Cart::create(['user_id' => $userId]);
-        }
-        return $cart;
+        return $this->model->firstOrCreate(['user_id' => $userId]);
     }
 
     public function findUserCart($userId)
     {
-        return Cart::where('user_id', $userId)
+        return $this->model->where('user_id', $userId)
                    ->with([
                        'cartItems.product.images',
                        'cartItems.currency',
@@ -34,10 +34,10 @@ class CartRepository
 
     public function findOrCreateBySessionId($sessionId)
     {
-        $cart = Cart::where('session_id', $sessionId)->first();
+        $cart = $this->model->where('session_id', $sessionId)->first();
 
         if (!$cart) {
-            $cart = Cart::create([
+            $cart = $this->model->create([
                 'session_id' => $sessionId
             ]);
         }
@@ -47,7 +47,7 @@ class CartRepository
 
     public function findBySessionId($sessionId)
     {
-        return Cart::where('session_id', $sessionId)
+        return $this->model->where('session_id', $sessionId)
                    ->with([
                        'cartItems.product.images',
                        'cartItems.currency',
@@ -59,15 +59,4 @@ class CartRepository
                    ])
                    ->first();
     }
-
-    public function create(array $data)
-    {
-        return Cart::create($data);
-    }
-
-    public function update(Cart $cart, array $data)
-    {
-        return $cart->update($data);
-    }
-
 }

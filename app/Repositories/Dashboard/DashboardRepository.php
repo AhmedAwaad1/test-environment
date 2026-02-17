@@ -43,7 +43,6 @@ class DashboardRepository
         $lastDayOfMonth = now()->endOfMonth();
 
         $orders = Order::whereBetween('created_at', [$firstDayOfMonth, $lastDayOfMonth]);
-        // dd($orders);
         $subtotalRevenue = (clone $orders)->where('status', 'delivered')->sum('subtotal');
         $shippingTotal = (clone $orders)->where('status', 'delivered')->sum('shipping_price');
         $totalRevenue = $subtotalRevenue + $shippingTotal;

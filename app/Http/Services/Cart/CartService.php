@@ -8,8 +8,10 @@ use App\Http\Services\ProductPrice\ProductPriceService;
 use App\Models\Cart;
 use App\Models\User;
 use App\Repositories\Cart\CartRepository;
+use App\Repositories\Cart\CartRepositoryInterface;
 use App\Repositories\CartItem\CartItemRepository;
 use App\Repositories\Product\ProductRepository;
+use App\Repositories\Product\ProductRepositoryInterface;
 use App\Repositories\ProductVariant\ProductVariantRepository;
 use App\Repositories\ProductSetItems\ProductSetItemsRepository;
 use App\Repositories\PromoCode\PromoCodeRepository;
@@ -22,34 +24,22 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class CartService
 {
-    protected $cartRepo, $cartItemRepo, $productVarRepo, $couponService,
-        $productRepo, $productValidator, $cartItemService, $geoCurrencyService, $productPriceService, $productSetRepo;
-
     public function __construct(
-        CartRepository           $cartRepo,
-        CartItemRepository       $cartItemRepo,
-        ProductRepository        $productRepo,
-        ProductVariantRepository $productVarRepo,
-        ProductValidatorService  $productValidator,
-        CartItemService          $cartItemService,
-        CouponService            $couponService,
-        GeoCurrencyService       $geoCurrencyService,
-        ProductPriceService      $productPriceService,
-        ProductSetItemsRepository $productSetRepo
-
-    )
-    {
-        $this->cartRepo            = $cartRepo;
-        $this->cartItemRepo        = $cartItemRepo;
-        $this->productVarRepo      = $productVarRepo;
-        $this->productRepo         = $productRepo;
-        $this->productValidator    = $productValidator;
-        $this->cartItemService     = $cartItemService;
-        $this->couponService       = $couponService;
-        $this->geoCurrencyService  = $geoCurrencyService;
-        $this->productPriceService = $productPriceService;
-        $this->productSetRepo      = $productSetRepo;
-    }
+        protected CartRepositoryInterface   $cartRepo,
+        protected CartItemRepository        $cartItemRepo,
+        protected ProductRepositoryInterface $productRepo,
+        protected ProductVariantRepository  $productVarRepo,
+        protected ProductValidatorService   $productValidator,
+        protected CartItemService           $cartItemService,
+        protected CouponService             $couponService,
+        protected GeoCurrencyService        $geoCurrencyService,
+        protected ProductPriceService       $productPriceService,
+        protected ProductSetItemsRepository $productSetRepo,
+        protected CartCalculationService    $cartCalculationService,
+        protected CartCurrencyService       $cartCurrencyService,
+        protected CartUserResolverService   $cartUserResolverService,
+        protected CartValidationService      $cartValidationService
+    ) {}
 
     public function getUserCart()
     {
@@ -114,7 +104,7 @@ class CartService
                 $sessionId = $data['session_id'] ?? null;
             }
 
-            $user = $this->resolveUserFromRequest();
+            $user = $this->cartUserResolverService->resolveUserFromRequest();
 
             if ($user) {
                 $cart = $this->cartRepo->findOrCreateUserCart($user->id);
@@ -126,35 +116,14 @@ class CartService
                 $cart = $this->cartRepo->findOrCreateBySessionId($sessionId);
             }
 
-            // --- REFACTOR: Remove IP/Geo logic & Force EGP (Egypt) ---
-            $egpCurrency = \App\Models\Currency::where('name', 'EGP')->first();
-            
-            // Fallback if EGP isn't in DB (though it should be)
-            if (!$egpCurrency) {
-                 // Try to get default currency from Geo service as a last resort backup
-                 $geo = app(GeoCurrencyService::class);
-                 $egpCurrency = $geo->getDefaultCurrency();
-            }
-
-            // Always enforce EGP currency if not set or if we want to force it
-            if (!$cart->currency_id || $cart->currency_id !== $egpCurrency->id) {
-                $cart->currency_id = $egpCurrency->id;
-                $cart->save();
-            }
-
-            // Update session/cache to reflect this forced currency
-            session(['currency_id' => $cart->currency_id]);
-            if (!empty($sessionId)) {
-                Cache::put("currency_id_{$sessionId}", $cart->currency_id, now()->addDays(30));
-            }
-            // ----------------------------------------------------------
+            $this->cartCurrencyService->handleCartCurrency($cart, $sessionId);
 
             // Process each item in the loop
             foreach ($items as $itemData) {
                 $itemDataWithSession = array_merge($itemData, ['session_id' => $sessionId]);
                 
-                // Use existing getCartItemData for validation
-                $cartItemData = $this->getCartItemData($itemDataWithSession, $cart->id);
+                // Use validation service
+                $cartItemData = $this->cartValidationService->getCartItemData($itemDataWithSession, $cart->id);
                 
                 if ($cartItemData['error']) {
                     DB::rollBack();
@@ -177,8 +146,7 @@ class CartService
             }
 
             // Calculate totals and apply coupon ONLY ONCE after all items are added
-            $this->calculateTotalPrice($cart);
-            $this->couponService->checkAndApplyCouponIfExists($cart);
+            $this->cartCalculationService->recalculateCart($cart);
 
             DB::commit();
 
@@ -205,11 +173,9 @@ class CartService
             DB::beginTransaction();
 
             $updatedItem = $this->cartItemService->updateCartItemQuantity($cartItemId, $data);
-            // Update total cart price
-            $this->calculateTotalPrice($updatedItem->cart);
-
-            // Apply coupon discount
-            $this->couponService->checkAndApplyCouponIfExists($updatedItem->cart);
+            
+            // Recalculate cart
+            $this->cartCalculationService->recalculateCart($updatedItem->cart);
 
             DB::commit();
 
@@ -246,10 +212,7 @@ class CartService
                 return Response::errorResponse('Item not found', [], 404);
             }
 
-            $this->calculateTotalPrice($cart);
-            $this->couponService->checkAndApplyCouponIfExists($cart);
-
-            $cart->refresh();
+            $this->cartCalculationService->recalculateCart($cart);
 
             DB::commit();
 
@@ -257,98 +220,6 @@ class CartService
         } catch (\Throwable $e) {
             DB::rollBack();
             return Response::handleException($e, 'Error deleting item');
-        }
-    }
-
-
-    public function calculateItemPrice($unitPrice, $quantity)
-    {
-        return $unitPrice * $quantity;
-    }
-
-    public function calculateTotalPrice(Cart $cart)
-    {
-        $total = 0;
-        $totalAfterDiscount = 0;
-
-        foreach ($cart->cartItems as $item) {
-            $unitPrice = (float) $item->unit_price;
-            $unitPriceAfter = $item->unit_price_after_discount !== null 
-                ? (float) $item->unit_price_after_discount 
-                : $unitPrice;
-
-            $total += $unitPrice * $item->quantity;
-            $totalAfterDiscount += $unitPriceAfter * $item->quantity;
-        }
-
-        $cart->total_price = round($total, 2);
-        $cart->total_price_after_discount = round($totalAfterDiscount, 2);
-        $cart->save();
-
-        return $cart->total_price;
-    }
-
-    private function getCartItemData(array $data, $cartId): array
-    {
-        if (!empty($data['product_variant_id'])) {
-            $item       = $this->productVarRepo->find($data['product_variant_id']);
-            if (!$item) {
-                return ['error' => 'Product variant not found'];
-            }
-            $existing   = $this->cartItemRepo->variantExistsInCart($cartId, $item->id);
-            $currentQty = $existing ? $existing->quantity : 0;
-            $totalQty   = $currentQty + $data['quantity'];
-            $validation = $this->productValidator->validateVariant($item, $totalQty);
-            $type       = 'variant';
-        } elseif (!empty($data['product_set_item_id'])) {
-            $item       = $this->productSetRepo->find($data['product_set_item_id']);
-            if (!$item) {
-                return ['error' => 'Product set item not found'];
-            }
-            $existing   = $this->cartItemRepo->setItemExistsInCart($cartId, $item->id);
-            // Assuming ProductSetItems has a quantity or we just allow adding it
-            $type       = 'set';
-            $validation = true; // You might want to add validation logic for sets later
-        } else {
-            $item = $this->productRepo->find($data['product_id']);
-            if (!$item) {
-                return ['error' => 'Product not found'];
-            }
-            if ($item->has_variants) {
-                return ['error' => 'Product has variants and cannot be added to cart directly. Please select a variant.'];
-            }
-
-            $existing   = $this->cartItemRepo->productExistsInCart($cartId, $item->id);
-            $currentQty = $existing ? $existing->quantity : 0;
-            $totalQty   = $currentQty + $data['quantity'];
-            $validation = $this->productValidator->validateProduct($item, $totalQty);
-            $type       = 'product';
-        }
-
-        if ($validation !== true) {
-            return ['error' => $validation];
-        }
-
-        return ['item' => $item, 'existing' => $existing, 'type' => $type, 'error' => false];
-    }
-
-    private function resolveUserFromRequest(): ?User
-    {
-        // لو فيه يوزر محمّل بالفعل
-        if (auth()->check()) {
-            return auth()->user();
-        }
-
-        // لو فيه Bearer token في الهيدر
-        $token = request()->bearerToken();
-        if (!$token) {
-            return null;
-        }
-
-        try {
-            return JWTAuth::setToken($token)->authenticate(); // بيرجّع User أو null
-        } catch (\Throwable $e) {
-            return null; // أي مشكلة في التوكن => نعامل الطلب كضيف
         }
     }
 

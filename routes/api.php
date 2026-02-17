@@ -38,7 +38,6 @@ use App\Http\Controllers\Payment\TapWebhookController;
 use App\Http\Controllers\Product\ProductOptionController;
 use App\Http\Controllers\Product\ProductAttributeFilterController;
 use App\Http\Controllers\Review\ReviewController;
-use App\Http\Controllers\HomeworkController;
 
 /*
 |--------------------------------------------------------------------------
@@ -84,12 +83,15 @@ Route::prefix('country')->namespace('Country')->group(function () {
     Route::get('/geo', [CountryController::class, 'getCountriesByIp'])->name('country.geo');
     // Get specific country
     Route::get('/{id}', [CountryController::class, 'show'])->name('country.show');
-    // Create country
-    Route::post('/', [CountryController::class, 'store'])->name('country.store');
-    // Update country
-    Route::put('/{id}', [CountryController::class, 'update'])->name('country.update');
-    // Delete country
-    Route::delete('/{id}', [CountryController::class, 'destroy'])->name('country.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create country
+        Route::post('/', [CountryController::class, 'store'])->name('country.store');
+        // Update country
+        Route::put('/{id}', [CountryController::class, 'update'])->name('country.update');
+        // Delete country
+        Route::delete('/{id}', [CountryController::class, 'destroy'])->name('country.destroy');
+    });
 });
 
 Route::prefix('city')->namespace('City')->group(function () {
@@ -99,12 +101,15 @@ Route::prefix('city')->namespace('City')->group(function () {
     Route::get('/', [CityController::class, 'index'])->name('city.index');
     // Get specific city
     Route::get('/{id}', [CityController::class, 'show'])->name('city.show');
-    // Create city
-    Route::post('/', [CityController::class, 'store'])->name('city.store');
-    // Update city
-    Route::put('/{id}', [CityController::class, 'update'])->name('city.update');
-    // Delete city
-    Route::delete('/{id}', [CityController::class, 'destroy'])->name('city.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create city
+        Route::post('/', [CityController::class, 'store'])->name('city.store');
+        // Update city
+        Route::put('/{id}', [CityController::class, 'update'])->name('city.update');
+        // Delete city
+        Route::delete('/{id}', [CityController::class, 'destroy'])->name('city.destroy');
+    });
 });
 
 Route::prefix('sub-category')->namespace('SubCategory')->group(function () {
@@ -112,12 +117,15 @@ Route::prefix('sub-category')->namespace('SubCategory')->group(function () {
     Route::get('/', [SubCategoryController::class, 'index'])->name('sub-category.index');
     // Get specific sub-category
     Route::get('/{id}', [SubCategoryController::class, 'show'])->name('sub-category.show');
-    // Create sub-category
-    Route::post('/', [SubCategoryController::class, 'store'])->name('sub-category.store');
-    // Update sub-category
-    Route::put('/{id}', [SubCategoryController::class, 'update'])->name('sub-category.update');
-    // Delete sub-category
-    Route::delete('/{id}', [SubCategoryController::class, 'destroy'])->name('sub-category.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create sub-category
+        Route::post('/', [SubCategoryController::class, 'store'])->name('sub-category.store');
+        // Update sub-category
+        Route::put('/{id}', [SubCategoryController::class, 'update'])->name('sub-category.update');
+        // Delete sub-category
+        Route::delete('/{id}', [SubCategoryController::class, 'destroy'])->name('sub-category.destroy');
+    });
 });
 
 Route::prefix('category')->namespace('Category')->group(function () {
@@ -125,69 +133,85 @@ Route::prefix('category')->namespace('Category')->group(function () {
     Route::get('/', [CategoryController::class, 'index'])->name('category.index');
     // Get specific category
     Route::get('/{id}', [CategoryController::class, 'show'])->name('category.show');
-    // Create category
-    Route::post('/', [CategoryController::class, 'store'])->name('category.store');
-    // Update category
-    Route::put('/{id}', [CategoryController::class, 'update'])->name('category.update');
-    // Delete category
-    Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create category
+        Route::post('/', [CategoryController::class, 'store'])->name('category.store');
+        // Update category
+        Route::put('/{id}', [CategoryController::class, 'update'])->name('category.update');
+        // Delete category
+        Route::delete('/{id}', [CategoryController::class, 'destroy'])->name('category.destroy');
+    });
 });
 
 // Product Management
 Route::prefix('products')->group(function () {
     // Basic Product CRUD
-    Route::get('/', [ProductController::class, 'index']);
-    Route::post('/', [ProductController::class, 'store']);
+    Route::get('/', [ProductController::class, 'index'])->name('products.index');
 
     // Specific endpoints first
-    Route::get('/new-arrivals', [ProductController::class, 'newArrivals']);
-    Route::get('/best-sellers', [ProductController::class, 'bestSellers']);
+    Route::get('/new-arrivals', [ProductController::class, 'newArrivals'])->name('products.new-arrivals');
+    Route::get('/best-sellers', [ProductController::class, 'bestSellers'])->name('products.best-sellers');
 
     // Catch-all by ID last
-    Route::get('/{id}', [ProductController::class, 'show']);
-    Route::put('/{id}', [ProductController::class, 'update']);
-    Route::delete('/{id}', [ProductController::class, 'destroy']);
+    Route::get('/{id}', [ProductController::class, 'show'])->name('products.show');
+
+    Route::middleware(['auth:api', 'role.admin'])->group(function () {
+        Route::post('/', [ProductController::class, 'store'])->name('products.store');
+        Route::put('/{id}', [ProductController::class, 'update'])->name('products.update');
+        Route::delete('/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+    });
 
     // --- Product Variants ---
     Route::prefix('{productId}/variants')->group(function () {
-        Route::get('/', [ProductVariantController::class, 'index']);
-        Route::post('/get-by-options', [ProductVariantController::class, 'getByOptions']);
+        Route::get('/', [ProductVariantController::class, 'index'])->name('products.variants.index');
+        Route::post('/get-by-options', [ProductVariantController::class, 'getByOptions'])->name('products.variants.get-by-options');
     });
 
     // --- Product Options & Values ---
     Route::prefix('{productId}/options')->group(function () {
-        Route::get('/', [ProductOptionController::class, 'index']);
-        Route::post('/', [ProductOptionController::class, 'store']);
+        Route::get('/', [ProductOptionController::class, 'index'])->name('products.options.index');
+        Route::middleware('auth:api')->group(function () {
+            Route::post('/', [ProductOptionController::class, 'store'])->name('products.options.store');
+        });
     });
 });
 
 // Standalone Variant/Option Management (for Update/Delete)
 Route::prefix('product-variants')->group(function () {
-    Route::post('/', [ProductVariantController::class, 'store']);
-    Route::put('/{id}', [ProductVariantController::class, 'update']);
-    Route::patch('/{id}/stock', [ProductVariantController::class, 'updateStock']);
-    Route::patch('/{id}/toggle-status', [ProductVariantController::class, 'toggleStatus']);
-    Route::delete('/{id}', [ProductVariantController::class, 'destroy']);
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/', [ProductVariantController::class, 'store'])->name('product-variants.store');
+        Route::put('/{id}', [ProductVariantController::class, 'update'])->name('product-variants.update');
+        Route::patch('/{id}/stock', [ProductVariantController::class, 'updateStock'])->name('product-variants.update-stock');
+        Route::patch('/{id}/toggle-status', [ProductVariantController::class, 'toggleStatus'])->name('product-variants.toggle-status');
+        Route::delete('/{id}', [ProductVariantController::class, 'destroy'])->name('product-variants.destroy');
+    });
 });
 
 Route::prefix('product-options')->group(function () {
-    Route::get('/types', [ProductOptionTypeController::class, 'index']);
-    Route::put('/{id}', [ProductOptionController::class, 'update']);
-    Route::delete('/{id}', [ProductOptionController::class, 'destroy']);
+    Route::get('/types', [ProductOptionTypeController::class, 'index'])->name('product-options.types');
 
-    // Values within Options
-    Route::post('/{id}/values', [ProductOptionController::class, 'addValue']);
-    Route::put('/values/{valueId}', [ProductOptionController::class, 'updateValue']);
-    Route::delete('/values/{valueId}', [ProductOptionController::class, 'deleteValue']);
-    Route::post('/{id}/reorder-values', [ProductOptionController::class, 'reorderValues']);
+    Route::middleware('auth:api')->group(function () {
+        Route::put('/{id}', [ProductOptionController::class, 'update'])->name('product-options.update');
+        Route::delete('/{id}', [ProductOptionController::class, 'destroy'])->name('product-options.destroy');
+
+        // Values within Options
+        Route::post('/{id}/values', [ProductOptionController::class, 'addValue'])->name('product-options.add-value');
+        Route::put('/values/{valueId}', [ProductOptionController::class, 'updateValue'])->name('product-options.update-value');
+        Route::delete('/values/{valueId}', [ProductOptionController::class, 'deleteValue'])->name('product-options.delete-value');
+        Route::post('/{id}/reorder-values', [ProductOptionController::class, 'reorder-values'])->name('product-options.reorder-values');
+    });
 });
 
     Route::prefix('option-types')->group(function () {
     Route::get('/', [ProductOptionTypeController::class, 'index'])->name('option-types.index');
-    Route::post('/', [ProductOptionTypeController::class, 'store'])->name('option-types.store');
     Route::get('/{id}', [ProductOptionTypeController::class, 'show'])->name('option-types.show');
-    Route::put('/{id}', [ProductOptionTypeController::class, 'update'])->name('option-types.update');
-    Route::delete('/{id}', [ProductOptionTypeController::class, 'destroy'])->name('option-types.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/', [ProductOptionTypeController::class, 'store'])->name('option-types.store');
+        Route::put('/{id}', [ProductOptionTypeController::class, 'update'])->name('option-types.update');
+        Route::delete('/{id}', [ProductOptionTypeController::class, 'destroy'])->name('option-types.destroy');
+    });
 });
 
 // Keep the old one for backward compatibility if needed by frontend
@@ -204,12 +228,15 @@ Route::prefix('banner')->namespace('Banner')->group(function () {
     Route::get('/', [BannerController::class, 'index'])->name('banner.index');
     // Get specific banner
     Route::get('/{id}', [BannerController::class, 'show'])->name('banner.show');
-    // Create banner
-    Route::post('/', [BannerController::class, 'store'])->name('banner.store');
-    // Update banner
-    Route::put('/{id}', [BannerController::class, 'update'])->name('banner.update');
-    // Delete banner
-    Route::delete('/{id}', [BannerController::class, 'destroy'])->name('banner.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create banner
+        Route::post('/', [BannerController::class, 'store'])->name('banner.store');
+        // Update banner
+        Route::put('/{id}', [BannerController::class, 'update'])->name('banner.update');
+        // Delete banner
+        Route::delete('/{id}', [BannerController::class, 'destroy'])->name('banner.destroy');
+    });
 });
 
 Route::prefix('district')->namespace('District')->group(function () {
@@ -217,15 +244,18 @@ Route::prefix('district')->namespace('District')->group(function () {
     Route::get('/', [DistrictController::class, 'index'])->name('district.index');
     // Get specific district
     Route::get('/{id}', [DistrictController::class, 'show'])->name('district.show');
-    // Create district
-    Route::post('/', [DistrictController::class, 'store'])->name('district.store');
-    // Update district
-    Route::put('/{id}', [DistrictController::class, 'update'])->name('district.update');
-    // Delete district
-    Route::delete('/{id}', [DistrictController::class, 'destroy'])->name('district.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create district
+        Route::post('/', [DistrictController::class, 'store'])->name('district.store');
+        // Update district
+        Route::put('/{id}', [DistrictController::class, 'update'])->name('district.update');
+        // Delete district
+        Route::delete('/{id}', [DistrictController::class, 'destroy'])->name('district.destroy');
+    });
 });
 
-Route::prefix('address')->namespace('Address')->group(function () {
+Route::prefix('address')->namespace('Address')->middleware('auth:api')->group(function () {
     // Get all user addresses
     Route::get('/', [AddressController::class, 'index'])->name('address.index');
     // Get specific address
@@ -243,12 +273,15 @@ Route::prefix('promo-code')->namespace('PromoCode')->group(function () {
     Route::get('/', [PromoCodeController::class, 'index'])->name('promo-code.index');
     // Get specific promo code
     Route::get('/{id}', [PromoCodeController::class, 'show'])->name('promo-code.show');
-    // Create promo code
-    Route::post('/', [PromoCodeController::class, 'store'])->name('promo-code.store');
-    // Update promo code
-    Route::put('/{id}', [PromoCodeController::class, 'update'])->name('promo-code.update');
-    // Delete promo code
-    Route::delete('/{id}', [PromoCodeController::class, 'destroy'])->name('promo-code.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create promo code
+        Route::post('/', [PromoCodeController::class, 'store'])->name('promo-code.store');
+        // Update promo code
+        Route::put('/{id}', [PromoCodeController::class, 'update'])->name('promo-code.update');
+        // Delete promo code
+        Route::delete('/{id}', [PromoCodeController::class, 'destroy'])->name('promo-code.destroy');
+    });
 });
 
 Route::prefix('cart')->namespace('Cart')->group(function () {
@@ -272,21 +305,24 @@ Route::prefix('cart')->namespace('Cart')->group(function () {
 });
 
 Route::prefix('order')->namespace('Order')->group(function () {
-    // Get all user orders
-    Route::get('/', [OrderController::class, 'index'])->name('order.index');
-    // Get specific order
-    Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
-    // Create order
+    // Create order (Allows Guest Checkout)
     Route::post('/checkout', [OrderController::class, 'checkout'])->name('order.checkout');
+
+    Route::middleware('auth:api')->group(function () {
+        // Get all user orders
+        Route::get('/', [OrderController::class, 'index'])->name('order.index');
+        // Get specific order
+        Route::get('/{id}', [OrderController::class, 'show'])->name('order.show');
+    });
 });
 
-Route::prefix('admin/order')->middleware('role.admin')->group(function () {
+Route::prefix('admin/order')->middleware(['auth:api', 'role.admin'])->group(function () {
     Route::get('/', [OrderAdminController::class, 'index'])->name('admin.orders.index');
     Route::get('/{id}', [OrderAdminController::class, 'show'])->name('admin.orders.show');
     Route::put('/{id}', [OrderAdminController::class, 'update'])->name('admin.orders.update');
 });
 
-Route::prefix('favorite')->namespace('Favorite')->group(function () {
+Route::prefix('favorite')->namespace('Favorite')->middleware('auth:api')->group(function () {
     // Delete all favorites
     Route::delete('/all', [FavoriteController::class, 'deleteAllFavorite'])->name('favorite.delete_all');
     // Get all user favorites
@@ -301,28 +337,34 @@ Route::prefix('favorite')->namespace('Favorite')->group(function () {
     Route::delete('/{id}', [FavoriteController::class, 'destroy'])->name('favorite.destroy');
 });
 
-Route::prefix('user-profile')->namespace('UserProfile')->group(function () {
+Route::prefix('user-profile')->namespace('UserProfile')->middleware('auth:api')->group(function () {
     // Update user profile
     Route::put('/', [UserProfileController::class, 'update'])->name('user-profile.update');
 });
 
 
 Route::prefix('contact')->namespace('Contact')->group(function () {
-    Route::get('/', [ContactController::class, 'index'])->name('contact.index');
     Route::get('/{id}', [ContactController::class, 'show'])->name('contact.show');
     Route::post('/', [ContactController::class, 'store'])->name('contact.store');
-    Route::delete('/{id}', [ContactController::class, 'destroy'])->name('contact.destroy');
-    // Mark as checked form
-    Route::put('/{id}/mark-checked', [ContactController::class, 'markAsChecked'])
-         ->name('contact.mark_checked');
+
+    Route::middleware('auth:api')->group(function () {
+        Route::get('/', [ContactController::class, 'index'])->name('contact.index');
+        Route::delete('/{id}', [ContactController::class, 'destroy'])->name('contact.destroy');
+        // Mark as checked form
+        Route::put('/{id}/mark-checked', [ContactController::class, 'markAsChecked'])
+             ->name('contact.mark_checked');
+    });
 });
 
 Route::prefix('blog')->namespace('Blog')->group(function () {
     Route::get('/', [BlogController::class, 'index'])->name('blog.index');
     Route::get('/{slug}', [BlogController::class, 'show'])->name('blog.show');
-    Route::post('/', [BlogController::class, 'store'])->name('blog.store');
-    Route::put('/{id}', [BlogController::class, 'update'])->name('blog.update');
-    Route::delete('/{id}', [BlogController::class, 'destroy'])->name('blog.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        Route::post('/', [BlogController::class, 'store'])->name('blog.store');
+        Route::put('/{id}', [BlogController::class, 'update'])->name('blog.update');
+        Route::delete('/{id}', [BlogController::class, 'destroy'])->name('blog.destroy');
+    });
 });
 
 // Review Routes
@@ -331,51 +373,63 @@ Route::prefix('review')->namespace('Review')->group(function () {
     Route::get('/', [ReviewController::class, 'all'])->name('review.all');
     // Get a specific Review
     Route::get('/{id}', [ReviewController::class, 'show'])->name('review.get');
-    // Create a new Review
-    Route::post('/', [ReviewController::class, 'create'])->name('review.create')->middleware('auth:api');
-    // Delete a Review
-    Route::delete('/{id}', [ReviewController::class, 'delete'])->name('review.delete');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create a new Review
+        Route::post('/', [ReviewController::class, 'create'])->name('review.create');
+        // Delete a Review
+        Route::delete('/{id}', [ReviewController::class, 'delete'])->name('review.delete');
+    });
 });
 
-Route::prefix('dashboard')->namespace('Dashboard')->group(function () {
-    Route::get('/stats', [DashboardController::class, 'getStatistics']);
+Route::prefix('dashboard')->namespace('Dashboard')->middleware(['auth:api', 'role.admin'])->group(function () {
+    Route::get('/stats', [DashboardController::class, 'getStatistics'])->name('admin.dashboard.stats');
     Route::get('/order-report', [DashboardController::class, 'getOrderStatistics'])->name('admin.orders.order_report');
 });
 
 Route::prefix('product-set-items')->group(function () {
     // Get all Product Set Items Management
     Route::get('/', [ProductSetItemsController::class, 'index'])->name('product-set-items.index');
-    // Create a new Product Set Item
-    Route::post('/', [ProductSetItemsController::class, 'store'])->name('product-set-items.store');
     // Get Product Set Item
     Route::get('/{id}', [ProductSetItemsController::class, 'show'])->name('product-set-items.show');
-    // Update a specific Product Set Item
-    Route::put('/{id}', [ProductSetItemsController::class, 'update'])->name('product-set-items.update');
-    // Delete a specific Product Set Item
-    Route::delete('/{id}', [ProductSetItemsController::class, 'destroy'])->name('product-set-items.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create a new Product Set Item
+        Route::post('/', [ProductSetItemsController::class, 'store'])->name('product-set-items.store');
+        // Update a specific Product Set Item
+        Route::put('/{id}', [ProductSetItemsController::class, 'update'])->name('product-set-items.update');
+        // Delete a specific Product Set Item
+        Route::delete('/{id}', [ProductSetItemsController::class, 'destroy'])->name('product-set-items.destroy');
+    });
 });
 
 Route::prefix('product-price')->group(function () {
     // Get all Product Prices
     Route::get('/', [ProductPriceController::class, 'index'])->name('product-price.index');
-    // Create a new Product Price
-    Route::post('/', [ProductPriceController::class, 'store'])->name('product-price.store');
     // Get a specific Product Price
     Route::get('/{id}', [ProductPriceController::class, 'show'])->name('product-price.show');
-    // Update a specific Product Price
-    Route::put('/{id}', [ProductPriceController::class, 'update'])->name('product-price.update');
-    // Delete a specific Product Price
-    Route::delete('/{id}', [ProductPriceController::class, 'destroy'])->name('product-price.destroy');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create a new Product Price
+        Route::post('/', [ProductPriceController::class, 'store'])->name('product-price.store');
+        // Update a specific Product Price
+        Route::put('/{id}', [ProductPriceController::class, 'update'])->name('product-price.update');
+        // Delete a specific Product Price
+        Route::delete('/{id}', [ProductPriceController::class, 'destroy'])->name('product-price.destroy');
+    });
 });
 
-Route::get('/currencies', [CurrencyController::class, 'index']);
+Route::get('/currencies', [CurrencyController::class, 'index'])->name('currencies.index');
 
 
 // Product Options
 Route::prefix('subscribe')->namespace('Subscribe')->group(function () {
-    Route::get('/', [SubscribeController::class, 'index'])->name('subscribe.index');
     Route::post('/', [SubscribeController::class, 'store'])->name('subscribe.store');
-    Route::post('/send-email', [SubscribeController::class, 'sendEmailToSubscribers'])->name('subscribe.send-email');
+
+    Route::middleware(['auth:api', 'role.admin'])->group(function () {
+        Route::get('/', [SubscribeController::class, 'index'])->name('subscribe.index');
+        Route::post('/send-email', [SubscribeController::class, 'sendEmailToSubscribers'])->name('subscribe.send-email');
+    });
 });
 
 
@@ -385,28 +439,26 @@ Route::prefix('testimonial')->namespace('Testimonial')->group(function () {
     Route::get('/', [TestimonialController::class, 'all'])->name('testimonial.all');
     // Get a specific Testimonial
     Route::get('/{id}', [TestimonialController::class, 'show'])->name('testimonial.get');
-    // Create a new Testimonial
-    Route::post('/', [TestimonialController::class, 'create'])->name('testimonial.create')->middleware('auth:api');
-    // Delete a Testimonial
-    Route::delete('/{id}', [TestimonialController::class, 'delete'])->name('testimonial.delete');
+
+    Route::middleware('auth:api')->group(function () {
+        // Create a new Testimonial
+        Route::post('/', [TestimonialController::class, 'create'])->name('testimonial.create');
+        // Delete a Testimonial
+        Route::delete('/{id}', [TestimonialController::class, 'delete'])->name('testimonial.delete');
+    });
 });
 
 
-Route::get('/payments/tap/mock/complete', [TapMockController::class, 'complete']);
+Route::get('/payments/tap/mock/complete', [TapMockController::class, 'complete'])->name('payments.tap.mock.complete');
 
 // Tap Payments Webhook and Redirect Routes
-Route::post('/payments/tap/webhook', [TapWebhookController::class, 'handleWebhook']);
-Route::get('/payments/tap/redirect', [TapRedirectController::class, 'handleRedirect']);
+Route::post('/payments/tap/webhook', [TapWebhookController::class, 'handleWebhook'])->name('payments.tap.webhook');
+Route::get('/payments/tap/redirect', [TapRedirectController::class, 'handleRedirect'])->name('payments.tap.redirect');
 
 // Quiz Routes
 Route::prefix('quiz')->group(function () {
     // Get  quizz
-    Route::get('/{id}', [QuizController::class, 'show']);
+    Route::get('/{id}', [QuizController::class, 'show'])->name('quiz.show');
     // Submit quiz answers
-    Route::post('/submit', [QuizController::class, 'submit']);
-});
-
-
-Route::prefix('homework')->group(function () {
-    Route::delete('/{id}', [HomeworkController::class, 'destroy'])->whereNumber('id');
+    Route::post('/submit', [QuizController::class, 'submit'])->name('quiz.submit');
 });

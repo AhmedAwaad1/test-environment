@@ -3,12 +3,18 @@
 namespace App\Repositories\Order;
 
 use App\Models\Order;
+use App\Repositories\BaseRepository;
 
-class OrderRepository
+class OrderRepository extends BaseRepository implements OrderRepositoryInterface
 {
+    public function __construct(Order $model)
+    {
+        parent::__construct($model);
+    }
+
     public function getAllUserOrder($request)
     {
-        return Order::with([
+        return $this->model->with([
             'orderItems',
             'address.country',
             'address.city',
@@ -22,7 +28,7 @@ class OrderRepository
 
     public function findOrderById($id)
     {
-        return Order::with([
+        return $this->model->with([
             'orderItems',
             'user',
             'address.country',
@@ -46,7 +52,7 @@ class OrderRepository
         // For recording, we might want to store the total discount (product + coupon)
         $totalDiscount = ($subtotal - $totalAfterProdDisc) + $couponDiscount;
 
-        return Order::create([
+        return $this->model->create([
             'user_id'         => $data['user_id'],
             'address_id'      => $data['address_id'],
             'order_number'    => $data['order_number'],
@@ -62,13 +68,10 @@ class OrderRepository
         ]);
     }
 
-    public function delete($id)
+    public function delete($id): ?bool
     {
-        $order = Order::find($id);
-        if ($order) {
-            $order->delete();
-        }
-        return $order;
+        $order = $this->find($id);
+        return $order ? $order->delete() : false;
     }
 
     public function getCartForOrder($userId)

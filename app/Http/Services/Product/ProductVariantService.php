@@ -2,208 +2,217 @@
 
 namespace App\Http\Services\Product;
 
+use App\Models\Product;
+use App\Models\VariantOptionValue;
 use App\Http\Resources\ProductVariant\ProductVariantResource;
-use App\Repositories\Product\ProductRepository;
+use App\Repositories\ProductOption\ProductOptionRepository;
+use App\Repositories\ProductOptionValue\ProductOptionValueRepository;
 use App\Repositories\ProductVariant\ProductVariantRepository;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Response;
 
 class ProductVariantService
 {
     public function __construct(
-        protected ProductRepository $productRepo,
-        protected ProductVariantRepository $variantRepo
+        protected ProductOptionRepository      $productOptionRepo,
+        protected ProductOptionValueRepository $productOptionValueRepo,
+        protected ProductVariantRepository     $productVariantRepo,
+        protected VariantOptionValue           $variantOptionValue
     ) {}
 
-    public function getProductVariants($productId)
+    /**
+     * Create variants for a product
+     */
+    public function createVariants(int $productId, array $variants, array $optionValueMap): void
     {
-        try {
-            $product = $this->productRepo->find($productId);
+        foreach ($variants as $variant) {
+            $defaultPrice = 0;
+            $defaultPriceAfterDiscount = null;
 
-            if (!$product) {
-                return Response::errorResponse('Product not found', [], 404);
+            if (!empty($variant['prices'])) {
+                $priceData = collect($variant['prices'])->firstWhere('currency_id', 1) 
+                            ?? collect($variant['prices'])->first();
+                
+                if ($priceData) {
+                    $defaultPrice = $priceData['price'];
+                    $defaultPriceAfterDiscount = $priceData['price_after_discount'] ?? null;
+                }
             }
 
-            if (!$product->has_variants) {
-                return Response::errorResponse('Product does not have variants', [], 400);
-            }
-
-            $variants = $this->variantRepo->getByProductId($productId);
-
-            return Response::successResponse(
-                ProductVariantResource::collection($variants),
-                'Variants retrieved successfully'
-            );
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to retrieve variants');
-        }
-    }
-
-    public function createVariant($productId, array $data)
-    {
-        try {
-            DB::beginTransaction();
-
-            $product = $this->productRepo->find($productId);
-            if (!$product) {
-                return Response::errorResponse('Product not found', [], 404);
-            }
-
-            if (!$product->has_variants) {
-                $product->update(['has_variants' => true]);
-            }
-
-            $variant = $this->variantRepo->create([
+            $createdVariant = $this->productVariantRepo->create([
                 'product_id'           => $productId,
-                'sku'                  => $data['sku'],
-                'price'                => $data['price'],
-                'price_after_discount' => $data['price_after_discount'] ?? null,
-                'quantity'             => $data['quantity'],
-                'barcode'              => $data['barcode'] ?? null,
-                'weight'               => $data['weight'] ?? null,
-                'is_active'            => $data['is_active'] ?? true,
-                'order'                => $data['order'] ?? 1,
+                'sku'                  => $variant['sku'],
+                'price'                => $defaultPrice,
+                'price_after_discount' => $defaultPriceAfterDiscount,
+                'quantity'             => $variant['quantity'],
+                'barcode'              => $variant['barcode'] ?? null,
+                'weight'               => $variant['weight'] ?? null,
+                'is_active'            => $variant['is_active'] ?? true,
+                'order'                => $variant['order'] ?? 1,
             ]);
 
-            if (!empty($data['option_values'])) {
-                $this->updateVariantOptionValues($variant, $data['option_values']);
+            if (!empty($variant['prices'])) {
+                foreach ($variant['prices'] as $priceData) {
+                    $createdVariant->productPrices()->create([
+                        'currency_id'          => $priceData['currency_id'],
+                        'price'                => $priceData['price'],
+                        'price_after_discount' => $priceData['price_after_discount'] ?? null,
+                    ]);
+                }
             }
 
-            DB::commit();
-
-            return Response::successResponse(
-                new ProductVariantResource($variant->load(['optionValues.productOption.optionType', 'images'])),
-                'Variant created successfully',
-                201
-            );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return Response::handleException($e, 'Failed to create variant');
+            foreach ($variant['option_values'] as $value) {
+                foreach ($optionValueMap as $valuesMap) {
+                    if (isset($valuesMap[strtolower($value['value'])])) {
+                        $this->variantOptionValue->create([
+                            'product_variant_id'      => $createdVariant->id,
+                            'product_option_value_id' => $valuesMap[strtolower($value['value'])],
+                        ]);
+                        break;
+                    }
+                }
+            }
         }
     }
 
-    public function updateVariant($variantId, array $data)
+    /**
+     * Update product variants
+     */
+    public function updateProductVariants(int $productId, array $data): void
+    {
+        $optionValueMap = [];
+        if (!empty($data['options'])) {
+            $optionValueMap = $this->updateOptionsAndValues($productId, $data['options']);
+        } else {
+            $optionValueMap = $this->getExistingOptionValueMap($productId);
+        }
+
+        $existingVariants = $this->productVariantRepo->getByProductId($productId);
+        $processedIds = [];
+
+        if (!empty($data['variants'])) {
+            foreach ($data['variants'] as $variantData) {
+                $defaultPrice = 0;
+                $defaultPriceAfterDiscount = null;
+
+                if (!empty($variantData['prices'])) {
+                    $priceData = collect($variantData['prices'])->firstWhere('currency_id', 1) 
+                                ?? collect($variantData['prices'])->first();
+                    
+                    if ($priceData) {
+                        $defaultPrice = $priceData['price'];
+                        $defaultPriceAfterDiscount = $priceData['price_after_discount'] ?? null;
+                    }
+                }
+
+                $variantFields = [
+                    'sku'                  => $variantData['sku'],
+                    'price'                => $defaultPrice,
+                    'price_after_discount' => $defaultPriceAfterDiscount,
+                    'quantity'             => $variantData['quantity'],
+                    'barcode'              => $variantData['barcode'] ?? null,
+                    'weight'               => $variantData['weight'] ?? null,
+                    'is_active'            => $variantData['is_active'] ?? true,
+                    'order'                => $variantData['order'] ?? 1,
+                ];
+
+                if (!empty($variantData['id'])) {
+                    $variant = $this->productVariantRepo->update($variantData['id'], $variantFields);
+                    $processedIds[] = $variant->id;
+                } else {
+                    $variantFields['product_id'] = $productId;
+                    $variant = $this->productVariantRepo->create($variantFields);
+                    $processedIds[] = $variant->id;
+                }
+
+                if (!empty($variantData['prices'])) {
+                    if (!empty($variantData['id'])) {
+                        $variant->productPrices()->delete();
+                    }
+                    
+                    foreach ($variantData['prices'] as $priceData) {
+                        $variant->productPrices()->create([
+                            'currency_id'          => $priceData['currency_id'],
+                            'price'                => $priceData['price'],
+                            'price_after_discount' => $priceData['price_after_discount'] ?? null,
+                        ]);
+                    }
+                }
+
+                if (!empty($variantData['option_values'])) {
+                    $this->syncVariantOptionValues($variant, $variantData['option_values'], $optionValueMap);
+                }
+            }
+        }
+
+        foreach ($existingVariants as $existingVariant) {
+            if (!in_array($existingVariant->id, $processedIds)) {
+                $this->productVariantRepo->delete($existingVariant->id);
+            }
+        }
+    }
+
+    /**
+     * Create options and values
+     */
+    public function createOptionsAndValues(int $productId, array $options): array
+    {
+        $map = [];
+
+        foreach ($options as $option) {
+            $createdOption = $this->productOptionRepo->create([
+                'product_id'             => $productId,
+                'product_option_type_id' => $option['option_type_id'],
+                'order'                  => $option['order'] ?? 1,
+            ]);
+
+            $createdOption->load('optionType');
+
+            foreach ($option['values'] as $index => $value) {
+                $createdValue = $this->productOptionValueRepo->create([
+                    'product_option_id' => $createdOption->id,
+                    'value'             => $value['value'],
+                    'hex_code'          => $value['hex_code'] ?? null,
+                    'order'             => $value['order'] ?? ($index + 1),
+                ]);
+
+                if (!empty($createdOption->optionType)) {
+                    $map[strtolower($createdOption->optionType->name)][strtolower($value['value'])] = $createdValue->id;
+                }
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * Delete all variants and options for a product
+     */
+    public function deleteAllVariants(Product $product): void
+    {
+        foreach ($product->productVariants as $variant) {
+            $this->productVariantRepo->delete($variant->id);
+        }
+
+        foreach ($product->productOptions as $option) {
+            $this->productOptionRepo->delete($option->id);
+        }
+    }
+
+    /**
+     * Get variant by selected options
+     */
+    public function getVariantByOptions($productId, array $selectedOptions)
     {
         try {
-            DB::beginTransaction();
-
-            $variant = $this->variantRepo->find($variantId);
+            $variant = $this->productVariantRepo->findByOptions($productId, $selectedOptions);
 
             if (!$variant) {
                 return Response::errorResponse('Variant not found', [], 404);
             }
-
-            $variant = $this->variantRepo->update($variantId, $data);
-
-            // Update option values if provided
-            if (!empty($data['option_values'])) {
-                $this->updateVariantOptionValues($variant, $data['option_values']);
-            }
-
-            DB::commit();
-
-            return Response::successResponse(
-                new ProductVariantResource($variant->load('optionValues')),
-                'Variant updated successfully'
-            );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return Response::handleException($e, 'Failed to update variant');
-        }
-    }
-
-    public function updateVariantStock($variantId, $quantity)
-    {
-        try {
-            $variant = $this->variantRepo->find($variantId);
-
-            if (!$variant) {
-                return Response::errorResponse('Variant not found', [], 404);
-            }
-
-            $variant = $this->variantRepo->update($variantId, ['quantity' => $quantity]);
 
             return Response::successResponse(
                 new ProductVariantResource($variant),
-                'Stock updated successfully'
-            );
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to update stock');
-        }
-    }
-
-    public function toggleVariantStatus($variantId)
-    {
-        try {
-            $variant = $this->variantRepo->find($variantId);
-
-            if (!$variant) {
-                return Response::errorResponse('Variant not found', [], 404);
-            }
-
-            $variant = $this->variantRepo->toggleStatus($variantId);
-
-            return Response::successResponse(
-                new ProductVariantResource($variant),
-                'Status updated successfully'
-            );
-        } catch (\Exception $e) {
-            return Response::handleException($e, 'Failed to toggle status');
-        }
-    }
-
-    public function deleteVariant($variantId)
-    {
-        try {
-            DB::beginTransaction();
-
-            $variant = $this->variantRepo->find($variantId);
-
-            if (!$variant) {
-                return Response::errorResponse('Variant not found', [], 404);
-            }
-
-            // Check if this is the last variant
-            $variantsCount = $variant->product->productVariants()->count();
-            if ($variantsCount <= 1) {
-                return Response::errorResponse('Cannot delete the last variant', [], 400);
-            }
-
-            $this->variantRepo->delete($variantId);
-
-            DB::commit();
-
-            return Response::successResponse(
-                null,
-                'Variant deleted successfully'
-            );
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return Response::handleException($e, 'Failed to delete variant');
-        }
-    }
-
-    public function getVariantByOptions($productId, array $optionValues)
-    {
-        try {
-            $product = $this->productRepo->find($productId);
-
-            if (!$product) {
-                return Response::errorResponse('Product not found', [], 404);
-            }
-
-            if (!$product->has_variants) {
-                return Response::errorResponse('Product does not have variants', [], 400);
-            }
-
-            $variant = $this->variantRepo->findByOptions($productId, $optionValues);
-
-            if (!$variant) {
-                return Response::errorResponse('Variant not found', [], 404);
-            }
-
-            return Response::successResponse(
-                new ProductVariantResource($variant->load(['optionValues.productOption.optionType', 'optionValues.images'])),
                 'Variant found successfully'
             );
         } catch (\Exception $e) {
@@ -211,23 +220,87 @@ class ProductVariantService
         }
     }
 
-    private function updateVariantOptionValues($variant, array $optionValues)
+    /**
+     * Handle variant updates during product update.
+     */
+    public function handleProductVariantsUpdate(Product $product, array $data): void
     {
-        // Get existing option value IDs
-        $existingValueIds = $variant->optionValues->pluck('id')->toArray();
-
-        // Get new option value IDs
-        $newValueIds = collect($optionValues)->pluck('id')->filter()->toArray();
-
-        // Get values to delete (existing but not in new)
-        $toDelete = array_diff($existingValueIds, $newValueIds);
-
-        // Delete removed values
-        if (!empty($toDelete)) {
-            $variant->optionValues()->detach($toDelete);
+        // If has_variants is not provided, we don't change the variant structure
+        if (!isset($data['has_variants'])) {
+            if (!empty($data['variants'])) {
+                $this->updateProductVariants($product->id, $data);
+            }
+            return;
         }
 
-        // Add new values
-        $variant->optionValues()->syncWithoutDetaching($newValueIds);
+        if ($data['has_variants']) {
+            $this->updateProductVariants($product->id, $data);
+        } else {
+            $this->deleteAllVariants($product);
+        }
+    }
+
+    protected function updateOptionsAndValues(int $productId, array $options): array
+    {
+        $map = [];
+        foreach ($options as $optionData) {
+            $option = $this->productOptionRepo->create([
+                'product_id'             => $productId,
+                'product_option_type_id' => $optionData['option_type_id'],
+                'order'                  => $optionData['order'] ?? 1,
+            ]);
+            
+            $option->load('optionType');
+
+            foreach ($optionData['values'] as $index => $valueData) {
+                $value = $this->productOptionValueRepo->create([
+                    'product_option_id' => $option->id,
+                    'value'             => $valueData['value'],
+                    'hex_code'          => $valueData['hex_code'] ?? null,
+                    'order'             => $valueData['order'] ?? ($index + 1),
+                ]);
+
+                if ($option->optionType) {
+                    $map[strtolower($option->optionType->name)][strtolower($value->value)] = $value->id;
+                }
+            }
+        }
+        return $map;
+    }
+
+    protected function getExistingOptionValueMap(int $productId): array
+    {
+        $map = [];
+        $options = $this->productOptionRepo->getByProductId($productId);
+        foreach ($options as $option) {
+            foreach ($option->values as $value) {
+                if ($option->optionType) {
+                    $map[strtolower($option->optionType->name)][strtolower($value->value)] = $value->id;
+                }
+            }
+        }
+        return $map;
+    }
+
+    protected function syncVariantOptionValues($variant, array $optionValues, array $optionValueMap): void
+    {
+        $this->variantOptionValue->where('product_variant_id', $variant->id)->delete();
+
+        foreach ($optionValues as $valueData) {
+            $valueId = null;
+            foreach ($optionValueMap as $typeName => $values) {
+                if (isset($values[strtolower($valueData['value'])])) {
+                    $valueId = $values[strtolower($valueData['value'])];
+                    break;
+                }
+            }
+
+            if ($valueId) {
+                $this->variantOptionValue->create([
+                    'product_variant_id'      => $variant->id,
+                    'product_option_value_id' => $valueId,
+                ]);
+            }
+        }
     }
 }

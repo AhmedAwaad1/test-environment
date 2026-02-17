@@ -45,7 +45,6 @@ class AuthService
 
     public function login($request)
     {
-        // dd($request->all());
         $user = User::where('email', $request->email)
                     ->first();
 
