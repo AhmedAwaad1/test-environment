@@ -79,6 +79,14 @@ class CreateOrderAction
 
             if ($item->product_variant_id) {
                 $variant = $item->productVariant;
+                if (!$variant) {
+                    throw new \Exception('Product variant not found');
+                }
+                
+                if (!$variant->product) {
+                    throw new \Exception('Associated product not found for variant ID: ' . $variant->id);
+                }
+
                 $freshPrice = (float) $variant->price;
                 $freshDiscountedPrice = $variant->price_after_discount !== null ? (float) $variant->price_after_discount : null;
                 $productName = $variant->product->name_en . ' (' . $variant->getTitle() . ')';
