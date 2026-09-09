@@ -18,11 +18,15 @@ class Product extends Model
         'name_ar',
         'description_en',
         'description_ar',
-        'sub_category_id',
         'category_id',
+        'sub_category_id',
+        'sub_sub_category_id',
+        'erp_group_code',
+        'erp_group2_code',
+        'erp_group3_code',
         'quantity',
-          'is_best_seller',
-    'is_new_arrival',
+        'is_best_seller',
+        'is_new_arrival',
         'is_active',
         'has_variants',
         'sku',
@@ -32,8 +36,8 @@ class Product extends Model
     protected $casts = [
         'has_variants' => 'boolean',
         'is_active'    => 'boolean',
-           'is_best_seller' => 'boolean',
-    'is_new_arrival' => 'boolean',
+        'is_best_seller' => 'boolean',
+        'is_new_arrival' => 'boolean',
     ];
 
     public function productPrices()
@@ -63,6 +67,10 @@ class Product extends Model
     public function category()
     {
         return $this->belongsTo(Category::class);
+    }
+    public function subSubCategory()
+    {
+        return $this->belongsTo(SubSubCategory::class);
     }
     public function colors()
     {

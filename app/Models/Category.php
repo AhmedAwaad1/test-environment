@@ -10,12 +10,14 @@ class Category extends Model
     use HasFactory;
 
     protected $fillable = [
+        'code',
         'name_en',
         'name_ar',
         'slug',
         'image',
         'order',
         'is_active',
+        'notes',
     ];
 
     // public function products()
@@ -25,6 +27,11 @@ class Category extends Model
     public function subCategories()
     {
         return $this->hasMany(SubCategory::class)->orderBy('order', 'asc');
+    }
+
+    public function subSubCategories()
+    {
+        return $this->hasMany(SubSubCategory::class)->orderBy('order', 'asc');
     }
     public function getImageAttribute($value)
     {

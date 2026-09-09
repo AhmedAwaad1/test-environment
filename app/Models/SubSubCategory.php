@@ -5,13 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class SubCategory extends Model
+class SubSubCategory extends Model
 {
     use HasFactory;
+
     protected $fillable = [
         'code',
         'ucode1',
+        'ucode2',
         'category_id',
+        'sub_category_id',
         'name_en',
         'name_ar',
         'is_active',
@@ -28,14 +31,16 @@ class SubCategory extends Model
         }
         return null;
     }
+
     public function setImageAttribute($value)
     {
         if (is_string($value)) {
             $this->attributes['image'] = $value;
         } else {
-            $this->attributes['image'] = $value->store('sub_categories', 'public');
+            $this->attributes['image'] = $value->store('sub_sub_categories', 'public');
         }
     }
+
     public function getSlugAttribute($value)
     {
         return $value;
@@ -46,24 +51,13 @@ class SubCategory extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function subSubCategories()
+    public function subCategory()
     {
-        return $this->hasMany(SubSubCategory::class)->orderBy('order', 'asc');
+        return $this->belongsTo(SubCategory::class);
     }
-    public function scopeFilter($query, array $filters)
-    {
-        $query->when(
-            $filters['is_active'] ?? false,
-            function ($query, $is_active) {
-                $query->where('is_active', (int) $is_active);
-            }
-        );
 
-        $query->when(
-            $filters['category_id'] ?? false,
-            function ($query, $category_id) {
-                $query->where('category_id', $category_id);
-            }
-        );
+    public function products()
+    {
+        return $this->hasMany(Product::class);
     }
 }

@@ -38,6 +38,8 @@ use App\Http\Controllers\Payment\TapWebhookController;
 use App\Http\Controllers\Product\ProductOptionController;
 use App\Http\Controllers\Product\ProductAttributeFilterController;
 use App\Http\Controllers\Review\ReviewController;
+use App\Http\Controllers\ERP\ErpCategoryController;
+use App\Http\Controllers\ERP\ErpProductController;
 
 /*
 |--------------------------------------------------------------------------
@@ -461,4 +463,15 @@ Route::prefix('quiz')->group(function () {
     Route::get('/{id}', [QuizController::class, 'show'])->name('quiz.show');
     // Submit quiz answers
     Route::post('/submit', [QuizController::class, 'submit'])->name('quiz.submit');
+});
+
+// ERP Integration Routes (Categories & Products Sync)
+Route::prefix('v1/erp')->group(function () {
+    Route::post('categories', [ErpCategoryController::class, 'store'])->name('erp.categories.store');
+    Route::get('categories', [ErpCategoryController::class, 'index'])->name('erp.categories.index');
+    Route::post('products', [ErpProductController::class, 'store'])->name('erp.products.store');
+    Route::get('products', [ErpProductController::class, 'index'])->name('erp.products.index');
+    Route::get('products/{sku}', [ErpProductController::class, 'show'])->name('erp.products.show');
+    Route::put('products/{sku}', [ErpProductController::class, 'update'])->name('erp.products.update');
+    Route::delete('products/{sku}', [ErpProductController::class, 'destroy'])->name('erp.products.destroy');
 });
