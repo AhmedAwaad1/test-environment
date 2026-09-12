@@ -64,6 +64,47 @@ class ErpProductRepository
         return $this->findBySku($product->sku);
     }
 
+    public function createProduct(array $data): Product
+    {
+        $product = Product::create([
+            'sku' => $data['sku'],
+            'name_ar' => $data['name_ar'],
+            'name_en' => $data['name_en'] ?? $data['name_ar'],
+            'description_ar' => $data['description_ar'] ?? null,
+            'description_en' => $data['description_en'] ?? null,
+            'category_id' => $data['category_id'] ?? null,
+            'sub_category_id' => $data['sub_category_id'] ?? null,
+            'sub_sub_category_id' => $data['sub_sub_category_id'] ?? null,
+            'erp_group_code' => $data['erp_group_code'] ?? null,
+            'erp_group2_code' => $data['erp_group2_code'] ?? null,
+            'erp_group3_code' => $data['erp_group3_code'] ?? null,
+            'quantity' => $data['quantity'] ?? 0,
+            'has_variants' => 0,
+            'is_active' => 1,
+        ]);
+
+        $this->syncProductPrice($product, (float) $data['price']);
+
+        if (!empty($data['image_url'])) {
+            $this->syncProductImage($product, $data['image_url']);
+        }
+
+        return $this->findBySku($product->sku);
+    }
+
+    public function updatePriceAndStock(Product $product, array $data): Product
+    {
+        if (array_key_exists('stock', $data)) {
+            $product->update(['quantity' => (int) $data['stock']]);
+        }
+
+        if (array_key_exists('price', $data)) {
+            $this->syncProductPrice($product, (float) $data['price']);
+        }
+
+        return $this->findBySku($product->sku);
+    }
+
     public function updateProductBySku(Product $product, array $data): Product
     {
         $updateFields = [];

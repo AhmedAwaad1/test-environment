@@ -46,6 +46,48 @@ class ErpProductService
         });
     }
 
+    public function bulkUpsertProducts(array $products)
+    {
+        return DB::transaction(function () use ($products) {
+            $created = 0;
+            $updated = 0;
+
+            foreach ($products as $data) {
+                $product = $this->productRepo->findBySku($data['sku']);
+
+                if ($product) {
+                    if (!array_key_exists('stock', $data) && array_key_exists('quantity', $data)) {
+                        $data['stock'] = $data['quantity'];
+                    }
+
+                    $this->productRepo->updatePriceAndStock($product, $data);
+                    $updated++;
+                    continue;
+                }
+
+                $groups = $this->resolveProductHierarchy($data);
+                $nameAr = $data['name_ar'] ?? $data['name'];
+                $this->productRepo->createProduct([
+                    'sku' => $data['sku'],
+                    'name_ar' => $nameAr,
+                    'name_en' => $data['name_en'] ?? $data['name2'] ?? $nameAr,
+                    'description_ar' => $data['description_ar'] ?? $data['description'] ?? null,
+                    'description_en' => $data['description_en'] ?? $data['description2'] ?? null,
+                    'price' => (float) $data['price'],
+                    'quantity' => (int) ($data['stock'] ?? $data['quantity'] ?? 0),
+                    'image_url' => $data['image_url'] ?? null,
+                    ...$groups,
+                ]);
+                $created++;
+            }
+
+            return Response::successResponse([
+                'created' => $created,
+                'updated' => $updated,
+            ], 'ERP products synchronized successfully', 200);
+        });
+    }
+
     public function updateProduct(string $sku, array $data)
     {
         return DB::transaction(function () use ($sku, $data) {

@@ -42,8 +42,6 @@ class ErpCategoryRepository
 
         if ($category) {
             $category->update([
-                'name_ar' => $name,
-                'name_en' => $category->name_en ?: $name,
                 'notes' => $notes,
             ]);
             return $category->fresh();
@@ -73,8 +71,6 @@ class ErpCategoryRepository
             $subCategory->update([
                 'category_id' => $parentCategory->id,
                 'ucode1' => $data['ucode1'],
-                'name_ar' => $name,
-                'name_en' => $subCategory->name_en ?: $name,
                 'notes' => $notes,
             ]);
             return $subCategory->fresh();

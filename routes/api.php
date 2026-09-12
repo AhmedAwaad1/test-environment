@@ -470,6 +470,7 @@ Route::prefix('v1/erp')->group(function () {
     Route::post('categories', [ErpCategoryController::class, 'store'])->name('erp.categories.store');
     Route::get('categories', [ErpCategoryController::class, 'index'])->name('erp.categories.index');
     Route::post('products', [ErpProductController::class, 'store'])->name('erp.products.store');
+    Route::post('products/bulk', [ErpProductController::class, 'bulkUpsert'])->name('erp.products.bulk-upsert');
     Route::get('products', [ErpProductController::class, 'index'])->name('erp.products.index');
     Route::get('products/{sku}', [ErpProductController::class, 'show'])->name('erp.products.show');
     Route::put('products/{sku}', [ErpProductController::class, 'update'])->name('erp.products.update');
