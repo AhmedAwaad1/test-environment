@@ -472,7 +472,7 @@ Route::prefix('v1/erp')->group(function () {
     Route::post('products', [ErpProductController::class, 'store'])->name('erp.products.store');
     Route::post('products/bulk', [ErpProductController::class, 'bulkUpsert'])->name('erp.products.bulk-upsert');
     Route::get('products', [ErpProductController::class, 'index'])->name('erp.products.index');
-    Route::get('products/{sku}', [ErpProductController::class, 'show'])->name('erp.products.show');
-    Route::put('products/{sku}', [ErpProductController::class, 'update'])->name('erp.products.update');
-    Route::delete('products/{sku}', [ErpProductController::class, 'destroy'])->name('erp.products.destroy');
+    Route::get('products/{externalId}', [ErpProductController::class, 'show'])->name('erp.products.show');
+    Route::put('products/{externalId}', [ErpProductController::class, 'update'])->name('erp.products.update');
+    Route::delete('products/{externalId}', [ErpProductController::class, 'destroy'])->name('erp.products.destroy');
 });

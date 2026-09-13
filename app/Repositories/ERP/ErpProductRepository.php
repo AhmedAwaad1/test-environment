@@ -14,21 +14,21 @@ class ErpProductRepository
     public function paginate(int $perPage): LengthAwarePaginator
     {
         return Product::with(['productPrices.currency', 'images', 'category', 'subCategory', 'subSubCategory'])
-            ->whereNotNull('sku')
+            ->whereNotNull('external_id')
             ->orderByDesc('id')
             ->paginate($perPage);
     }
 
-    public function findBySku(string $sku): ?Product
+    public function findByExternalId(string $externalId): ?Product
     {
         return Product::with(['productPrices.currency', 'images', 'category', 'subCategory', 'subSubCategory'])
-            ->where('sku', $sku)
+            ->where('external_id', $externalId)
             ->first();
     }
 
     public function upsertProduct(array $data): Product
     {
-        $product = Product::where('sku', $data['sku'])->first();
+        $product = Product::where('external_id', $data['external_id'])->first();
 
         $attributes = [
             'name_ar' => $data['name_ar'],
@@ -49,7 +49,7 @@ class ErpProductRepository
         if ($product) {
             $product->update($attributes);
         } else {
-            $attributes['sku'] = $data['sku'];
+            $attributes['external_id'] = $data['external_id'];
             $product = Product::create($attributes);
         }
 
@@ -61,13 +61,13 @@ class ErpProductRepository
             $this->syncProductImage($product, $data['image_url']);
         }
 
-        return $this->findBySku($product->sku);
+        return $this->findByExternalId($product->external_id);
     }
 
     public function createProduct(array $data): Product
     {
         $product = Product::create([
-            'sku' => $data['sku'],
+            'external_id' => $data['external_id'],
             'name_ar' => $data['name_ar'],
             'name_en' => $data['name_en'] ?? $data['name_ar'],
             'description_ar' => $data['description_ar'] ?? null,
@@ -89,7 +89,7 @@ class ErpProductRepository
             $this->syncProductImage($product, $data['image_url']);
         }
 
-        return $this->findBySku($product->sku);
+        return $this->findByExternalId($product->external_id);
     }
 
     public function updatePriceAndStock(Product $product, array $data): Product
@@ -102,10 +102,10 @@ class ErpProductRepository
             $this->syncProductPrice($product, (float) $data['price']);
         }
 
-        return $this->findBySku($product->sku);
+        return $this->findByExternalId($product->external_id);
     }
 
-    public function updateProductBySku(Product $product, array $data): Product
+    public function updateProductByExternalId(Product $product, array $data): Product
     {
         $updateFields = [];
 
@@ -155,7 +155,7 @@ class ErpProductRepository
             $this->syncProductImage($product, $data['image_url']);
         }
 
-        return $this->findBySku($product->sku);
+        return $this->findByExternalId($product->external_id);
     }
 
     public function syncProductPrice(Product $product, float $price): ProductPrice

@@ -25,9 +25,9 @@ class ErpProductController extends Controller
         return $this->erpProductService->bulkUpsertProducts($request->validated());
     }
 
-    public function update(ErpProductUpdateRequest $request, string $sku)
+    public function update(ErpProductUpdateRequest $request, string $externalId)
     {
-        return $this->erpProductService->updateProduct($sku, $request->validated());
+        return $this->erpProductService->updateProduct($externalId, $request->validated());
     }
 
     public function index(ErpProductIndexRequest $request)
@@ -35,13 +35,13 @@ class ErpProductController extends Controller
         return $this->erpProductService->listProducts($request->integer('per_page', 15));
     }
 
-    public function show(string $sku)
+    public function show(string $externalId)
     {
-        return $this->erpProductService->getProduct($sku);
+        return $this->erpProductService->getProduct($externalId);
     }
 
-    public function destroy(string $sku)
+    public function destroy(string $externalId)
     {
-        return $this->erpProductService->deleteProduct($sku);
+        return $this->erpProductService->deleteProduct($externalId);
     }
 }

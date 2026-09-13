@@ -13,8 +13,7 @@ class ErpProductResource extends JsonResource
         $mainImage = $this->images?->firstWhere('is_main', true) ?? $this->images?->first();
 
         return [
-            'id' => $this->id,
-            'sku' => $this->sku,
+            'id' => $this->external_id,
             'name' => $this->name_ar,
             'name2' => $this->name_en,
             'description' => $this->description_ar,

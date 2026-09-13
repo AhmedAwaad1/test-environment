@@ -19,13 +19,13 @@ class ErpProductService
     public function storeProduct(array $data)
     {
         return DB::transaction(function () use ($data) {
-            if ($this->productRepo->findBySku($data['sku'])) {
-                throw ValidationException::withMessages(['sku' => ["A product with SKU '{$data['sku']}' already exists."]]);
+            if ($this->productRepo->findByExternalId((string) $data['id'])) {
+                throw ValidationException::withMessages(['id' => ["A product with ERP ID '{$data['id']}' already exists."]]);
             }
 
             $groups = $this->resolveProductHierarchy($data);
             $productData = [
-                'sku' => $data['sku'],
+                'external_id' => (string) $data['id'],
                 'name_ar' => $data['name'],
                 'name_en' => $data['name2'] ?? $data['name'],
                 'description_ar' => $data['description'] ?? null,
@@ -53,7 +53,7 @@ class ErpProductService
             $updated = 0;
 
             foreach ($products as $data) {
-                $product = $this->productRepo->findBySku($data['sku']);
+                $product = $this->productRepo->findByExternalId((string) $data['id']);
 
                 if ($product) {
                     if (!array_key_exists('stock', $data) && array_key_exists('quantity', $data)) {
@@ -68,7 +68,7 @@ class ErpProductService
                 $groups = $this->resolveProductHierarchy($data);
                 $nameAr = $data['name_ar'] ?? $data['name'];
                 $this->productRepo->createProduct([
-                    'sku' => $data['sku'],
+                    'external_id' => (string) $data['id'],
                     'name_ar' => $nameAr,
                     'name_en' => $data['name_en'] ?? $data['name2'] ?? $nameAr,
                     'description_ar' => $data['description_ar'] ?? $data['description'] ?? null,
@@ -88,14 +88,14 @@ class ErpProductService
         });
     }
 
-    public function updateProduct(string $sku, array $data)
+    public function updateProduct(string $externalId, array $data)
     {
-        return DB::transaction(function () use ($sku, $data) {
-            $product = $this->productRepo->findBySku($sku);
+        return DB::transaction(function () use ($externalId, $data) {
+            $product = $this->productRepo->findByExternalId($externalId);
 
             if (!$product) {
                 return Response::errorResponse(
-                    "Product with SKU '{$sku}' not found",
+                    "Product with ERP ID '{$externalId}' not found",
                     [],
                     404
                 );
@@ -109,7 +109,7 @@ class ErpProductService
                 ])];
             }
 
-            $updatedProduct = $this->productRepo->updateProductBySku($product, $data);
+            $updatedProduct = $this->productRepo->updateProductByExternalId($product, $data);
 
             return Response::successResponse(
                 new ErpProductResource($updatedProduct),
@@ -123,21 +123,21 @@ class ErpProductService
         return ErpProductResource::collection($this->productRepo->paginate($perPage));
     }
 
-    public function getProduct(string $sku)
+    public function getProduct(string $externalId)
     {
-        $product = $this->productRepo->findBySku($sku);
+        $product = $this->productRepo->findByExternalId($externalId);
         if (!$product) {
-            return Response::errorResponse("Product with SKU '{$sku}' not found", [], 404);
+            return Response::errorResponse("Product with ERP ID '{$externalId}' not found", [], 404);
         }
 
         return Response::successResponse(new ErpProductResource($product), 'ERP product retrieved successfully');
     }
 
-    public function deleteProduct(string $sku)
+    public function deleteProduct(string $externalId)
     {
-        $product = $this->productRepo->findBySku($sku);
+        $product = $this->productRepo->findByExternalId($externalId);
         if (!$product) {
-            return Response::errorResponse("Product with SKU '{$sku}' not found", [], 404);
+            return Response::errorResponse("Product with ERP ID '{$externalId}' not found", [], 404);
         }
         if ($this->productRepo->hasCommercialReferences($product)) {
             return Response::errorResponse('Product cannot be deleted because it is referenced by an existing order or transaction.', [], 409);
@@ -145,7 +145,7 @@ class ErpProductService
 
         $this->productRepo->delete($product);
 
-        return Response::successResponse(['sku' => $sku], 'ERP product deleted successfully');
+        return Response::successResponse(['external_id' => $externalId], 'ERP product deleted successfully');
     }
 
     private function hasGroupModification(array $data): bool

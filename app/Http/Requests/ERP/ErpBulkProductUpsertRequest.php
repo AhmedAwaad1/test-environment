@@ -8,6 +8,19 @@ use Illuminate\Validation\Validator;
 
 class ErpBulkProductUpsertRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $this->merge(collect($this->all())
+            ->map(function ($product) {
+                if (is_array($product) && array_key_exists('id', $product)) {
+                    $product['id'] = (string) $product['id'];
+                }
+
+                return $product;
+            })
+            ->all());
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -17,7 +30,7 @@ class ErpBulkProductUpsertRequest extends FormRequest
     {
         return [
             '*' => ['array'],
-            '*.sku' => ['required', 'string', 'max:255', 'distinct'],
+            '*.id' => ['required', 'string', 'max:255', 'distinct'],
             '*.name' => ['nullable', 'string', 'max:255'],
             '*.name2' => ['nullable', 'string', 'max:255'],
             '*.name_ar' => ['nullable', 'string', 'max:255'],
@@ -37,14 +50,14 @@ class ErpBulkProductUpsertRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $skus = collect($this->all())
-                ->pluck('sku')
-                ->filter(fn ($sku) => $sku !== null && $sku !== '')
+            $externalIds = collect($this->all())
+                ->pluck('id')
+                ->filter(fn ($externalId) => $externalId !== null && $externalId !== '')
                 ->all();
-            $existingSkus = array_flip(Product::whereIn('sku', $skus)->pluck('sku')->all());
+            $existingExternalIds = array_flip(Product::whereIn('external_id', $externalIds)->pluck('external_id')->all());
 
             foreach ($this->all() as $index => $product) {
-                $isNewProduct = is_array($product) && !isset($existingSkus[$product['sku'] ?? '']);
+                $isNewProduct = is_array($product) && !isset($existingExternalIds[$product['id'] ?? '']);
 
                 if ($isNewProduct && !isset($product['name']) && !isset($product['name_ar'])) {
                     $validator->errors()->add("{$index}.name", 'The name or name_ar field is required.');

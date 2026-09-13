@@ -6,6 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class ErpProductStoreRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('id')) {
+            $this->merge(['id' => (string) $this->input('id')]);
+        }
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -14,7 +21,7 @@ class ErpProductStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sku' => ['required', 'string', 'max:255', 'unique:products,sku'],
+            'id' => ['required', 'string', 'max:255', 'unique:products,external_id'],
             'name' => ['required', 'string', 'max:255'],
             'name2' => ['nullable', 'string', 'max:255'],
             'description' => ['nullable', 'string'],

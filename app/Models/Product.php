@@ -30,6 +30,7 @@ class Product extends Model
         'is_active',
         'has_variants',
         'sku',
+        'external_id',
     ];
 
 
